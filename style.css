@@ -1,0 +1,29 @@
+#math, .base .mbin, .base .mord, .base .mrel, .base .minner, .base .mopen, .base .mclose {
+	position: relative;
+}
+
+.mrel {
+	color: blue;
+	font-weight: bold;
+}
+
+.selected {
+	color: red;
+	border-color: red;
+}
+
+.base {
+	cursor: default;
+}
+
+.math, .buttons, #MathInput {
+	text-align: center;
+}
+
+.manip {
+	background-color: green;
+}
+
+.note {
+	font-size:0.5em;
+}
