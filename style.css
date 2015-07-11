@@ -18,6 +18,7 @@
 
 .math, .buttons, #MathInput {
 	text-align: center;
+	height: 50px;
 }
 
 .manip {
