@@ -15,7 +15,8 @@
 <p class="math"><span id="math">...</span></p>
 <p></p>
 <p class="buttons">
-	<input type="checkbox" name="multi_select" id="multi_select"/> Select multiple? <span class="note">(doesn't work for some things atm!)</span>
+	<label><input type="checkbox" name="inner_select" id="inner_select"/> Select inside?</label>
+	<label><input type="checkbox" name="multi_select" id="multi_select"/> Select multiple? <!--<span class="note">(doesn't work for some things atm!)--></span></label>
 	<button class="manip" id="factor">Select factor</button>
 	&nbsp;
 	<button class="manip" id="term">Select term</button>
@@ -30,9 +31,12 @@
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.3.0/katex.min.js"></script>
 <!--<script src="http://cdnjs.cloudflare.com/ajax/libs/gsap/1.17.0/TweenMax.min.js"></script>-->
+<!--need to add the local copies-->
 <script src="https://code.jquery.com/jquery-2.1.4.min.js"></script>
 <script>window.jQuery || document.write('<script src="js/libs/jquery.min.js">\x3C/script>')</script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/1.7.0/math.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/1.7.0/math.min.js"></script>
+<!--<script src="https://cdnjs.cloudflare.com/ajax/libs/numeric/1.2.6/numeric.min.js"></script>-->
+<script src="http://matthewja.com/Coffeequate/coffeequate.min.js"></script>
 <script src="script.js"></script>
 
 </body>

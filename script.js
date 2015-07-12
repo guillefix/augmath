@@ -6,12 +6,14 @@ var math_str,
 	equals_position = {left: 0, top: 0}, 
 	manip = "term", 
 	multi_select = false, 
-	step_duration = 700;
+	step_duration = 700, 
+	inner_select = false;
 
 //UI stuff
 $("#term").on("click", function () {manip = "term";});
 $("#factor").on("click", function () {manip = "factor";});
 $("#multi_select").on("click", function () {multi_select = document.getElementById("multi_select").checked;});
+$("#inner_select").on("click", function () {inner_select = document.getElementById("inner_select").checked; prepare(math_str);});
 
 
 //MANIPULATIVES & RENDERING//
@@ -28,20 +30,18 @@ katex.render(math, math_el, { displayMode: true });
 
 //manipulatives
 $manipulatives = $(".base").find(".mord, .mbin, .mrel, .minner, .mopen, .mclose");
-$objects = $(".base").find(".mord, .minner, .mopen, .mclose");
+$objects = $(".base").find(".mord:not(:has(*)), .minner, .mopen, .mclose");
 $operators = $(".base").find(".mbin");
 if ($objects.first().text() === "+" || $objects.first().text() === "−") {$operators = $operators.add($objects.first()); $objects = $objects.not($objects.first());}
 
-
-$objects.on("click", function() {
+function add_events() { //if using $objects. it does term selection within fraction. hmm..
+	$this = $(this);
 	//select a TERM. this works with only simple parenthesis expressions!! although im improving it, im still not sure it works in all generality
 	if (manip === "term") {
 		//select whole TERM, both symbols before and after
-		$this = $(this);
-		//if ($this.prevAll(".mopen").length - $this.prevAll(".mclose").length === 0 ) {
 			$prev = $this.prevUntil(".mbin, .mrel, .mopen");
-			topkek = 0;
-			while ($prev.first().prevAll(".mopen").length - $prev.first().prevAll(".mclose").length !== 0 && topkek<10) {
+			topkek = 0; //to prevent overflow
+			while ($prev.first().prevAll(".mopen").length - $prev.first().prevAll(".mclose").length !== 0 && topkek<$manipulatives.length) {
 				$prev = $prev.add($prev.first().prev());
 				$prev = $prev.add($prev.first().prevUntil(".mbin, .mrel"));
 				topkek++;
@@ -53,12 +53,12 @@ $objects.on("click", function() {
 			$prev = $prev.add($prev.first().prev());
 		}
 
-		//if ($this.nextAll(".mopen").length - $this.nextAll(".mclose").length === 0) {
 			$next = $this.nextUntil(".mbin, .mrel, .mclose");
-			while ($next.last().nextAll(".mopen").length - $next.last().nextAll(".mclose").length !== 0) {
-				console.log("lol2");
+			topkek = 0; //to prevent overflow
+			while ($next.last().nextAll(".mopen").length - $next.last().nextAll(".mclose").length !== 0 && topkek<$manipulatives.length) {
 				$next = $next.add($next.last().next());
 				$next = $next.add($next.last().nextUntil(".mbin, .mrel"));
+				topkek++;
 			}
 		$this = $this.add($prev);
 		$this = $this.add($next);
@@ -66,23 +66,29 @@ $objects.on("click", function() {
 	}
 
 	//select a FACTOR
-	else if (manip === "factor") {
-		$this = $(this);
-		if ($this.filter(".mopen, .mclose").length === 0) {
-			$this = $this.not(".minner");
-		} else {
+	else if (manip === "factor" && $this.filter(".minner").length === 0) {
+		if (!$this.filter(".mopen, .mclose").length === 0) {
 			do {
 				$this = $this.add($this.next()); 
 			} while (!($this.filter(".mopen").length-$this.filter(".mclose").length === 0));
 		}
 	}
-	$this.toggleClass("selected");
-	if (!multi_select)	{
+	//console.log($this);
+	//console.log($selected);
+	if (!(manip === "factor" && $this.filter(".minner").length !== 0)) {
+		$this.toggleClass("selected");
+	}
+	if (!multi_select && !(manip === "factor" && $this.filter(".minner").length !== 0))	{
 			$manipulatives.find(".selected").not($this).toggleClass("selected");
-			$manipulatives.siblings(".selected").not($this).toggleClass("selected");
+			$manipulatives.filter(".selected").not($this).toggleClass("selected");
 	}
 
-});
+}
+if (!inner_select) {
+	$(".base").on("click", ".mord:not(:has(*)), .minner, .mopen, .mclose", add_events);
+} else {
+	$(".base").on("click", ".mord:not(:has(*)), .mopen, .mclose", add_events);
+}
 
 //More compatible TERM selector, works by clicking on its operator on the left
 $operators.on("click", function() {
@@ -237,8 +243,15 @@ function prepare_expression() {
 		selected_term = "\\frac{" + numerator + "}{" + denominator + "}";
 	}
 	selected_term = selected_term.replace(/[^\x00-\x7F]/g, ""); //removing non-ASCII characters that crop up from the text() method
-
-	new_term = math.eval(selected_term_str).toString();
+	if (selected_term_str.search(/[a-z]/) > -1) { //doesn't work with some expressions, as usual
+		selected_term_str = selected_term_str.split("").join("*");
+		selected_term_str = selected_term_str.replace("*+*", "+");
+		selected_term_str = selected_term_str.replace("*-*", "-");
+		selected_term_str = selected_term_str.replace("*=*", "=");
+		new_term = CQ(selected_term_str).simplify().toLaTeX().replace("\\cdot", ""); //removing cdot format
+	} else {
+		new_term = math.eval(selected_term_str).toString();
+	}
 
 
 }
