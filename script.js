@@ -31,7 +31,7 @@ katex.render(math, math_el, { displayMode: true });
 //manipulatives
 $manipulatives = $(".base").find(".mord, .mbin, .mrel, .minner, .mopen, .mclose");
 $objects = $(".base").find(".mord:not(:has(*)), .minner, .mopen, .mclose");
-$operators = $(".base").find(".mbin");
+$operators = $(".base").find(".mbin"); //some operators are of .mord type
 if ($objects.first().text() === "+" || $objects.first().text() === "−") {$operators = $operators.add($objects.first()); $objects = $objects.not($objects.first());}
 
 function add_events() { //if using $objects. it does term selection within fraction. hmm..
@@ -95,7 +95,12 @@ $operators.on("click", function() {
 	$this = $(this)
 	do {
 		$this = $this.add($this.last().next()); 
-	} while ((($this.filter(".mopen").length !== 0) && !($this.filter(".mopen").length-$this.filter(".mclose").length === 0 && ($this.last().next().filter(".mbin, .mrel").length !== 0 || $this.last().next().length === 0))) || ($this.filter(".mopen").length === 0 && $this.last().next().filter(".mbin, .mrel").length === 0 && $this.last().next().length !== 0));
+	} while ((($this.filter(".mopen").length !== 0) 
+			&& !($this.filter(".mopen").length-$this.filter(".mclose").length === 0 
+				&& ($this.last().next().filter(".mbin, .mrel").length !== 0 || $this.last().next().length === 0))) 
+		|| ($this.filter(".mopen").length === 0 
+			&& $this.last().next().filter(".mbin, .mrel").length === 0 
+			&& $this.last().next().length !== 0));
 	$this.toggleClass("selected");
 	$this.siblings(".selected").not($this).toggleClass("selected");
 });
@@ -107,11 +112,14 @@ $operators.on("click", function() {
 	math_el.setAttribute("style", "left:"+h_eq_shift.toString()+"px;"+"top:"+v_eq_shift.toString()+"px;");
 }
 
-function tot_width(obj, bool) {
+function tot_width(obj, bool, include_op) {
 	var width=0;
 	obj.each(function(i) {
 		width += $(this).outerWidth(includeMargin=bool);
 	})
+	if (include_op === true) {
+		if (obj.first().filter(".mbin").length === 0) {width += $operators.first().outerWidth(includeMargin=bool);}
+	}
 	return width;
 }
 
@@ -124,21 +132,22 @@ $(document).ready(prepare(initial_math_str));
 //MANIPULATIONS//
 
 //prepare term for new expression by finding it in the math_str
-function prepare_term() {
-	term_num = $selected.first().prevAll(".mbin, .mrel").length; //no +1 as the equal sign isn't part of term
+function prepare_term($term) {
+	var selected_term;
+	term_num = $term.first().prevAll(".mbin, .mrel").length; //no +1 as the equal sign isn't part of term
 	signs = math_str.match(/[+=-]+/g);
-	if (($selected.first().prev(".mrel").length === 0 && $selected.prevAll().filter(".mrel").length == 1) || ($selected.first().prev().length !== 0 && $selected.prevAll().filter(".mrel").length === 0)) { term_num+=1; }
+	if (($term.first().prev(".mrel").length === 0 && $term.prevAll().filter(".mrel").length == 1) || ($term.first().prev().length !== 0 && $selected.prevAll().filter(".mrel").length === 0)) { term_num+=1; }
 	if ($manipulatives.siblings(".mrel").prev().length === 0) {term_num--;}
 	terms = math_str.split(/[+=-]+/);
 	if (terms[0] === "") { terms.splice(0, 1); signs.splice(0, 1); }
 	
-	if ($selected.first().filter(".mbin").length !== 0) {
-		term_cnt = $selected.filter(".mbin").length;
+	if ($term.first().filter(".mbin").length !== 0) {
+		term_cnt = $term.filter(".mbin").length;
 	} else {
-		term_cnt = $selected.filter(".mbin").length+1;
+		term_cnt = $term.filter(".mbin").length+1;
 	}
+	new_term = "";
 	selected_term = "";
-	new_term = ""
 	i = term_num;
 	do {
 		if (i !== term_num) {
@@ -151,7 +160,7 @@ function prepare_term() {
 		i++;
 	}
 	while (i<term_num+term_cnt);
-	sign = $selected.first().text();
+	sign = $term.first().text();
 	if (sign === "+") {
 		new_term = "-" + selected_term;
 		selected_term = "+" + selected_term;
@@ -161,6 +170,9 @@ function prepare_term() {
 	} else {
 		new_term = "-" + selected_term;
 	}
+
+	return selected_term;
+	
 }
 
 //change a term of side. things to fix about this when multi_select is on. also fix animation when on RHS the term doesnt have a sign
@@ -179,18 +191,18 @@ change_side.onclick = function() {
 		$selected.first().prevAll().animate({left:selected_width}, step_duration);
 		$selected.animate({left:offset}, step_duration).promise().done(function() {
 			$selected = $(".selected").add($(".selected").find("*"));
-			prepare_term();
+			selected_term = prepare_term($selected);
 			math_str = math_str.replace(selected_term, "")+new_term;
 			prepare(math_str);
 		});
 
 	} else { //after eq sign
 		offset = (equals_position.left-selected_position.left)-selected_width;
-		$selected.prevAll(".mrel").first().prevAll().animate({left:-selected_width}, step_duration);
+		$selected.prevAll(".mrel").first().prevAll().animate({left:-tot_width($selected, true, false)}, step_duration);
 		$selected.last().nextAll().animate({left:-selected_width}, step_duration);
 		$selected.animate({left:offset}, step_duration).promise().done(function() {
 			$selected = $(".selected").add($(".selected").find("*"));
-			prepare_term();
+			selected_term = prepare_term($selected);
 			math_str = math_str.replace(selected_term, "");
 			math_str = math_str.replace("=", new_term+"=");
 			prepare(math_str);
@@ -215,10 +227,10 @@ divide_factor.onclick = function() {
 	beginning_of_equation = $manipulatives.first().offset();
 	$equals = $manipulatives.siblings(".mrel");
 	equals_position = $equals.offset();
-	RHS_width = tot_width($manipulatives.siblings(".mrel").nextAll(), false);
-	h_offset = $equals.offset().left - $selected.offset().left + tot_width($equals, true) + (RHS_width)/2;
+	RHS_width = tot_width($manipulatives.siblings(".mrel").nextAll(), false, false);
+	h_offset = $equals.offset().left - $selected.offset().left + tot_width($equals, true, false) + (RHS_width)/2;
 	v_offset = $selected.outerHeight(includeMargin=true)/2;
-	$equals.nextAll().animate({top:-v_offset, left:tot_width($selected, true)/2}, step_duration);
+	$equals.nextAll().animate({top:-v_offset, left:tot_width($selected, true, false)/2}, step_duration);
 	$selected.animate({left:h_offset, top:v_offset}, step_duration).promise().done(function() {
 		prepare_factor();
 		math_str = math_str.replace(selected_term, "");
@@ -252,8 +264,6 @@ function prepare_expression() {
 	} else {
 		new_term = math.eval(selected_term_str).toString();
 	}
-
-
 }
 
 //evaulate simple sum or multiplication
@@ -266,4 +276,87 @@ eval.onclick = function() {
 		math_str = math_str.replace(selected_term, new_term);
 		prepare(math_str);
 	});
+}
+
+//move term within expression
+function get_contig_term($term, dir) {
+	if (dir) { //next term
+		$term = $term.last().next();
+		do {
+			$term = $term.add($term.last().next()); 
+		} while ((($term.filter(".mopen").length !== 0) 
+				&& !($term.filter(".mopen").length-$term.filter(".mclose").length === 0 
+					&& ($term.last().next().filter(".mbin, .mrel").length !== 0 || $term.last().next().length === 0))) 
+			|| ($term.filter(".mopen").length === 0 
+				&& $term.last().next().filter(".mbin, .mrel").length === 0 
+				&& $term.last().next().length !== 0));
+	} else { //prev
+		$term = $term.first();
+		do {
+			$term = $term.add($term.first().prev()); 
+		} while ((($term.filter(".mopen").length !== 0) 
+				&& !($term.filter(".mopen").length-$term.filter(".mclose").length === 0 
+					&& ($term.first().prev().filter(".mbin, .mrel").length !== 0 || $term.first().prev().length === 0))) 
+			|| ($term.filter(".mopen").length === 0 
+				&& $term.first().prev().filter(".mbin, .mrel").length === 0 
+				&& $term.first().prev().length !== 0));
+		$term = $term.not($term.last());
+	}
+	return $term;
+}
+
+function has_op(obj) {
+	if (obj.first().text() === "+" || obj.first().text() === "−") {
+		return true;
+	} else {
+		return false;
+	}
+}
+
+move_right = document.getElementById("move_right");
+move_right.onclick = function(){
+	$selected = $(".selected");
+	$selected_next = get_contig_term($selected, true);
+	selected_width = tot_width($selected, true, true);
+	selected_next_width = tot_width($selected_next, true, true);
+	equals_position = $manipulatives.siblings(".mrel").offset(); //necessary for keeping equals in the same position when prepare is called
+	$selected_next.animate({left:-selected_width}, step_duration);
+	$selected.animate({left:selected_next_width}, step_duration).promise().done(function() {
+		selected_term = prepare_term($selected);
+		if (!has_op($selected)) {selected_term_str = "+" + selected_term;} else {selected_term_str = selected_term;}
+		next_term = prepare_term($selected_next);
+		if (!has_op($selected_next)) {next_term_str = "+" + next_term;} else {next_term_str = next_term;}
+		math_str = math_str.replace(next_term, selected_term_str);
+		math_str = math_str.replace(selected_term, next_term_str);
+		prepare(math_str);
+	});
+}
+move_left = document.getElementById("move_left");
+move_left.onclick = function() {
+	$selected = $(".selected");
+	$selected_prev = get_contig_term($selected, false);
+	selected_width = tot_width($selected, true, true);
+	selected_prev_width = tot_width($selected_prev, true, true);
+	equals_position = $manipulatives.siblings(".mrel").offset(); //necessary for keeping equals in the same position when prepare is called
+	$selected_prev.animate({left:selected_width}, step_duration);
+	$selected.animate({left:-selected_prev_width}, step_duration).promise().done(function() {
+		selected_term = prepare_term($selected);
+		if (!has_op($selected)) {selected_term_str = "+" + selected_term;} else {selected_term_str = selected_term;}
+		prev_term = prepare_term($selected_prev);
+		if (!has_op($selected_prev)) {prev_term_str = "+" + prev_term;} else {prev_term_str = prev_term;}
+		math_str = math_str.replace(selected_term, prev_term_str);
+		math_str = math_str.replace(prev_term, selected_term_str);
+		prepare(math_str);
+	});
+}
+
+//change power of side. working on it
+root_power = document.getElementById("root_power");
+root_power.onclick = function() {
+	$selected = $(".selected");
+	equals_position = $manipulatives.siblings(".mrel").offset(); //necessary for keeping equals in the same position when prepare is called
+	//$selected.animate({left:
+		prepare_expression();
+		if (!has_op(selected_term)) {selected_term_str = "+" + selected_term;} else {selected_term_str = selected_term;}
+		math_str = math_str.replace();
 }
