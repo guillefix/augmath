@@ -17,9 +17,19 @@
 <p class="buttons">
 	<label><input type="checkbox" name="inner_select" id="inner_select"/> Select inside (fraction)?</label>
 	<label><input type="checkbox" name="multi_select" id="multi_select"/> Select multiple? <!--<span class="note">(doesn't work for some things atm!)--></span></label>
-	<button class="manip" id="factor">Select factor</button>
+	<label>Manipulative: 
+		<select class="traverse" id="manip">
+			<option value="term" selected>Term</option>
+			<option value="normal">Factor</option>
+			<option value="group">Grouped factor</option>
+			<option value="power">Power</option>
+			<option value="base">Base</option>
+		</select>
+	</label>
 	&nbsp;
-	<button class="manip" id="term">Select term</button>
+	<label> Depth: 
+		<input type="number" min="1" step="1" value="1" class="traverse" id="depth">
+	</label>
 	&nbsp;&nbsp;&nbsp;&nbsp;
 	<button id="change_side">Change side</button>
 	&nbsp;
@@ -44,6 +54,7 @@
 <script>window.math || document.write('<script src="../../js/libs/jquery.min.js">\x3C/script>')</script>
 <script src="http://matthewja.com/Coffeequate/coffeequate.min.js"></script>
 <script>window.CQ || document.write('<script src="../../js/libs/coffeequate.min.js">\x3C/script>')</script>
+<script src="../../js/libs/TreeModel-min.js"></script>
 <script src="script.js"></script>
 
 </body>
