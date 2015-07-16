@@ -15,15 +15,15 @@
 <p class="math"><span id="math">...</span></p>
 <p></p>
 <p class="buttons">
-	<label><input type="checkbox" name="inner_select" id="inner_select"/> Select inside (fraction)?</label>
 	<label><input type="checkbox" name="multi_select" id="multi_select"/> Select multiple? <!--<span class="note">(doesn't work for some things atm!)--></span></label>
 	<label>Manipulative: 
 		<select class="traverse" id="manip">
 			<option value="term" selected>Term</option>
-			<option value="normal">Factor</option>
-			<option value="group">Grouped factor</option>
+			<option value="factor">Factor</option>
 			<option value="power">Power</option>
 			<option value="base">Base</option>
+			<option value="nominator">Nominator</option>
+			<option value="denominator">Denominator</option>
 		</select>
 	</label>
 	&nbsp;
@@ -44,15 +44,15 @@
 </p>
 
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.3.0/katex.min.js"></script>
+<!--<script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.3.0/katex.min.js"></script>-->
 <script>window.katex || document.write('<script src="../../js/libs/katex.min.js">\x3C/script>')</script>
 <!--<script src="http://cdnjs.cloudflare.com/ajax/libs/gsap/1.17.0/TweenMax.min.js"></script>-->
 <!--<script src="https://cdnjs.cloudflare.com/ajax/libs/numeric/1.2.6/numeric.min.js"></script>-->
-<script src="https://code.jquery.com/jquery-2.1.4.min.js"></script>
+<!--<script src="https://code.jquery.com/jquery-2.1.4.min.js"></script>-->
 <script>window.jQuery || document.write('<script src="../../js/libs/jquery.min.js">\x3C/script>')</script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/1.7.0/math.min.js"></script>
-<script>window.math || document.write('<script src="../../js/libs/jquery.min.js">\x3C/script>')</script>
-<script src="http://matthewja.com/Coffeequate/coffeequate.min.js"></script>
+<!--<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/1.7.0/math.min.js"></script>-->
+<script>window.math.eval || document.write('<script src="../../js/libs/math.min.js">\x3C/script>')</script>
+<!--<script src="http://matthewja.com/Coffeequate/coffeequate.min.js"></script>-->
 <script>window.CQ || document.write('<script src="../../js/libs/coffeequate.min.js">\x3C/script>')</script>
 <script src="../../js/libs/TreeModel-min.js"></script>
 <script src="script.js"></script>
