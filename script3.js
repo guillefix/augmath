@@ -1,3 +1,63 @@
+//function to replace a certain thing from math_str. it deals with same math latex being in different places in equation
+//function replace_in_mtstr(node_arr, str_arr) {
+//	var text = math_str;
+//	if (typeof str_arr === "string") {
+//		var str = str_arr;
+//		str_arr = [];
+//		for (i=0; i<node_arr.length; i++) {
+//			if (i === 0) {str_arr.push(str);}
+//			else {str_arr.push("");}
+//		}
+//	}
+//	for (var i=0; i<node_arr.length; i++) {
+//		var coincidences = getIndicesOf(node_arr[i].text, math_str).length;
+//		var indices = getIndicesOf(node_arr[i].text, text);
+//		//do this only if str_arr doesn't have \frac or \sqrt in it
+//		coincidences = cleanIndices(coincidences, math_str);
+//		indices = cleanIndices(indices, text);
+//		var coinciding_nodes = math_root.all(function (node) { 
+//			var coinciding_children;
+//			for (var j=0; j<node.children.length; j++) {
+//				if (node.children[j].text === node_arr[i].text) {
+//					coinciding_children = true;
+//					break;
+//				} else {
+//					coinciding_children = false;
+//				}
+//			}
+//	    	return (node.text === node_arr[i].text && !coinciding_children);
+//		});
+//		for (var index = 0; index < coinciding_nodes.length; index++) {
+//				var coinciding_parent
+//				if (coinciding_nodes[index].parent.model.id === node_arr[i].model.id) {
+//					coinciding_parent = true;
+//				} else {
+//					coinciding_parent = false;
+//				}
+//			if (coinciding_nodes[index].model.id === node_arr[i].model.id || coinciding_parent) {
+//				if (indices.length !== coincidences) {
+//					for (var k=0; k<indices.length; k++) {
+//						if (indices[k] !== getIndicesOf(node_arr[i].text, math_str)[k]) {
+//							if (indices.length > coincidences && index >= k) {
+//								index++;
+//							} else if (indices.length < coincidences && index > k) {
+//								index--;
+//							}
+//							break;
+//						}
+//					}
+//				}
+//				var chosen_index = indices[index];
+//				break;
+//			}
+//		};
+//		text = text.slice(0, chosen_index) + str_arr[i] + text.slice(chosen_index+node_arr[i].text.length, text.length);
+//	}
+//	return text;
+//}
+//
+
+
 //Need to maybe add more validation of the operations you are doing. In any case, this is such a big project, there'll always be work to do.
 
 var math_str, 

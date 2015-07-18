@@ -1,5 +1,5 @@
 //Need to maybe add more validation of the operations you are doing. In any case, this is such a big project, there'll always be work to do.
-
+//Probably a good addition would be to add MathQuill (http://mathquill.com/) for math input
 var math_str, 
 	h_eq_shift=0, 
 	v_eq_shift=0, 
@@ -14,6 +14,21 @@ var math_str,
 	selected_nodes = [], 
 	selected_text = "";
 
+//jQuery plugins
+(function($) {
+    $.fn.closest_n_descendents = function(filter, n) {
+        var $found = $(),
+            $currentSet = this; // Current place
+        while ($currentSet.length) {
+            $found = $currentSet.filter(filter);
+            if ($found.length === n) break;  // At least one match: break loop
+            // Get all children of the current set
+            $currentSet = $currentSet.children();
+        }
+        return $found; // Return first match of the collection
+    }    
+})(jQuery);
+
 //UI stuff
 var manip_el = $("#manip"), depth_el = $("#depth");
 manip_el.on("change", function () {
@@ -25,6 +40,11 @@ manip_el.on("change", function () {
 		remove_events(manip, depth); 
 		depth = parseInt(depth_el[0].value, 10); 
 		create_events(manip, depth);	
+	} else if (manip === "power") {
+		depth_el[0].value = "3";
+		remove_events(manip, depth); 
+		depth = parseInt(depth_el[0].value, 10); 
+		create_events(manip, depth);	
 	}
 });
 depth_el.on("change", function () {remove_events(manip, depth); depth = parseInt(this.value, 10); create_events(manip, depth);});
@@ -32,7 +52,160 @@ $("#multi_select").on("click", function () {multi_select = document.getElementBy
 $("#inner_select").on("click", function () {inner_select = document.getElementById("inner_select").checked; prepare(math_str);});
 
 //manipulatives
+
+function parse_poly(root, poly, parent_id, is_container) {
+	var poly_str = "";
+	var term_cnt = 0;
+	var factor_cnt = 0;
+	var i = 0; 
+	var factor_obj, factor, op, term_obj=$(), factor_id, term_id, inside, nom_str, denom_str, prev_factor_id, inside_text, base_obj, power_obj, base, power, child1, child2;
+	var nominator, denominator;
+	var term = tree.parse({id: parent_id.toString() + "/" + (term_cnt+1).toString()});
+	term.text = "";
+	term.type = "term";
+	root.addChild(term);
+	var things = is_container ? poly.children() : poly;
+	while (i < things.length) {
+		var thing = things.filter(":eq("+i+")");
+		factor_obj = thing;
+		factor_id = parent_id.toString() + "/" + (term_cnt+1).toString() + "/" + (factor_cnt+1).toString();
+		term_id = parent_id.toString() + "/" + (term_cnt+1).toString();
+		//deal with elements grouped by brackets
+		if (thing.is(".mopen")) {
+			do {
+				factor_obj = factor_obj.add(factor_obj.next()); 
+			} while (!(factor_obj.filter(".mopen").length-factor_obj.filter(".mclose").length === 0));
+			factor = tree.parse({id: factor_id, obj: factor_obj});
+			factor.type = "factor";
+			factor.type2 = "group";
+			term.addChild(factor);
+			term_obj = term_obj.add(factor_obj);
+			factor_cnt++;
+			i += factor_obj.length;
+			inside = factor_obj.not(factor_obj.first()).not(factor_obj.last());
+			if (!factor_obj.last().is(".mclose:has(.vlist)")) {
+				inside_text = parse_poly(factor, inside, factor_id, false);
+				factor.text = "(" + inside_text + ")";
+				term.text+=factor.text;
+			}
+		}
+		//if not grouped, deal with individual element
+		if (!thing.is(".mbin, .mopen, .mclose, .mrel")) {
+			factor = tree.parse({id: factor_id, obj: factor_obj});
+			factor.type = "factor";
+			factor.type2 = "normal";
+			if (!thing.is(":has(*)")) {
+				factor.text = thing.text();
+				if (factor.text === "−") {factor.text = "-";}
+				term.text+=factor.text;
+			}
+			term.addChild(factor);
+			term_obj = term_obj.add(thing);
+			factor_cnt++;
+			i++;
+		} else if (thing.is(".mbin, .mrel")) { //begin new term
+			term.model.obj = term_obj;
+			term_cnt++;
+			poly_str+=term.text;
+			factor_cnt = 0;
+			term_id = parent_id.toString() + "/" + (term_cnt+1).toString();
+			op = tree.parse({id: factor_id, obj: thing});
+			term = tree.parse({id: term_id});
+			term_obj = $();
+			term.text = "";
+			term.type = "term";
+			if (thing.is(".mbin")) {
+				root.addChild(term);
+				term.addChild(op);
+				op.type = "op";
+				op.text = (thing.text() === "−") ? "-" : "+"
+				term_obj = term_obj.add(thing);
+				term.text+=op.text;
+			} else if (thing.is(".mrel")) {
+				term = tree.parse({id: term_id, obj: thing});
+				root.addChild(term);
+				term.addChild(op);
+				op.type = "rel";
+				op.text = thing.text();
+				term_cnt++;
+				poly_str+=term.text;
+				factor_cnt = 0;
+				term_id = parent_id.toString() + "/" + (term_cnt+1).toString();
+				term = tree.parse({id: term_id});
+				root.addChild(term);
+				term_obj = $();
+				term.text = "";
+				term.type = "term";
+			}
+			i++;
+		}
+
+		//deal with things with children, recursivelly.
+		if (factor_obj.is(":has(*)")) {
+			if (thing.is(".minner")) {//fractions
+				factor.type2 = "frac";
+				denominator = thing.closest_n_descendents(".mord", 2).first();
+				nominator = thing.closest_n_descendents(".mord", 2).last();
+				child1 = tree.parse({id: factor_id + "/" + "1", obj: nominator});
+				child1.type = "nominator";
+				child2 = tree.parse({id: factor_id + "/" + "2", obj: denominator});
+				child2.type = "denominator";
+				factor.addChild(child1);
+				factor.addChild(child2);
+				//TEST = thing;
+				nom_str = parse_poly(child1, nominator, factor_id + "/" + "1", true);
+				child1.text = nom_str;
+				denom_str = parse_poly(child2, denominator, factor_id + "/" + "2", true);
+				child2.text = denom_str;
+				factor.text = "\\frac{" + nom_str + "}{" + denom_str + "}"
+				term.text+=factor.text;
+			} else if (thing.is(".sqrt")) {//square roots
+				factor.type2 = "sqrt";
+				inside = thing.find(".mord").first();
+				factor.text = "\\sqrt{" + parse_poly(factor, inside, factor_id, true) + "}";
+				term.text+=factor.text;
+			} else if (thing.is(":has(.vlist)")) {//exponentials
+				base_obj = thing.find(".mord").first();
+				power_obj = thing.find(".vlist").first();
+				inside = power_obj.find(".mord").first();
+				base = tree.parse({id: factor_id + "/" + "1", obj: base_obj});
+				base.type = "base";
+				base.text = base_obj.text();
+				power = tree.parse({id: factor_id + "/" + "2", obj: power_obj});
+				power.type = "power";
+				power.text = parse_poly(power, inside, factor_id + "/" + "2", true);
+				factor.addChild(base);
+				factor.addChild(power);
+				factor.type2 = "exp";
+				factor.text = base.text + "^{" + power.text + "}";//needs the standard power format in latex
+				term.text+=factor.text;
+			} else if (factor_obj.last().is(".mclose:has(.vlist)")) {//exponentiated group
+				factor.type2 = "group_exp";
+				base_obj = inside;
+				base = tree.parse({id: factor_id + "/" + "1", obj: base_obj});
+				base.type = "base";
+				base.text = parse_poly(base, inside, factor_id, false);
+				power_obj = factor_obj.last().find(".vlist").first();
+				power = tree.parse({id: factor_id + "/" + "2", obj: power_obj});
+				power.type = "power";
+				inside = power_obj.find(".mord").first();
+				power.text = parse_poly(power, inside, factor_id + "/" + "2", true);
+				factor.addChild(base);
+				factor.addChild(power);
+				factor.text = "(" + base.text + ")" + "^{" + power.text + "}";
+				term.text+=factor.text;
+			}
+		}
+		if (i === things.length) {term.model.obj = term_obj; poly_str+=term.text;}
+	};
+	return poly_str;
+}
+
 function prepare(math) {
+
+	math = math.replace(/\\frac{}/g, "\\frac{1}")
+				.replace(/=$/, "=0")
+				.replace(/\^{}/g, "");
 
 	math_str = math;
 
@@ -41,140 +214,12 @@ function prepare(math) {
 
 	var root_poly = $(".base");
 
-	var tree = new TreeModel();
+	tree = new TreeModel();
 
 	math_root = tree.parse({});
 	math_root.model.id = "0";
-	function parse_poly(root, poly, parent_id, is_container) {
-		var poly_str = "";
-		var term_cnt = 0;
-		var factor_cnt = 0;
-		var i = 0; 
-		var factor_obj, factor, op, term_obj=$(), factor_id, term_id, inside, nom_str, denom_str, prev_factor_id, inside_text, base_obj, power_obj, base, power;
-		var nominator, denominator;
-		var term = tree.parse({id: parent_id.toString() + "/" + (term_cnt+1).toString()});
-		term.text = "";
-		term.type = "term";
-		root.addChild(term);
-		var things = is_container ? poly.children() : poly;
-		while (i < things.length) {
-			var thing = things.filter(":eq("+i+")");
-			factor_obj = thing;
-			factor_id = parent_id.toString() + "/" + (term_cnt+1).toString() + "/" + (factor_cnt+1).toString();
-			term_id = parent_id.toString() + "/" + (term_cnt+1).toString();
-			//deal with elements grouped by brackets
-			if (thing.is(".mopen")) {
-				do {
-					factor_obj = factor_obj.add(factor_obj.next()); 
-				} while (!(factor_obj.filter(".mopen").length-factor_obj.filter(".mclose").length === 0));
-				factor = tree.parse({id: factor_id, obj: factor_obj});
-				factor.type = "factor";
-				factor.type2 = "group";
-				term.addChild(factor);
-				term_obj = term_obj.add(factor_obj);
-				factor_cnt++;
-				i += factor_obj.length;
-				inside = factor_obj.not(factor_obj.first()).not(factor_obj.last());
-				if (!factor_obj.last().is(".mclose:has(.vlist)")) {
-					inside_text = parse_poly(factor, inside, factor_id, false);
-					factor.text = "(" + inside_text + ")";
-					term.text+=factor.text;
-				}
-			}
-			//if not grouped, deal with individual element
-			if (!thing.is(".mbin, .mopen, .mclose, .mrel")) {
-				factor = tree.parse({id: factor_id, obj: factor_obj});
-				factor.type = "factor";
-				if (!thing.is(":has(*)")) {
-					factor.text = thing.text();
-					if (factor.text === "−") {factor.text = "-";}
-					term.text+=factor.text;
-				}
-				term.addChild(factor);
-				term_obj = term_obj.add(thing);
-				factor_cnt++;
-				i++;
-			} else if (thing.is(".mbin, .mrel")) { //begin new term
-				term.model.obj = term_obj;
-				term_cnt++;
-				poly_str+=term.text;
-				factor_cnt = 0;
-				term_id = parent_id.toString() + "/" + (term_cnt+1).toString();
-				op = tree.parse({id: factor_id, obj: thing});
-				term = tree.parse({id: term_id});
-				root.addChild(term);
-				term_obj = $();
-				term.text = "";
-				term.type = "term";
-				if (thing.is(".mbin")) {
-					term.addChild(op);
-					op.type = "op";
-					op.text = (thing.text() === "−") ? "-" : "+"
-					term_obj = term_obj.add(thing);
-					term.text+=op.text;
-				}
-				i++;
-			}
-
-			//deal with things with children, recursivelly.
-			if (factor_obj.is(":has(*)")) {
-				if (thing.is(".minner")) {//fractions
-					factor.type2 = "fract";
-					denominator = thing.find(".mord.textstyle.cramped").first();
-					nominator = thing.find(".mord.textstyle.uncramped").first();
-					child1 = tree.parse({id: factor_id + "/" + "1", obj: nominator});
-					child1.type = "nominator";
-					child2 = tree.parse({id: factor_id + "/" + "2", obj: denominator});
-					child2.type = "nominator";
-					factor.addChild(child1);
-					factor.addChild(child2);
-					nom_str = parse_poly(child1, nominator, factor_id + "/" + "1", true);
-					child1.text = nom_str;
-					denom_str =parse_poly(child2, denominator, factor_id + "/" + "2", true);
-					child2.text = denom_str;
-					factor.text = "\\frac{" + nom_str + "}{" + denom_str + "}"
-					term.text+=factor.text;
-				} else if (thing.is(".sqrt")) {//square roots
-					factor.type2 = "sqrt";
-					inside = thing.find(".mord").first();
-					factor.text = "\\sqrt{" + parse_poly(factor, inside, factor_id, true) + "}";
-					term.text+=factor.text;
-				} else if (thing.is(":has(.vlist)")) {//exponentials
-					base_obj = thing.find(".mord").first();
-					power_obj = thing.find(".vlist").first();
-					inside = power_obj.find(".mord").first();
-					base = tree.parse({id: factor_id + "/" + "1", obj: base_obj});
-					base.type = "base";
-					base.text = base_obj.text();
-					power = tree.parse({id: factor_id + "/" + "2", obj: power_obj});
-					power.type = "power";
-					power.text = parse_poly(power, inside, factor_id + "/" + "2", true);
-					factor.addChild(base);
-					factor.addChild(power);
-					factor.type2 = "exp";
-					factor.text = base.text + "^{" + power.text + "}";//needs the standard power format in latex
-					term.text+=factor.text;
-				} else if (factor_obj.last().is(".mclose:has(.vlist)")) {//exponentiated group
-					factor.type2 = "group_ex";
-					base_obj = inside;
-					base = tree.parse({id: factor_id + "/" + "1", obj: base_obj});
-					base.type = "base";
-					base.text = parse_poly(base, inside, factor_id, false);
-					power_obj = factor_obj.last().find(".vlist").first();
-					power = tree.parse({id: factor_id + "/" + "2", obj: power_obj});
-					power.type = "power";
-					inside = power_obj.find(".mord").first();
-					power.text = parse_poly(power, inside, factor_id + "/" + "2", true);
-					factor.addChild(base);
-					factor.addChild(power);
-					factor.text = "(" + base.text + ")" + "^{" + power.text + "}";
-					term.text+=factor.text;
-				}
-			}
-			if (i === things.length) {term.model.obj = term_obj; poly_str+=term.text;}
-		};
-		return poly_str;
-	}
+	//KaTeX offers MathML semantic elements on the HTML, could that be used?
+	
 	parse_poly(math_root, root_poly, 0, true);
 
 	math_root.walk(function (node) {
@@ -184,8 +229,9 @@ function prepare(math) {
 	//useful variables
 	$equals = $(".base").find(".mrel");
 	beginning_of_equation = math_root.children[0].model.obj.offset();
-	end_of_equation = math_root.children[math_root.children.length-1].model.obj.offset();
 	width_last_term = math_root.children[math_root.children.length-1].model.obj.outerWidth(includeMargin=true);
+	end_of_equation = math_root.children[math_root.children.length-1].model.obj.offset();
+	end_of_equation.left += + width_last_term;
 
 	create_events(manip, depth);
 
@@ -257,65 +303,140 @@ function getIndicesOf(searchStr, str) {
     return indices;
 }
 
-//function to replace a certain thing from math_str. it deals with same math latex being in different places in equation
-function replace_in_mtstr(node_arr, str_arr) {
-	var text = math_str;
+function cleanIndices(arr, str) {
+	var indices = getIndicesOf("\\frac", str);
+	indices = indices.concat(getIndicesOf("\\sqrt", str));
+	for (var i=0; i < arr.length; i++) {
+		for (var j=0; j < indices.length; j++) {
+			if (arr[i] >= indices[j] && arr[i] <= indices[j]+4) {
+				arr.splice(i, 1);
+			}
+		}
+	}
+	return arr;
+}
+
+function parse_mtstr(root, node_arr, str_arr) {
+	var poly_str = "";
+	var i = 0, j = 0;
+	//console.log(node_arr);
+	while (i < root.children.length) {
+		var term_text="";
+		var child = root.children[i];
+		console.log("child")
+		console.log(child);
+		node_selected = false;
+		for (var k=0; k<node_arr.length; k++) {
+			if (child.model.id === node_arr[k].model.id) {
+				node_selected = true;
+				term_text = str_arr[k];
+				break;
+			}
+		}
+		if (node_selected) {i++; poly_str+=term_text; continue;}
+		//console.log(child.children);
+		j = 0;
+		while (j < child.children.length) {
+			var factor_text="";
+			var frac_text = [], exp_text = [];
+			var grandchild = child.children[j];
+			//console.log("grandchild");
+			//console.log(grandchild);
+			node_selected = false;
+			for (var k=0; k<node_arr.length; k++) {
+				if (grandchild.model.id === node_arr[k].model.id) {
+					node_selected = true;
+					factor_text = str_arr[k];
+					break;
+				}
+			}
+			if (node_selected) {j++; term_text+=factor_text; continue;}
+			if (grandchild.type === "rel") {
+				poly_str+=grandchild.text;
+			} else if (grandchild.type === "op") {
+				term_text+=grandchild.text;
+			} else {
+				switch (grandchild.type2) {
+					case "normal":
+						term_text+=grandchild.text;
+						break;
+					case "group":
+						factor_text = "(" + parse_mtstr(grandchild, node_arr, str_arr) + ")";
+						break;
+					case "frac":
+						frac_text[0] = parse_mtstr(grandchild.children[0], node_arr, str_arr);
+						frac_text[1] = parse_mtstr(grandchild.children[1], node_arr, str_arr);
+						for (var l=0; l<2; l++) {
+							for (var k=0; k<node_arr.length; k++) {
+								if (grandchild.children[l].model.id === node_arr[k].model.id) {
+									frac_text[l] = str_arr[k];
+									break;
+								}
+							}
+						}
+						factor_text = "\\frac{" + frac_text[0] + "}{" + frac_text[1] + "}"
+						break;
+					case "sqrt":
+						factor_text = "\\sqrt{" + parse_mtstr(grandchild, node_arr, str_arr) + "}";
+						//console.log("cuco");
+						//console.log(grandchild.children[0]);
+						break;
+					case "exp":
+						exp_text[0] = grandchild.children[0].text;
+						exp_text[1] = parse_mtstr(grandchild.children[1], node_arr, str_arr);
+						for (var l=0; l<2; l++) {
+							for (var k=0; k<node_arr.length; k++) {
+								if (grandchild.children[l].model.id === node_arr[k].model.id) {
+									exp_text[l] = str_arr[k];
+									break;
+								}
+							}
+						}
+						factor_text = exp_text[0] + "^{" + exp_text[1] + "}";
+						break;
+					case "group_exp":
+						exp_text[0] = parse_mtstr(grandchild.children[0], node_arr, str_arr);
+						exp_text[1] = parse_mtstr(grandchild.children[1], node_arr, str_arr);
+						console.log(grandchild.children);
+						for (var l=0; l<2; l++) {
+							for (var k=0; k<node_arr.length; k++) {
+								if (grandchild.children[l].model.id === node_arr[k].model.id) {
+									exp_text[l] = str_arr[k];
+									break;
+								}
+							}
+						}
+						factor_text = "(" + exp_text[0] + ")" + "^{" + exp_text[1] + "}";
+						break;
+				}
+				term_text+=factor_text;
+			}
+			j++;
+		};
+		i++;
+		poly_str+=term_text;
+		console.log(poly_str);
+	};
+
+	return poly_str;
+}
+
+function replace_in_mtstr(nodes, str_arr) {
 	if (typeof str_arr === "string") {
 		var str = str_arr;
 		str_arr = [];
-		for (i=0; i<node_arr.length; i++) {
+		for (i=0; i<nodes.length; i++) {
 			if (i === 0) {str_arr.push(str);}
 			else {str_arr.push("");}
 		}
 	}
-	for (var i=0; i<node_arr.length; i++) {
-		var coincidences = getIndicesOf(node_arr[i].text, math_str).length;
-		var indices = getIndicesOf(node_arr[i].text, text);
-		var coinciding_nodes = math_root.all(function (node) { 
-			var coinciding_children;
-			for (var j=0; j<node.children.length; j++) {
-				if (node.children[j].text === node_arr[i].text) {
-					coinciding_children = true;
-					break;
-				} else {
-					coinciding_children = false;
-				}
-			}
-	    	return (node.text === node_arr[i].text && !coinciding_children);
-		});
-		for (var index = 0; index < coinciding_nodes.length; index++) {
-				var coinciding_parent
-				if (coinciding_nodes[index].parent.model.id === node_arr[i].model.id) {
-					coinciding_parent = true;
-				} else {
-					coinciding_parent = false;
-				}
-			if (coinciding_nodes[index].model.id === node_arr[i].model.id || coinciding_parent) {
-				if (indices.length !== coincidences) {
-					for (var k=0; k<indices.length; k++) {
-						if (indices[k] !== getIndicesOf(node_arr[i].text, math_str)[k]) {
-							if (indices.length > coincidences && index >= k) {
-								index++;
-							} else if (indices.length < coincidences && index > k) {
-								index--;
-							}
-							break;
-						}
-					}
-				}
-				var chosen_index = indices[index];
-				break;
-			}
-		};
-		text = text.slice(0, chosen_index) + str_arr[i] + text.slice(chosen_index+node_arr[i].text.length, text.length);
-	}
-	return text;
+	return parse_mtstr(math_root, nodes, str_arr);
 }
 
 function eval_expression(expression) {
 	var new_term;
 	if (expression.indexOf("\\sqrt") > -1) {
-		expression = expression.replace("\\sqrt", "").replace("}", "^0.5");
+		expression = expression.replace("\\sqrt{", "").replace("}", "^0.5");
 	} else if (expression.indexOf("\\frac") > -1) {
 		expression = expression.replace("\\frac{", "(").replace("}{", "/").replace("}", ")");
 	}
@@ -325,7 +446,17 @@ function eval_expression(expression) {
 		expression = expression.replace("*+*", "+");
 		expression = expression.replace("*-*", "-");
 		expression = expression.replace("*=*", "=");
-		new_term = CQ(expression).simplify().toLaTeX().replace("\\cdot", ""); //removing cdot format
+		console.log(expression);
+		//NEED TO make it work with exponentials!!
+		try {
+			new_term = CQ(expression).simplify().toLaTeX().replace("\\cdot", ""); //removing cdot format
+		}
+		catch(err) {
+			console.log("Error (from CQ): " + err);
+		}
+		finally {
+			new_term = CQ(expression).simplify().toString().replace("*", "").replace(/\(([a-z]+)\)/g, "$1");
+		}
 	} else {
 		new_term = math.eval(expression).toString();
 	}
@@ -403,7 +534,7 @@ change_side.onclick = function() {
 	var selected_width = tot_width($selected, true, true);
 	//different behaviour depending on which side of the eq., determined by existence of equal sign before or after
 	if ($selected.prevAll(".mrel").length === 0) { //before eq sign
-		offset = (end_of_equation.left-selected_position.left)+width_last_term;
+		offset = (end_of_equation.left-selected_position.left);
 		$selected.first().prevAll().animate({left:selected_width}, step_duration);
 		$selected.animate({left:offset}, step_duration).promise().done(function() {
 			$selected = $(".selected").add($(".selected").find("*"));
@@ -426,7 +557,7 @@ change_side.onclick = function() {
 	}
 };
 
-//divide by factor
+//divide by factor. NEED TO MAKE IT WORK WITH DIVIDING BY A FACTOR ON THE RHS!
 divide_factor = document.getElementById("divide_factor");
 divide_factor.onclick = function() {
 	RHS_width = tot_width($equals.nextAll(), false, false);
@@ -493,3 +624,42 @@ move_left.onclick = function() {
 }
 
 //change power of side
+root_power = document.getElementById("root_power");
+root_power.onclick = function() {
+	equals_position = $equals.offset();
+	var offset = end_of_equation.left - equals_position.left;
+	$selected.animate({left:offset}, step_duration).promise().done(function() {
+		math_str = replace_in_mtstr(selected_nodes, "");
+		math_HS = math_str.split("="); //HS=hand sides
+		if (selected_nodes[0].text === "2") {
+			math_str = math_HS[0] + "=" + "\\sqrt{" + math_HS[1] + "}";
+		} else {
+			math_str = math_HS[0] + "=" + math_HS[1] + "^{" + "\\frac{1}{" + selected_text + "}}"; //ad brackets
+		}
+		prepare(math_str);
+	});
+
+}
+
+//Add something to both sides
+function add_both_sides(thing) {
+	math_HS = math_str.split("=");
+	math_str = math_HS[0] + thing + "=" +math_HS[1] + thing;
+	prepare(math_str);
+}
+
+//split fraction. SHOULD MAKE WORK WHEN FRACTION IS ONE OF MANY FACTORS IN TERM!
+split_frac = document.getElementById("split_frac");
+split_frac.onclick = function() {
+	//animation?
+	var new_term="";
+	for (var i=0; i<selected_nodes[0].children[0].children.length; i++) {
+		new_term += "+" + "\\frac{" + selected_nodes[0].children[0].children[i].text + "}{" + selected_nodes[0].children[1].text + "}";
+	}
+	math_str = replace_in_mtstr(selected_nodes, new_term);
+	prepare(math_str);
+}
+
+//move factor within term
+
+//REMOVE SOMETHING. Used for: cancelling something on both sides, or cancelling something on a fraction, among other things

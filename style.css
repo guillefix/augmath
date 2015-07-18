@@ -1,4 +1,4 @@
-#math, .base .mbin, .base .mord, .base .mrel, .base .minner, .base .mopen, .base .mclose {
+#math, .base .mbin, .base .mord, .base .mrel, .base .minner, .base .mopen, .base .mclose, .base .vlist {
 	position: relative;
 }
 
@@ -16,9 +16,12 @@
 	cursor: default;
 }
 
-.math, .buttons, #MathInput {
+.math, .manip, .basic_ops, .more_ops, #MathInput {
 	text-align: center;
-	height: 50px;
+}
+
+.math {
+	height: 150px;
 }
 
 .manip {
