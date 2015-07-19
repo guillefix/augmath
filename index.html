@@ -4,6 +4,7 @@
 
 <meta charset="utf-8"/>
 <title>Augmented Math Test Page</title>
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.3.0/katex.min.css">
 <link rel="stylesheet" href="style.css">
 
@@ -13,8 +14,9 @@
 <p id="MathInput">Input some algebraic equation: <input size="50" onchange="prepare(this.value)" /></p>
 
 <p class="math"><span id="math">...</span></p>
-<p></p>
-<div class="manip">
+
+<div class="container-fluid">
+<div class="row manip">
 	<label><input type="checkbox" name="multi_select" id="multi_select"/> Select multiple? <!--<span class="note">(doesn't work for some things atm!)--></span></label>
 	<label>Manipulative: 
 		<select class="traverse" id="manip">
@@ -31,29 +33,32 @@
 		<input type="number" min="1" step="1" value="1" class="traverse" id="depth">
 	</label>
 </div>
-<div class="basic_ops">
-	<button id="change_side">Change side</button>
+<br>
+<div class="row basic_ops">
+	<button type="button" class="btn btn-default" id="change_side">Change side</button>
 	&nbsp;
-	<button id="divide_factor">Divide by factor</button>
+	<button type="button" class="btn btn-default" id="divide_factor">Divide by factor</button>
 	&nbsp;
-	<button id="root_power">Root by power</button>
+	<button type="button" class="btn btn-default" id="root_power">Root by power</button>
 	&nbsp;
-	<button id="eval">Evaluate/Simplify</button>
+	<button type="button" class="btn btn-default" id="eval">Evaluate/Simplify</button>
 	&nbsp;
-	<button id="move_left">&lt;-</button>
-	<button id="move_right">-></button>
+	<button type="button" class="btn btn-default" id="move_left">&lt;-</button>
+	<button type="button" class="btn btn-default" id="move_right">-></button>
 </div>
-<div class="more_ops">
+<br>
+<div class="row more_ops">
 	<label>Add to both sides: <input id="add_both_sides" size="50" onchange="add_both_sides(this.value)" /></label>
 	&nbsp;
-	<button id="split_frac">Split fraction</button>
+	<button type="button" class="btn btn-default" id="split_frac">Split fraction</button>
 	&nbsp;
-	<span>Free editing: <button id="remove">Remove</button></span>
+	<span>Free editing: <button type="button" class="btn btn-default" id="remove">Remove</button></span>
 	&nbsp;
-	<button id="unbracket">Unbracket</button>
+	<button type="button" class="btn btn-default" id="unbracket">Unbracket</button>
 	&nbsp;
 	<label>Replace: <input id="replace" size="50" onchange="replace(this.value)" /></label>
 	&nbsp;
+</div>
 </div>
 
 <!--<script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.3.0/katex.min.js"></script>-->
