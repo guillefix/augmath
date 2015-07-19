@@ -1,64 +1,24 @@
-# [<img src="https://khan.github.io/KaTeX/katex-logo.svg" width="130" alt="KaTeX">](https://khan.github.io/KaTeX/) [![Build Status](https://travis-ci.org/Khan/KaTeX.svg?branch=master)](https://travis-ci.org/Khan/KaTeX)
+#AugMath
 
-KaTeX is a fast, easy-to-use JavaScript library for TeX math rendering on the web.
+##Vision
 
- * **Fast:** KaTeX renders its math synchronously and doesn't need to reflow the page. See how it compares to a competitor in [this speed test](http://jsperf.com/katex-vs-mathjax/).
- * **Print quality:** KaTeX’s layout is based on Donald Knuth’s TeX, the gold standard for math typesetting.
- * **Self contained:** KaTeX has no dependencies and can easily be bundled with your website resources.
- * **Server side rendering:** KaTeX produces the same output regardless of browser or environment, so you can pre-render expressions using Node.js and send them as plain HTML.
+AugMath is based on the idea that while Maths (broadly defined as the study and creation of structures) can and should explore its abstract aspects, it can not scape a "representation" when doing something that requires a tool that augments the human mind alone, and thus it should embrace, explore, and even seize this aspect as well. Really the work I'm doing here in JavaScript is the first baby step in a much grander vision of a future where Mathematics, Physics, Art, Engineering, Music, Philosophy, and other aspects of the Human Experience  become much more intertwined and hard to distinguish. I imagine the classroom having become a virtual space for the exploration of structures, creating virtual worlds, whether they are to explore some awe-inspiring idea in a video game, or to make a tool to predict and model bosonic excitations in condensed matter.
 
-KaTeX supports all major browsers, including Chrome, Safari, Firefox, Opera, and IE 8 - IE 11.
+Let's come back to the mathematics, from where the whole idea emerged. I have been studying Physics at the University of Oxford for 3 years now, and thus do a lot of math. How? Mostly with pen and paper, just like everyone else, now and for hundreds of years. But there was something bugging me. The things I was writting down on the paper were not the things going on in my head. In my head the different symbols were free in to move in the 3rd and 4th dimension as well as the 2 dimensions of the paper. I would imagine moving them in certain ways, manipulating them, using all the natural concepts for manipulating stuff built-in in the brain, with the only constraint of certain learned rules of algebra or calculus.
 
-## Usage
+But there was another reason, I felt this frustration now, and why probably, someone like Newton, wouldn't have: I knew this didn't have to be this way. Why? Computers. I am not avid video-game player (the reasons why are interesting, and related to all of this, but basically, I'm more interested in the "real world"), but I have played them. I have also played board games. I don't want to get into the video-game vs board-game fan boys debate, but one thing was clear to me. The sheer increase in possibilities in interface and engineered experinece video-games offer has allowed the creation of much more natural and immersive games. And of course, this isn't exclusive of games, but a similar thing has happened in many other areas. We have been imagining these things for centuries, and millenia, but only recently we've begun outsourcing our imagination to such a degree that we can experience things today, that were unimaginable before, simply due to the computational complexity of these experiences.
 
-You can [download KaTeX](https://github.com/khan/katex/releases) and host it on your server or include the `katex.min.js` and `katex.min.css` files on your page directly from a CDN:
+Now, computers have definitely changed Maths, and how a lot of Maths is done. However, having used Mathematica and other software, I still didn't fill fulfilled. It seems the main effort has been in extending what we can do, which is great, but very little effort has been put in improving what we could already do, and in making it much less tiresome and much more fun. The reason for this may well be the general neglect in the engineering and science community (which created programs like Mathematica) of the arts, in particular design (even though I consider design to be the modern realization of my dream of engineering being recognized as the "ultimate" art). The truth is that designers know the difference a good design makes on tools, inteneded to be used by humans. And, at least, the kind of math I do in physics, is that: a tool intended to be used by humans.
 
-```html
-<link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/KaTeX/0.3.0/katex.min.css">
-<script src="//cdnjs.cloudflare.com/ajax/libs/KaTeX/0.3.0/katex.min.js"></script>
-```
+There's another powerful aspect that will come from the necessary bringing together of the arts and sciences (a new Age of Wonder): education. I remember when I was in highschool and was thinking about relativity for the first time. I tried to come up with it myself, but eventually had to look up for some help online. I remember reading Wikipedia's page and not getting it much. Then I watched a video from an old documentary series called "The Mechanical Universe". The series included space-time animations as well as math animation, of a kind (which the creator, Jim Blinn, called "algebraic ballet") I haven't found elsewhere, and which ultimately inspired what I'm doing today. The important thing is how effective it was at teaching complicated ideas and derivations. The ultimate reason I want AugMath to exist is the accumulated frustration of having to learn so many complicated concepts and knowing how much easier it would have been, were there to have been a "The Mechanical Universe" episode about it.
 
-#### In-browser rendering
+##Usage
+As this is still being built, and the UI will surely change a lot, here's a quick demo of most of the current manipulations:
+[<img src="proving_quad_formula.gif" width="130" alt="Proof of Quadratic Formula">]
 
-Call `katex.render` with a TeX expression and a DOM element to render into:
+##Other notes
+AugMath uses [KaTeX](https://khan.github.io/KaTeX/) for math rendering, [Coffeequate](http://coffeequate.readthedocs.org/en/latest/), for some algebraic operations and [Math.js](http://mathjs.org/) for some math operations, and jQuery for animations and stuff.
 
-```js
-katex.render("c = \\pm\\sqrt{a^2 + b^2}", element);
-```
+Here is a [Worflowy list](https://workflowy.com/s/ukTBnrjxEE) I made to organize the stuff that goes into AugMath. 
 
-If KaTeX can't parse the expression, it throws a `katex.ParseError` error.
-
-#### Server side rendering or rendering to a string
-
-To generate HTML on the server or to generate an HTML string of the rendered math, you can use `katex.renderToString`:
-
-```js
-var html = katex.renderToString("c = \\pm\\sqrt{a^2 + b^2}");
-// '<span class="katex">...</span>'
-```
-
-Make sure to include the CSS and font files, but there is no need to include the JavaScript. Like `render`, `renderToString` throws if it can't parse the expression.
-
-#### Rendering options
-
-You can provide an object of options as the last argument to `katex.render` and `katex.renderToString`. Available options are:
-
-- `displayMode`: `boolean`. If `true` the math will be rendered in display mode, which will put the math in display style (so `\int` and `\sum` are large, for example), and will center the math on the page on its own line. If `false` the math will be rendered in inline mode. (default: `false`)
-
-For example:
-
-```js
-katex.render("c = \\pm\\sqrt{a^2 + b^2}", element, { displayMode: true });
-```
-
-#### Automatic rendering of math on a page
-
-Math on the page can be automatically rendered using the auto-render extension. See [the Auto-render README](contrib/auto-render/README.md) for more information.
-
-## Contributing
-
-See [CONTRIBUTING.md](CONTRIBUTING.md)
-
-## License
-
-KaTeX is licensed under the [MIT License](http://opensource.org/licenses/MIT).
+Here is a [Codepen](http://codepen.io/guillefix/full/xGWQPJ/) to test it live.

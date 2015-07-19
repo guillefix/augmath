@@ -45,6 +45,11 @@ manip_el.on("change", function () {
 		remove_events(manip, depth); 
 		depth = parseInt(depth_el[0].value, 10); 
 		create_events(manip, depth);	
+	} else if (manip === "term") {
+		depth_el[0].value = "1";
+		remove_events(manip, depth); 
+		depth = parseInt(depth_el[0].value, 10); 
+		create_events(manip, depth);
 	}
 });
 depth_el.on("change", function () {remove_events(manip, depth); depth = parseInt(this.value, 10); create_events(manip, depth);});
@@ -184,7 +189,7 @@ function parse_poly(root, poly, parent_id, is_container) {
 				base_obj = inside;
 				base = tree.parse({id: factor_id + "/" + "1", obj: base_obj});
 				base.type = "base";
-				base.text = parse_poly(base, inside, factor_id, false);
+				base.text = parse_poly(base, inside, factor_id + "/" + "1", false);
 				power_obj = factor_obj.last().find(".vlist").first();
 				power = tree.parse({id: factor_id + "/" + "2", obj: power_obj});
 				power.type = "power";
@@ -319,7 +324,7 @@ function cleanIndices(arr, str) {
 function parse_mtstr(root, node_arr, str_arr) {
 	var poly_str = "";
 	var i = 0, j = 0;
-	//console.log(node_arr);
+	console.log(node_arr);
 	while (i < root.children.length) {
 		var term_text="";
 		var child = root.children[i];
@@ -334,14 +339,14 @@ function parse_mtstr(root, node_arr, str_arr) {
 			}
 		}
 		if (node_selected) {i++; poly_str+=term_text; continue;}
-		//console.log(child.children);
+		console.log(child.children);
 		j = 0;
 		while (j < child.children.length) {
 			var factor_text="";
 			var frac_text = [], exp_text = [];
 			var grandchild = child.children[j];
-			//console.log("grandchild");
-			//console.log(grandchild);
+			console.log("grandchild");
+			console.log(grandchild);
 			node_selected = false;
 			for (var k=0; k<node_arr.length; k++) {
 				if (grandchild.model.id === node_arr[k].model.id) {
@@ -447,7 +452,7 @@ function eval_expression(expression) {
 		expression = expression.replace("*-*", "-");
 		expression = expression.replace("*=*", "=");
 		console.log(expression);
-		//NEED TO make it work with exponentials!!
+		expression = expression.replace(/\*\^\*\{\*([0-9]+)\*\}/g, "**$1"); //need to check if this works
 		try {
 			new_term = CQ(expression).simplify().toLaTeX().replace("\\cdot", ""); //removing cdot format
 		}
@@ -455,7 +460,7 @@ function eval_expression(expression) {
 			console.log("Error (from CQ): " + err);
 		}
 		finally {
-			new_term = CQ(expression).simplify().toString().replace("*", "").replace(/\(([a-z]+)\)/g, "$1");
+			new_term = CQ(expression).simplify().toString().replace(/\*{2}(\d+)/, "^{$1}").replace(/\*/g, "").replace(/\(([a-z]+)\)/g, "$1");
 		}
 	} else {
 		new_term = math.eval(expression).toString();
@@ -522,7 +527,7 @@ function has_op(obj) {
 	}
 }
 
-var initial_math_str = "(a+b)+c=d";
+var initial_math_str = "ax^{2}+bx+c=0";
 
 $(document).ready(function() {prepare(initial_math_str);});
 
@@ -557,7 +562,7 @@ change_side.onclick = function() {
 	}
 };
 
-//divide by factor. NEED TO MAKE IT WORK WITH DIVIDING BY A FACTOR ON THE RHS!
+//divide by factor. NEED TO MAKE IT WORK WITH DIVIDING BY A FACTOR ON THE RHS!!
 divide_factor = document.getElementById("divide_factor");
 divide_factor.onclick = function() {
 	RHS_width = tot_width($equals.nextAll(), false, false);
@@ -585,7 +590,6 @@ eval.onclick = function() {
 }
 
 //move term within expression
-
 move_right = document.getElementById("move_right");
 move_right.onclick = function(){
 	if ($selected.next().filter(".mrel").length === 0) {
@@ -623,7 +627,7 @@ move_left.onclick = function() {
 	}
 }
 
-//change power of side
+//change power of side. NEED TO MAKE IT WORK WITH DIVIDING BY A FACTOR ON THE RHS!!
 root_power = document.getElementById("root_power");
 root_power.onclick = function() {
 	equals_position = $equals.offset();
@@ -660,6 +664,30 @@ split_frac.onclick = function() {
 	prepare(math_str);
 }
 
-//move factor within term
+//unbracket
+unbracket = document.getElementById("unbracket");
+unbracket.onclick = function() {
+	//animation?
+	var new_term="";
+	new_term += selected_text.replace(/^\(|\)$/g, "");
+	math_str = replace_in_mtstr(selected_nodes, new_term);
+	prepare(math_str);
+}
+
+//replace something
+
+function replace(text) {
+	//animation?
+	math_str = replace_in_mtstr(selected_nodes, text);
+	prepare(math_str);
+}
+
+//move factor within term?
 
 //REMOVE SOMETHING. Used for: cancelling something on both sides, or cancelling something on a fraction, among other things
+remove = document.getElementById("remove");
+remove.onclick = function () {
+	//animation?
+	math_str = replace_in_mtstr(selected_nodes, "");
+	prepare(math_str);
+}

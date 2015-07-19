@@ -44,9 +44,15 @@
 	<button id="move_right">-></button>
 </div>
 <div class="more_ops">
-	<label id="add_both_sides">Add to both sides: <input size="50" onchange="add_both_sides(this.value)" /></label>
+	<label>Add to both sides: <input id="add_both_sides" size="50" onchange="add_both_sides(this.value)" /></label>
 	&nbsp;
 	<button id="split_frac">Split fraction</button>
+	&nbsp;
+	<span>Free editing: <button id="remove">Remove</button></span>
+	&nbsp;
+	<button id="unbracket">Unbracket</button>
+	&nbsp;
+	<label>Replace: <input id="replace" size="50" onchange="replace(this.value)" /></label>
 	&nbsp;
 </div>
 
