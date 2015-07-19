@@ -15,7 +15,8 @@ There's another powerful aspect that will come from the necessary bringing toget
 ##Usage
 As this is still being built, and the UI will surely change a lot, here's a quick demo of most of the current manipulations:
 </br>
-<img src="proving_quad_formula.gif" width="350" alt="Proof of Quadratic Formula"> (Created using [ScreenToGif](https://screentogif.codeplex.com/))
+<img src="proving_quad_formula.gif" width="400" alt="Proof of Quadratic Formula">
+</br>(Created using [ScreenToGif](https://screentogif.codeplex.com/))
 
 ##Other notes
 AugMath uses [KaTeX](https://khan.github.io/KaTeX/) for math rendering, [Coffeequate](http://coffeequate.readthedocs.org/en/latest/), for some algebraic operations and [Math.js](http://mathjs.org/) for some math operations, and jQuery for animations and stuff.
