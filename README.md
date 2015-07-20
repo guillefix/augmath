@@ -23,6 +23,6 @@ The acutal script is in 'script.js', the others are older versions.
 
 AugMath uses [KaTeX](https://khan.github.io/KaTeX/) for math rendering, [Coffeequate](http://coffeequate.readthedocs.org/en/latest/), for some algebraic operations and [Math.js](http://mathjs.org/) for some math operations, and jQuery for animations and stuff.
 
-Here is a [Worflowy list](https://workflowy.com/s/ukTBnrjxEE) I made to organize the stuff that goes into AugMath. 
+Here is a [Worflowy list](https://workflowy.com/s/BlNaX36nRR) I made to organize the stuff that goes into AugMath. 
 
 Here is a [Codepen](http://codepen.io/guillefix/full/xGWQPJ/) to test it live.
