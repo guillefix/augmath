@@ -18,6 +18,22 @@ As this is still being built, and the UI will surely change a lot, here's a quic
 <img src="proving_quad_formula.gif" width="400" alt="Proof of Quadratic Formula">
 </br>(Created using [ScreenToGif](https://screentogif.codeplex.com/))
 
+## Development
+
+Node.js is required for development. You can download it [here](http://nodejs.org).
+
+Install bower, the frontend dependency manager, gloabally with the following command
+
+```bash
+npm install -g bower
+```
+
+From the project root, use bower to install the front end dependencies
+
+```bash
+bower install
+```
+
 ##Other notes
 The acutal script is in 'script.js', the others are older versions.
 
