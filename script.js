@@ -57,6 +57,7 @@ $("#multi_select").on("click", function () {multi_select = document.getElementBy
 $("#inner_select").on("click", function () {inner_select = document.getElementById("inner_select").checked; prepare(math_str);});
 
 //manipulatives
+//This creates a tree by going through the terms in an expression, and going through its factors. Factors that can contain whole expressions within them are then recursively analyzed in the same way.
 
 function parse_poly(root, poly, parent_id, is_container) {
 	var poly_str = "";

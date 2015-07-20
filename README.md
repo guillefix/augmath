@@ -26,3 +26,8 @@ AugMath uses [KaTeX](https://khan.github.io/KaTeX/) for math rendering, [Coffeeq
 Here is a [Worflowy list](https://workflowy.com/s/BlNaX36nRR) I made to organize the stuff that goes into AugMath. 
 
 Here is a [Codepen](http://codepen.io/guillefix/full/xGWQPJ/) to test it live.
+
+Some discussion in this [Forum](http://forum.fractalfuture.net/t/augmented-math-and-education/265)
+
+##Math Tree
+The main object in AugMath is a tree created with [TreeModel](http://jnuno.com/tree-model-js/), which contains all the manipulatives in the equation or expression. This is done through the function parse_poly. This creates a tree by going through the terms in an expression, and going through its factors. Factors that can contain whole expressions within them are then recursively analyzed in the same way.
