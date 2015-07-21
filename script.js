@@ -563,19 +563,32 @@ change_side.onclick = function() {
 	}
 };
 
-//divide by factor. NEED TO MAKE IT WORK WITH DIVIDING BY A FACTOR ON THE RHS!!
+//divide by factor.
 divide_factor = document.getElementById("divide_factor");
 divide_factor.onclick = function() {
-	RHS_width = tot_width($equals.nextAll(), false, false);
-	h_offset = $equals.offset().left - $selected.offset().left + tot_width($equals, true, false) + (RHS_width)/2;
-	v_offset = $selected.outerHeight(includeMargin=true)/2;
-	$equals.nextAll().animate({top:-v_offset, left:tot_width($selected, true, false)/2}, step_duration);
-	$selected.animate({left:h_offset, top:v_offset}, step_duration).promise().done(function() {
-		math_str = replace_in_mtstr(selected_nodes, "");
-		math_HS = math_str.split("="); //HS=hand sides
-		math_str = math_HS[0] + "=" + "\\frac{" + math_HS[1] + "}{" + selected_text + "}";
-		prepare(math_str);
-	});
+	if ($selected.prevAll(".mrel").length === 0) { //before eq sign
+		RHS_width = tot_width($equals.nextAll(), false, false);
+		h_offset = $equals.offset().left - $selected.offset().left + tot_width($equals, true, false) + (RHS_width)/2;
+		v_offset = $selected.outerHeight(includeMargin=true)/2;
+		$equals.nextAll().animate({top:-v_offset, left:tot_width($selected, true, false)/2}, step_duration);
+		$selected.animate({left:h_offset, top:v_offset}, step_duration).promise().done(function() {
+			math_str = replace_in_mtstr(selected_nodes, "");
+			math_HS = math_str.split("="); //HS=hand sides
+			math_str = math_HS[0] + "=" + "\\frac{" + math_HS[1] + "}{" + selected_text + "}";
+			prepare(math_str);
+		});
+	} else { //after eq sign
+		LHS_width = tot_width($equals.prevAll(), false, false);
+		h_offset = $selected.offset().left - $equals.offset().left + (LHS_width)/2;
+		v_offset = $selected.outerHeight(includeMargin=true)/2;
+		$equals.prevAll().animate({top:-v_offset, left:tot_width($selected, true, false)/2}, step_duration);
+		$selected.animate({left:-h_offset, top:v_offset}, step_duration).promise().done(function() {
+			math_str = replace_in_mtstr(selected_nodes, "");
+			math_HS = math_str.split("="); //HS=hand sides
+			math_str = "\\frac{" + math_HS[0] + "}{" + selected_text + "}" + "=" + math_HS[1];
+			prepare(math_str);
+		});
+	}
 
 }
 
@@ -680,7 +693,7 @@ function replace(text) {
 	$selected.animate({"font-size": 0, opacity: 0}, step_duration).css('overflow', 'visible').promise().done(function() {
 		math_str = replace_in_mtstr(selected_nodes, text);
 		prepare(math_str);
-	}
+	});
 }
 
 //REMOVE SOMETHING. Used for: cancelling something on both sides, or cancelling something on a fraction, among other things
@@ -689,7 +702,7 @@ remove.onclick = function () {
 	$selected.animate({"font-size": 0, opacity: 0}, step_duration).css('overflow', 'visible').promise().done(function() {
 		math_str = replace_in_mtstr(selected_nodes, "");
 		prepare(math_str);
-	}
+	});
 }
 
 //move factor within term?
