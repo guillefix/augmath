@@ -1,0 +1,21 @@
+{
+  "name": "augmath",
+  "version": "1.0.0",
+  "description": "Manipulating abstract information",
+  "main": "script.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/guillefix/augmath.git"
+  },
+  "keywords": [
+    "maths"
+  ],
+  "author": "guillefix",
+  "bugs": {
+    "url": "https://github.com/guillefix/augmath/issues"
+  },
+  "homepage": "https://github.com/guillefix/augmath#readme"
+}

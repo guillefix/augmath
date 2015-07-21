@@ -1,0 +1,29 @@
+{
+  "name": "augmath",
+  "version": "1.0.0",
+  "homepage": "https://github.com/guillefix/augmath",
+  "authors": [
+    "guillefix"
+  ],
+  "description": "Manipulating abstract information",
+  "main": "script.js",
+  "keywords": [
+    "maths"
+  ],
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ],
+  "dependencies": {
+    "Coffeequate": "https://github.com/MatthewJA/Coffeequate.git#v1.2.2",
+    "katex": "~0.5.0",
+    "bootstrap": "~3.3.5",
+    "mathjs": "~1.7.1",
+    "jquery": "~2.1.4",
+    "TreeModel-min": "http://jnuno.com/tree-model-js/vendor/jnuno/TreeModel-min.js"
+  },
+  "private": true
+}

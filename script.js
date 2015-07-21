@@ -690,19 +690,25 @@ unbracket.onclick = function() {
 
 //replace something
 function replace(text) {
-	$selected.animate({"font-size": 0, opacity: 0}, step_duration).css('overflow', 'visible').promise().done(function() {
-		math_str = replace_in_mtstr(selected_nodes, text);
-		prepare(math_str);
-	});
+	$selected.animate({"font-size": 0, opacity: 0}, step_duration)
+    .css('overflow', 'visible')
+    .promise()
+    .done(function() {
+  		math_str = replace_in_mtstr(selected_nodes, text);
+  		prepare(math_str);
+  	});
 }
 
 //REMOVE SOMETHING. Used for: cancelling something on both sides, or cancelling something on a fraction, among other things
 remove = document.getElementById("remove");
 remove.onclick = function () {
-	$selected.animate({"font-size": 0, opacity: 0}, step_duration).css('overflow', 'visible').promise().done(function() {
-		math_str = replace_in_mtstr(selected_nodes, "");
-		prepare(math_str);
-	});
+	$selected.animate({"font-size": 0, opacity: 0}, step_duration)
+    .css('overflow', 'visible')
+    .promise()
+    .done(function() {
+  		math_str = replace_in_mtstr(selected_nodes, "");
+  		prepare(math_str);
+  	});
 }
 
 //move factor within term?

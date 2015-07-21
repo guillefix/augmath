@@ -4,8 +4,13 @@
 
 <meta charset="utf-8"/>
 <title>Augmented Math Test Page</title>
+<!-- CDN CSS -->
+<!--
 <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.3.0/katex.min.css">
+-->
+<link rel="stylesheet" href="bower_components/bootstrap/dist/css/bootstrap.css">
+<link rel="stylesheet" href="bower_components/katex/dist/katex.min.css">
 <link rel="stylesheet" href="style.css">
 
 </head>
@@ -61,17 +66,21 @@
 </div>
 </div>
 
-<!--<script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.3.0/katex.min.js"></script>-->
-<script>window.katex || document.write('<script src="../../js/libs/katex.min.js">\x3C/script>')</script>
-<!--<script src="http://cdnjs.cloudflare.com/ajax/libs/gsap/1.17.0/TweenMax.min.js"></script>-->
-<!--<script src="https://cdnjs.cloudflare.com/ajax/libs/numeric/1.2.6/numeric.min.js"></script>-->
-<!--<script src="https://code.jquery.com/jquery-2.1.4.min.js"></script>-->
-<script>window.jQuery || document.write('<script src="../../js/libs/jquery.min.js">\x3C/script>')</script>
-<!--<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/1.7.0/math.min.js"></script>-->
-<script>window.math.eval || document.write('<script src="../../js/libs/math.min.js">\x3C/script>')</script>
-<!--<script src="http://matthewja.com/Coffeequate/coffeequate.min.js"></script>-->
-<script>window.CQ || document.write('<script src="../../js/libs/coffeequate.min.js">\x3C/script>')</script>
-<script src="../../js/libs/TreeModel-min.js"></script>
+<!-- CDN front end dependencies -->
+<!--
+<script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.3.0/katex.min.js"></script>
+<script src="https://code.jquery.com/jquery-2.1.4.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/1.7.0/math.min.js"></script>
+<script src="http://matthewja.com/Coffeequate/coffeequate.min.js"></script>
+-->
+
+<!-- local front end dependencies -->
+<script src="bower_components/katex/dist/katex.min.js"></script>
+<script src="bower_components/jquery/dist/jquery.js"></script>
+<script src="bower_components/mathjs/dist/math.js"></script>
+<script src="bower_components/coffeequate/build.js"></script>
+<script src="bower_components/TreeModel-min/index.js"></script>
+<!-- the library -->
 <script src="script.js"></script>
 
 </body>
