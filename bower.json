@@ -18,12 +18,12 @@
     "tests"
   ],
   "dependencies": {
-    "Coffeequate": "https://github.com/MatthewJA/Coffeequate.git#v1.2.2",
     "katex": "~0.5.0",
     "bootstrap": "~3.3.5",
     "mathjs": "~1.7.1",
     "jquery": "~2.1.4",
-    "TreeModel-min": "http://jnuno.com/tree-model-js/vendor/jnuno/TreeModel-min.js"
+    "TreeModel-min": "http://jnuno.com/tree-model-js/vendor/jnuno/TreeModel-min.js",
+    "coffeequate.min": "http://matthewja.com/Coffeequate/coffeequate.min.js"
   },
   "private": true
 }
