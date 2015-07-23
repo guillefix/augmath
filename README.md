@@ -51,10 +51,18 @@ The main object in AugMath is a tree created with [TreeModel](http://jnuno.com/t
 ##TODOs
 Here are some things that one can work on:
 *Improve GUI design
+
 *Improve the animations of some manipulations (with jQuery animations, or otherwise), like the fraction splitting or the factor factoring or ditribution.
+
 *Add manipulations (see Workflowy list for suggestions or just think some of your own)
+
 *Add validations to manipulations. Many manipulations can break the math if the user hasn't selected the right stuff. Change code so that nothing happens if right stuff isn't selected.
+
 ###More (possibly) challenging (and fun) stuff:
+
 *Refactor the tree-building function to use the semantic MathML KaTeX uses to build the tree. Probably requires knowing how KaTeX works quite well, as well as knoweledge of MathML.
+
 *Add drag and drop capabilities, so that moving-based manipulations can be done that way. While you are dragging, visual feedback should be offered of the places you can drop it.
+
 *Allow to make selections with keyboard arrow keys (up and down for changing depth) to traverse the tree.
+
