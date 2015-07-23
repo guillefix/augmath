@@ -3,7 +3,7 @@
 var math_str, 
 	h_eq_shift=0, 
 	v_eq_shift=0, 
-	equals_position = {left: 0, top: 0}, 
+	equals_position = {left: 0, top: 100}, 
 	manip = "term",
 	depth = 1, 
 	multi_select = false, 
@@ -148,7 +148,7 @@ function parse_poly(root, poly, parent_id, is_container) {
 
 		//deal with things with children, recursivelly.
 		if (factor_obj.is(":has(*)")) {
-			if (thing.is(".minner")) {//fractions
+			if (thing.is(".minner") || thing.children(".mfrac").length !== 0) {//fractions
 				factor.type2 = "frac";
 				denominator = thing.closest_n_descendents(".mord", 2).first();
 				nominator = thing.closest_n_descendents(".mord", 2).last();
@@ -384,8 +384,6 @@ function parse_mtstr(root, node_arr, str_arr) {
 						break;
 					case "sqrt":
 						factor_text = "\\sqrt{" + parse_mtstr(grandchild, node_arr, str_arr) + "}";
-						//console.log("cuco");
-						//console.log(grandchild.children[0]);
 						break;
 					case "exp":
 						exp_text[0] = grandchild.children[0].text;
@@ -566,6 +564,7 @@ change_side.onclick = function() {
 //divide by factor.
 divide_factor = document.getElementById("divide_factor");
 divide_factor.onclick = function() {
+	equals_position = $equals.offset();
 	if ($selected.prevAll(".mrel").length === 0) { //before eq sign
 		RHS_width = tot_width($equals.nextAll(), false, false);
 		h_offset = $equals.offset().left - $selected.offset().left + tot_width($equals, true, false) + (RHS_width)/2;
@@ -603,7 +602,7 @@ eval.onclick = function() {
 	});
 }
 
-//move term within expression
+//move term within expression, or factor within term
 move_right = document.getElementById("move_right");
 move_right.onclick = function(){
 	if ($selected.next().filter(".mrel").length === 0) {
@@ -614,9 +613,9 @@ move_right.onclick = function(){
 		var selected_next_width = tot_width($selected_next, true, true);
 		$selected_next.animate({left:-selected_width}, step_duration); //animation should take into account possibly missing operator
 		$selected.animate({left:selected_next_width}, step_duration).promise().done(function() {
-			if (!has_op($selected)) {selected_text_str = "+" + selected_text;} else {selected_text_str = selected_text;}
+			if (!has_op($selected) && selected_nodes[0].type === "term") {selected_text_str = "+" + selected_text;} else {selected_text_str = selected_text;}
 			next_text = next_node.text;
-			if (!has_op($selected_next)) {next_text_str = "+" + next_text;} else {next_text_str = next_text;}
+			if (!has_op($selected_next) && selected_nodes[0].type === "term") {next_text_str = "+" + next_text;} else {next_text_str = next_text;}
 			math_str = replace_in_mtstr([next_node].concat(selected_nodes), [selected_text_str, next_text_str]);
 			prepare(math_str);
 		});
@@ -632,30 +631,44 @@ move_left.onclick = function() {
 		var selected_prev_width = tot_width($selected_prev, true, true);
 		$selected_prev.animate({left:selected_width}, step_duration);
 		$selected.animate({left:-selected_prev_width}, step_duration).promise().done(function() {
-			if (!has_op($selected)) {selected_text_str = "+" + selected_text;} else {selected_text_str = selected_text;}
+			if (!has_op($selected) && selected_nodes[0].type === "term") {selected_text_str = "+" + selected_text;} else {selected_text_str = selected_text;}
 			prev_text = prev_node.text;
-			if (!has_op($selected_prev)) {prev_text_str = "+" + prev_text;} else {prev_text_str = prev_text;}
+			if (!has_op($selected_prev) && selected_nodes[0].type === "term") {prev_text_str = "+" + prev_text;} else {prev_text_str = prev_text;}
 			math_str = replace_in_mtstr([prev_node].concat(selected_nodes), [selected_text_str, prev_text_str]);
 			prepare(math_str);
 		});
 	}
 }
 
-//change power of side. NEED TO MAKE IT WORK WITH DIVIDING BY A FACTOR ON THE RHS!!
+//change power of side.
 root_power = document.getElementById("root_power");
 root_power.onclick = function() {
 	equals_position = $equals.offset();
-	var offset = end_of_equation.left - equals_position.left;
-	$selected.animate({left:offset}, step_duration).promise().done(function() {
-		math_str = replace_in_mtstr(selected_nodes, "");
-		math_HS = math_str.split("="); //HS=hand sides
-		if (selected_nodes[0].text === "2") {
-			math_str = math_HS[0] + "=" + "\\sqrt{" + math_HS[1] + "}";
-		} else {
-			math_str = math_HS[0] + "=" + math_HS[1] + "^{" + "\\frac{1}{" + selected_text + "}}"; //ad brackets
-		}
-		prepare(math_str);
-	});
+	if ($selected.parent().prevAll(".mrel").length === 0) { //before eq sign
+		var offset = end_of_equation.left - equals_position.left;
+		$selected.animate({left:offset}, step_duration).promise().done(function() {
+			math_str = replace_in_mtstr(selected_nodes, "");
+			math_HS = math_str.split("="); //HS=hand sides
+			if (selected_nodes[0].text === "2") {
+				math_str = math_HS[0] + "=" + "\\sqrt{" + math_HS[1] + "}";
+			} else {
+				math_str = math_HS[0] + "=" + "(" + math_HS[1] + ")" + "^{" + "\\frac{1}{" + selected_text + "}}"; //ad brackets
+			}
+			prepare(math_str);
+		});
+	} else {
+		var offset = end_of_equation.left - equals_position.left;
+		$selected.animate({left:-offset}, step_duration).promise().done(function() {
+			math_str = replace_in_mtstr(selected_nodes, "");
+			math_HS = math_str.split("="); //HS=hand sides
+			if (selected_nodes[0].text === "2") {
+				math_str = "\\sqrt{" + math_HS[0] + "}" + "=" + math_HS[1];
+			} else {
+				math_str = "(" + math_HS[0] + ")" + "^{" + "\\frac{1}{" + selected_text + "}}" + "=" + math_HS[1]; //ad brackets
+			}
+			prepare(math_str);
+		});
+	}
 
 }
 
@@ -666,13 +679,23 @@ function add_both_sides(thing) {
 	prepare(math_str);
 }
 
-//split fraction. SHOULD MAKE WORK WHEN FRACTION IS ONE OF MANY FACTORS IN TERM!
+//split fraction.
 split_frac = document.getElementById("split_frac");
 split_frac.onclick = function() {
-	//animation?
+	//ANIMATION? SHOULD CLONE THE DENOMINATOR AND MOVE TO THE RIGHT PLACES
 	var new_term="";
 	for (var i=0; i<selected_nodes[0].children[0].children.length; i++) {
 		new_term += "+" + "\\frac{" + selected_nodes[0].children[0].children[i].text + "}{" + selected_nodes[0].children[1].text + "}";
+	}
+	var parent = math_root.first(function (node) {
+    	for (var j=0; j<node.children.length; j++) {
+    		if (node.children[j].model.id === selected_nodes[0].model.id) {
+    			return true;
+    		}
+    	}
+	});
+	if (parent.type === "term") {
+		new_term = "(" + new_term + ")";
 	}
 	math_str = replace_in_mtstr(selected_nodes, new_term);
 	prepare(math_str);
@@ -699,7 +722,7 @@ function replace(text) {
   	});
 }
 
-//REMOVE SOMETHING. Used for: cancelling something on both sides, or cancelling something on a fraction, among other things
+//remove something. Used for: cancelling something on both sides, or cancelling something on a fraction, among other things
 remove = document.getElementById("remove");
 remove.onclick = function () {
 	$selected.animate({"font-size": 0, opacity: 0}, step_duration)
@@ -711,4 +734,58 @@ remove.onclick = function () {
   	});
 }
 
-//move factor within term?
+//distribute factor over group of terms (grouped factor)
+distribute_in = document.getElementById("distribute_in");
+distribute_in.onclick = function () {
+	$selected.animate({"font-size": 0, opacity: 0}, step_duration) //IMPROVE ANIMATION (FOR EXAMPLE CLONE)
+    .css('overflow', 'visible')
+    .promise()
+    .done(function() {
+    	var next_node = get_next(selected_nodes);
+    	var text="";
+    	for (var i=0; i<next_node.children.length; i++) {
+    		if (next_node.children[i].text.search(/[+-]/) === 0) {
+    			text += next_node.children[i].text.slice(0, 1) + selected_text + next_node.children[i].text.slice(1, next_node.children[i].text.length);
+    		} else {
+    			text += selected_text + next_node.children[i].text;
+    		}
+    	}
+  		math_str = replace_in_mtstr(selected_nodes.concat(next_node), "(" + text + ")");
+  		prepare(math_str);
+  	});
+}
+
+//factor factor from group of terms
+factor_out = document.getElementById("factor_out");
+factor_out.onclick = function () {
+	$selected.animate({"font-size": 0, opacity: 0}, step_duration) //AS USUAL, IMPROVE ANIMATION
+    .css('overflow', 'visible')
+    .promise()
+    .done(function() {
+    	var term_ids = [], selected_terms = [];
+    	var selected_text = selected_nodes[0].text;
+  		math_str = replace_in_mtstr(selected_nodes, "");
+  		var new_text = "";
+  		for (var i=0; i<selected_nodes.length; i++) {
+	    	var parent = math_root.first(function (node) {
+		    	for (var j=0; j<node.children.length; j++) {
+		    		if (node.children[j].model.id === selected_nodes[i].model.id) {
+		    			return true;
+		    		}
+		    	}
+			});
+			term_ids.push(parent.model.id);
+		}
+  		prepare(math_str);
+  		for (var k=0; k<term_ids.length; k++) {
+  			var term = math_root.first(function (node) {
+  				return node.model.id === term_ids[k];
+  			});
+  			new_text += term.text;
+  			selected_terms.push(term);
+  		}
+  		new_text = selected_text + "(" + new_text + ")";
+  		math_str = replace_in_mtstr(selected_terms, new_text);
+  		prepare(math_str);
+  	});
+}
