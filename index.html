@@ -16,7 +16,7 @@
 </head>
 <body>
 
-<p id="MathInput">Input some algebraic equation: <input size="50" onchange="prepare(this.value)" /></p>
+<p id="MathInput">Input some algebraic equation: <input size="50" id="math_input" /></p>
 
 <p class="math"><span id="math">...</span></p>
 
@@ -69,6 +69,13 @@
 	<button type="button" class="btn btn-default" id="distribute_in">Distribute in</button>
 	&nbsp;
 	<button type="button" class="btn btn-default" id="factor_out">Factor out</button>
+	&nbsp;
+</div>
+<br>
+<div class="row more_ops">
+	<button type="button" class="btn btn-default" id="undo">Undo</button>
+	&nbsp;
+	<button type="button" class="btn btn-default" id="redo">Redo</button>
 	&nbsp;
 </div>
 </div>
