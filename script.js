@@ -231,7 +231,7 @@ function prepare(math) {
 	var math_el = document.getElementById("math");
 	katex.render(math, math_el, { displayMode: true });
 
-	math_str_el.value = math_str[current_index];
+	math_str_el.attr("value", math_str[current_index]);
 
 	var root_poly = $(".base");
 
