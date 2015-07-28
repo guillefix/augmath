@@ -1,5 +1,6 @@
-//Need to maybe add more validation of the operations you are doing. In any case, this is such a big project, there'll always be work to do.
 //Probably a good addition would be to add MathQuill (http://mathquill.com/) for math input
+
+//GLOBAL VARIABLES
 var h_eq_shift=0, 
 	v_eq_shift=0, 
 	equals_position = {left: 0, top: 100}, 
@@ -30,7 +31,7 @@ var h_eq_shift=0,
     }    
 })(jQuery);
 
-//UI stuff
+//UI STUFF
 var manip_el = $("#manip"), depth_el = $("#depth");
 manip_el.on("change", function () {
 	remove_events(manip, depth); 
@@ -41,7 +42,7 @@ manip_el.on("change", function () {
 		remove_events(manip, depth); 
 		depth = parseInt(depth_el[0].value, 10); 
 		create_events(manip, depth);	
-	} else if (manip === "power") {
+	} else if (manip === "power" || manip === "nominator" || manip === "denominator") {
 		depth_el[0].value = "3";
 		remove_events(manip, depth); 
 		depth = parseInt(depth_el[0].value, 10); 
@@ -58,14 +59,308 @@ $("#multi_select").on("click", function () {multi_select = document.getElementBy
 var math_str_el = $("#math_input");
 math_str_el.keyup(function (e) {
     if (e.keyCode == 13) {
-        prepare(this.value);
+        prepare(math_str_el.get()[0].value);
     }
 });
 
+//USEFUL FUNCTIONS
 
-//manipulatives
+//remove and create events that happen when user clicks a manipulative
+function remove_events(type, depth) {
+	var $selectable = $();
+	math_root.walk(function (node) {
+		if (node.model.id !== "0" && node.type === type && getIndicesOf("/", node.model.id).length === depth) {
+			$selectable = $selectable.add(node.model.obj);
+	    }
+	});
+	$selectable.off();
+}
+
+function create_events(type, depth) {
+	var $selectable = $(), index;
+	//reset stuff
+	math_root.walk(function (node) {
+		node.selected = false;
+	});
+	$(".selected").toggleClass("selected");
+	selected_nodes = [];
+	selected_text = "";
+
+	math_root.walk(function (node) {
+		if (node.model.id !== "0" && node.type === type && getIndicesOf("/", node.model.id).length === depth) {
+			$selectable = $selectable.add(node.model.obj);
+	    }
+	});
+	math_root.walk(function (node) {
+		if (node.model.id !== "0" && node.type === type && getIndicesOf("/", node.model.id).length === depth) {
+	    	node.model.obj.on("click", function() {
+	    		$this = node.model.obj;
+	    		$this.toggleClass("selected");
+	    		node.selected = !node.selected;
+	    		if (!multi_select) {
+	    			math_root.walk(function (node2) {
+						if (node2 !== node) {node2.selected = false;}
+					});
+	    			$selectable.filter(".selected").not($this).toggleClass("selected");
+	    		}
+	    		selected_nodes = [];
+	    		selected_text = "";
+	    		math_root.walk(function (node) {
+					if (node.selected) {selected_nodes.push(node); selected_text += node.text;}
+				});
+				equals_position = $equals.offset();
+				$selected = $(".selected");
+				selected_width = tot_width($selected, true);
+				selected_position = $selected.offset();
+	    	})
+	    }
+	});
+}
+//get all the indices of searchStr within str
+function getIndicesOf(searchStr, str) {
+    var startIndex = 0, searchStrLen = searchStr.length;
+    var index, indices = [];
+    while ((index = str.indexOf(searchStr, startIndex)) > -1) {
+        indices.push(index);
+        startIndex = index + searchStrLen;
+    }
+    return indices;
+}
+
+//ignore matches due to LaTeX sintax
+function cleanIndices(arr, str) {
+	var indices = getIndicesOf("\\frac", str);
+	indices = indices.concat(getIndicesOf("\\sqrt", str));
+	for (var i=0; i < arr.length; i++) {
+		for (var j=0; j < indices.length; j++) {
+			if (arr[i] >= indices[j] && arr[i] <= indices[j]+4) {
+				arr.splice(i, 1);
+			}
+		}
+	}
+	return arr;
+}
+//create a LaTeX string from a tree, and substitute the text of node_arr with that contained in str_arr. Useful for manipulations
+function parse_mtstr(root, node_arr, str_arr) {
+	var poly_str = "";
+	var i = 0, j = 0;
+	//console.log(node_arr);
+	while (i < root.children.length) {
+		var term_text="";
+		var child = root.children[i];
+		//console.log("child")
+		//console.log(child);
+		node_selected = false;
+		for (var k=0; k<node_arr.length; k++) {
+			if (child.model.id === node_arr[k].model.id) {
+				node_selected = true;
+				term_text = str_arr[k];
+				break;
+			}
+		}
+		if (node_selected) {i++; poly_str+=term_text; continue;}
+		//console.log(child.children);
+		j = 0;
+		while (j < child.children.length) {
+			var factor_text="";
+			var frac_text = [], exp_text = [];
+			var grandchild = child.children[j];
+			//console.log("grandchild");
+			//console.log(grandchild);
+			node_selected = false;
+			for (var k=0; k<node_arr.length; k++) {
+				if (grandchild.model.id === node_arr[k].model.id) {
+					node_selected = true;
+					factor_text = str_arr[k];
+					break;
+				}
+			}
+			if (node_selected) {j++; term_text+=factor_text; continue;}
+			if (grandchild.type === "rel") {
+				poly_str+=grandchild.text;
+			} else if (grandchild.type === "op") {
+				term_text+=grandchild.text;
+			} else {
+				switch (grandchild.type2) {
+					case "normal":
+						term_text+=grandchild.text;
+						break;
+					case "group":
+						factor_text = "(" + parse_mtstr(grandchild, node_arr, str_arr) + ")";
+						break;
+					case "frac":
+						frac_text[0] = parse_mtstr(grandchild.children[0], node_arr, str_arr);
+						frac_text[1] = parse_mtstr(grandchild.children[1], node_arr, str_arr);
+						for (var l=0; l<2; l++) {
+							for (var k=0; k<node_arr.length; k++) {
+								if (grandchild.children[l].model.id === node_arr[k].model.id) {
+									frac_text[l] = str_arr[k];
+									break;
+								}
+							}
+						}
+						factor_text = "\\frac{" + frac_text[0] + "}{" + frac_text[1] + "}"
+						break;
+					case "sqrt":
+						factor_text = "\\sqrt{" + parse_mtstr(grandchild, node_arr, str_arr) + "}";
+						break;
+					case "exp":
+						exp_text[0] = grandchild.children[0].text;
+						exp_text[1] = parse_mtstr(grandchild.children[1], node_arr, str_arr);
+						for (var l=0; l<2; l++) {
+							for (var k=0; k<node_arr.length; k++) {
+								if (grandchild.children[l].model.id === node_arr[k].model.id) {
+									exp_text[l] = str_arr[k];
+									break;
+								}
+							}
+						}
+						factor_text = exp_text[0] + "^{" + exp_text[1] + "}";
+						break;
+					case "group_exp":
+						exp_text[0] = parse_mtstr(grandchild.children[0], node_arr, str_arr);
+						exp_text[1] = parse_mtstr(grandchild.children[1], node_arr, str_arr);
+						//console.log(grandchild.children);
+						for (var l=0; l<2; l++) {
+							for (var k=0; k<node_arr.length; k++) {
+								if (grandchild.children[l].model.id === node_arr[k].model.id) {
+									exp_text[l] = str_arr[k];
+									break;
+								}
+							}
+						}
+						factor_text = "(" + exp_text[0] + ")" + "^{" + exp_text[1] + "}";
+						break;
+				}
+				term_text+=factor_text;
+			}
+			j++;
+		};
+		i++;
+		poly_str+=term_text;
+		//console.log(poly_str);
+	};
+
+	return poly_str;
+}
+
+//do some preparation to str_arr before calling parse_mtstr
+function replace_in_mtstr(nodes, str_arr) {
+	if (typeof str_arr === "string") {
+		var str = str_arr;
+		str_arr = [];
+		for (i=0; i<nodes.length; i++) {
+			if (i === 0) {str_arr.push(str);}
+			else {str_arr.push("");}
+		}
+	}
+	return parse_mtstr(math_root, nodes, str_arr);
+}
+
+//evaluate an expression with Coffeeequate. An incomplete LaTeX to AsciiMath conversion is performed. Should complete it further
+function eval_expression(expression) {
+	var new_term;
+	if (expression.indexOf("\\sqrt") > -1) {
+		expression = expression.replace(/\\sqrt\{([ -~]+)\}/g, "($1)**0.5");
+	} else if (expression.indexOf("\\frac") > -1) {
+		var occurences = getIndicesOf("\\frac", expression).length;
+		for (var i=0; i<occurences; i++) {
+			expression = expression.replace(/\\frac\{([ -~]+)\}\{([ -~]+)\}/g, "($1/$2)");
+		}
+	}
+	
+	if (expression.search(/[a-z]/) > -1) { //doesn't work with some expressions, as usual
+		expression = expression.split("").join("*");
+		expression = expression.replace(/\*?\+\*?/g, "+")
+								.replace(/\*?-\*?/g, "-")
+								.replace(/\*?=\*?/g, "=")
+								.replace(/\*?\(\*?/g, "(")
+								.replace(/\*?\)\*?/g, ")")
+								.replace(/\*?\/\*?/g, "/");
+		expression = expression.replace(/\*\^\*\{\*([0-9]+)\*\}/g, "**$1"); //need to check if this works
+
+		try {
+			new_term = CQ(expression).simplify().toLaTeX().replace("\\cdot", ""); //removing cdot format
+		}
+		catch(err) {
+			console.log("Error (from CQ): " + err);
+		}
+		finally {
+			new_term = CQ(expression).simplify().toString().replace(/\*{2}(\d+)/, "^{$1}").replace(/\*/g, "")
+															.replace(/([ -~]+)\/([ -~]+)/, "\\frac{$1}{$2}");
+		}
+	} else {
+		new_term = math.eval(expression).toString();
+	}
+	return new_term;
+}
+
+//get the total width of a set of elements
+function tot_width(obj, bool, include_op) {
+	var width=0;
+	obj.each(function(i) {
+		width += $(this).outerWidth(includeMargin=bool);
+	})
+	if (include_op === true) {
+		if (obj.first().text() !== "+" && obj.first().text() !== "−") {
+			width += $(".base").find(".mbin").first().outerWidth(includeMargin=bool);
+		}
+	}
+	return width;
+}
+
+//change sign of some nodes
+function change_sign(nodes) {
+	var text="";
+	for (i=0; i<nodes.length; i++) {
+		if (nodes[i].text.slice(0, 1) === "+") {
+			text += nodes[i].text.replace("+", "-");
+		} else if (nodes[i].text.slice(0, 1) === "-") {
+			text += nodes[i].text.replace("-", "+");
+		} else {
+			text += "-" + nodes[i].text;
+		}
+	}
+	return text;
+}
+
+//get previous node
+function get_prev(nodes) {
+	var node = nodes[0];
+	var array = node.model.id.split("/");
+	array[array.length-1] = (parseInt(array[array.length-1])-1).toString();
+	var new_id = array.join("/");
+	var chosen_node;
+	math_root.walk(function (node) {
+		if (node.model.id === new_id) {chosen_node = node; return false;}
+	});
+	return chosen_node;
+}
+
+//get next node
+function get_next(nodes) {
+	var node = nodes[nodes.length-1];
+	var array = node.model.id.split("/");
+	array[array.length-1] = (parseInt(array[array.length-1])+1).toString();
+	var new_id = array.join("/");
+	var chosen_node;
+	math_root.walk(function (node) {
+		if (node.model.id === new_id) {chosen_node = node; return false;}
+	});
+	return chosen_node;
+}
+
+//does it have a visible sign?
+function has_op(obj) {
+	if (obj.first().text() === "+" || obj.first().text() === "−") {
+		return true;
+	} else {
+		return false;
+	}
+}
+
+//MANIPULATIVES
 //This creates a tree by going through the terms in an expression, and going through its factors. Factors that can contain whole expressions within them are then recursively analyzed in the same way.
-
 function parse_poly(root, poly, parent_id, is_container) {
 	var poly_str = "";
 	var term_cnt = 0;
@@ -213,11 +508,12 @@ function parse_poly(root, poly, parent_id, is_container) {
 	};
 	return poly_str;
 }
-
+//this function prepares and renders the function with LaTeX, it also calls parse_poly to create the tree
 function prepare(math) {
 
 	math = math.replace(/\\frac{}/g, "\\frac{1}")
 				.replace(/=$/, "=0")
+				.replace(/^=/, "0=")
 				.replace(/\^{}/g, "");
 
 	if (current_index < math_str.length) {
@@ -225,13 +521,10 @@ function prepare(math) {
 	} else {
 		current_index = math_str.push(math)-1;
 	}
-	console.log(current_index);
-	console.log("Math: " + math);
 
 	var math_el = document.getElementById("math");
 	katex.render(math, math_el, { displayMode: true });
-
-	math_str_el.attr("value", math_str[current_index]);
+	math_str_el.get()[0].value = math_str[current_index];
 
 	var root_poly = $(".base");
 
@@ -247,308 +540,32 @@ function prepare(math) {
 		node.selected = false;
 	});
 
-	//useful variables
-	$equals = $(".base").find(".mrel");
-	beginning_of_equation = math_root.children[0].model.obj.offset();
-	width_last_term = math_root.children[math_root.children.length-1].model.obj.outerWidth(includeMargin=true);
-	end_of_equation = math_root.children[math_root.children.length-1].model.obj.offset();
-	end_of_equation.left += + width_last_term;
-
 	create_events(manip, depth);
 
 	//repositioning equals so that it's always in the same place
+	$equals = $(".base").find(".mrel");
 	new_equals_position = $equals.offset();
 	if (equals_position.left !== 0) {h_eq_shift += equals_position.left-new_equals_position.left;}
 	if (equals_position.top !== 0) {v_eq_shift += equals_position.top-new_equals_position.top;}
 	math_el.setAttribute("style", "left:"+h_eq_shift.toString()+"px;"+"top:"+v_eq_shift.toString()+"px;");
+
+	//useful variables
+	beginning_of_equation = math_root.children[0].model.obj.offset();
+	width_last_term = tot_width(math_root.children[math_root.children.length-1].model.obj, true, true);
+	end_of_equation = math_root.children[math_root.children.length-1].model.obj.offset();
+	end_of_equation.left += width_last_term;
 }
 
-function remove_events(type, depth) {
-	var $selectable = $();
-	math_root.walk(function (node) {
-		if (node.model.id !== "0" && node.type === type && getIndicesOf("/", node.model.id).length === depth) {
-			$selectable = $selectable.add(node.model.obj);
-	    }
-	});
-	$selectable.off();
-}
-
-function create_events(type, depth) {
-	var $selectable = $(), index;
-	//reset stuff
-	math_root.walk(function (node) {
-		node.selected = false;
-	});
-	selected_nodes = [];
-	selected_text = "";
-
-	math_root.walk(function (node) {
-		if (node.model.id !== "0" && node.type === type && getIndicesOf("/", node.model.id).length === depth) {
-			$selectable = $selectable.add(node.model.obj);
-	    }
-	});
-	math_root.walk(function (node) {
-		if (node.model.id !== "0" && node.type === type && getIndicesOf("/", node.model.id).length === depth) {
-	    	node.model.obj.on("click", function() {
-	    		$this = node.model.obj;
-	    		$this.toggleClass("selected");
-	    		node.selected = !node.selected;
-	    		if (!multi_select) {
-	    			math_root.walk(function (node2) {
-						if (node2 !== node) {node2.selected = false;}
-					});
-	    			$selectable.filter(".selected").not($this).toggleClass("selected");
-	    		}
-	    		selected_nodes = [];
-	    		selected_text = "";
-	    		math_root.walk(function (node) {
-					if (node.selected) {selected_nodes.push(node); selected_text += node.text;}
-				});
-				equals_position = $equals.offset();
-				$selected = $(".selected");
-				selected_width = tot_width($selected, true);
-				selected_position = $selected.offset();
-	    	})
-	    }
-	});
-}
-
-function getIndicesOf(searchStr, str) {
-    var startIndex = 0, searchStrLen = searchStr.length;
-    var index, indices = [];
-    while ((index = str.indexOf(searchStr, startIndex)) > -1) {
-        indices.push(index);
-        startIndex = index + searchStrLen;
-    }
-    return indices;
-}
-
-function cleanIndices(arr, str) {
-	var indices = getIndicesOf("\\frac", str);
-	indices = indices.concat(getIndicesOf("\\sqrt", str));
-	for (var i=0; i < arr.length; i++) {
-		for (var j=0; j < indices.length; j++) {
-			if (arr[i] >= indices[j] && arr[i] <= indices[j]+4) {
-				arr.splice(i, 1);
-			}
-		}
-	}
-	return arr;
-}
-
-function parse_mtstr(root, node_arr, str_arr) {
-	var poly_str = "";
-	var i = 0, j = 0;
-	//console.log(node_arr);
-	while (i < root.children.length) {
-		var term_text="";
-		var child = root.children[i];
-		//console.log("child")
-		//console.log(child);
-		node_selected = false;
-		for (var k=0; k<node_arr.length; k++) {
-			if (child.model.id === node_arr[k].model.id) {
-				node_selected = true;
-				term_text = str_arr[k];
-				break;
-			}
-		}
-		if (node_selected) {i++; poly_str+=term_text; continue;}
-		//console.log(child.children);
-		j = 0;
-		while (j < child.children.length) {
-			var factor_text="";
-			var frac_text = [], exp_text = [];
-			var grandchild = child.children[j];
-			//console.log("grandchild");
-			//console.log(grandchild);
-			node_selected = false;
-			for (var k=0; k<node_arr.length; k++) {
-				if (grandchild.model.id === node_arr[k].model.id) {
-					node_selected = true;
-					factor_text = str_arr[k];
-					break;
-				}
-			}
-			if (node_selected) {j++; term_text+=factor_text; continue;}
-			if (grandchild.type === "rel") {
-				poly_str+=grandchild.text;
-			} else if (grandchild.type === "op") {
-				term_text+=grandchild.text;
-			} else {
-				switch (grandchild.type2) {
-					case "normal":
-						term_text+=grandchild.text;
-						break;
-					case "group":
-						factor_text = "(" + parse_mtstr(grandchild, node_arr, str_arr) + ")";
-						break;
-					case "frac":
-						frac_text[0] = parse_mtstr(grandchild.children[0], node_arr, str_arr);
-						frac_text[1] = parse_mtstr(grandchild.children[1], node_arr, str_arr);
-						for (var l=0; l<2; l++) {
-							for (var k=0; k<node_arr.length; k++) {
-								if (grandchild.children[l].model.id === node_arr[k].model.id) {
-									frac_text[l] = str_arr[k];
-									break;
-								}
-							}
-						}
-						factor_text = "\\frac{" + frac_text[0] + "}{" + frac_text[1] + "}"
-						break;
-					case "sqrt":
-						factor_text = "\\sqrt{" + parse_mtstr(grandchild, node_arr, str_arr) + "}";
-						break;
-					case "exp":
-						exp_text[0] = grandchild.children[0].text;
-						exp_text[1] = parse_mtstr(grandchild.children[1], node_arr, str_arr);
-						for (var l=0; l<2; l++) {
-							for (var k=0; k<node_arr.length; k++) {
-								if (grandchild.children[l].model.id === node_arr[k].model.id) {
-									exp_text[l] = str_arr[k];
-									break;
-								}
-							}
-						}
-						factor_text = exp_text[0] + "^{" + exp_text[1] + "}";
-						break;
-					case "group_exp":
-						exp_text[0] = parse_mtstr(grandchild.children[0], node_arr, str_arr);
-						exp_text[1] = parse_mtstr(grandchild.children[1], node_arr, str_arr);
-						//console.log(grandchild.children);
-						for (var l=0; l<2; l++) {
-							for (var k=0; k<node_arr.length; k++) {
-								if (grandchild.children[l].model.id === node_arr[k].model.id) {
-									exp_text[l] = str_arr[k];
-									break;
-								}
-							}
-						}
-						factor_text = "(" + exp_text[0] + ")" + "^{" + exp_text[1] + "}";
-						break;
-				}
-				term_text+=factor_text;
-			}
-			j++;
-		};
-		i++;
-		poly_str+=term_text;
-		//console.log(poly_str);
-	};
-
-	return poly_str;
-}
-
-function replace_in_mtstr(nodes, str_arr) {
-	if (typeof str_arr === "string") {
-		var str = str_arr;
-		str_arr = [];
-		for (i=0; i<nodes.length; i++) {
-			if (i === 0) {str_arr.push(str);}
-			else {str_arr.push("");}
-		}
-	}
-	return parse_mtstr(math_root, nodes, str_arr);
-}
-
-function eval_expression(expression) {
-	var new_term;
-	if (expression.indexOf("\\sqrt") > -1) {
-		expression = expression.replace("\\sqrt{", "").replace("}", "^0.5");
-	} else if (expression.indexOf("\\frac") > -1) {
-		expression = expression.replace("\\frac{", "(").replace("}{", "/").replace("}", ")");
-	}
-	
-	if (expression.search(/[a-z]/) > -1) { //doesn't work with some expressions, as usual
-		expression = expression.split("").join("*");
-		expression = expression.replace("*+*", "+");
-		expression = expression.replace("*-*", "-");
-		expression = expression.replace("*=*", "=");
-		console.log(expression);
-		expression = expression.replace(/\*\^\*\{\*([0-9]+)\*\}/g, "**$1"); //need to check if this works
-		try {
-			new_term = CQ(expression).simplify().toLaTeX().replace("\\cdot", ""); //removing cdot format
-		}
-		catch(err) {
-			console.log("Error (from CQ): " + err);
-		}
-		finally {
-			new_term = CQ(expression).simplify().toString().replace(/\*{2}(\d+)/, "^{$1}").replace(/\*/g, "").replace(/\(([a-z]+)\)/g, "$1");
-		}
-	} else {
-		new_term = math.eval(expression).toString();
-	}
-	return new_term;
-}
-
-function tot_width(obj, bool, include_op) {
-	var width=0;
-	obj.each(function(i) {
-		width += $(this).outerWidth(includeMargin=bool);
-	})
-	if (include_op === true) {
-		if (obj.first().text() !== "+" && obj.first().text() !== "−") {
-			width += $(".base").find(".mbin").first().outerWidth(includeMargin=bool);
-		}
-	}
-	return width;
-}
-
-function change_sign(nodes) {
-	var text="";
-	for (i=0; i<nodes.length; i++) {
-		if (nodes[i].text.slice(0, 1) === "+") {
-			text += nodes[i].text.replace("+", "-");
-		} else if (nodes[i].text.slice(0, 1) === "-") {
-			text += nodes[i].text.replace("-", "+");
-		} else {
-			text += "-" + nodes[i].text;
-		}
-	}
-	return text;
-}
-
-function get_prev(nodes) {
-	var node = nodes[0];
-	var array = node.model.id.split("/");
-	array[array.length-1] = (parseInt(array[array.length-1])-1).toString();
-	var new_id = array.join("/");
-	var chosen_node;
-	math_root.walk(function (node) {
-		if (node.model.id === new_id) {chosen_node = node; return false;}
-	});
-	return chosen_node;
-}
-
-function get_next(nodes) {
-	var node = nodes[nodes.length-1];
-	var array = node.model.id.split("/");
-	array[array.length-1] = (parseInt(array[array.length-1])+1).toString();
-	var new_id = array.join("/");
-	var chosen_node;
-	math_root.walk(function (node) {
-		if (node.model.id === new_id) {chosen_node = node; return false;}
-	});
-	return chosen_node;
-}
-
-function has_op(obj) {
-	if (obj.first().text() === "+" || obj.first().text() === "−") {
-		return true;
-	} else {
-		return false;
-	}
-}
-
+//initial render
 var initial_math_str = "ax^{2}+bx+c=0";
-
 $(document).ready(function() {prepare(initial_math_str);});
 
-//manipulations
+//MANIPULATIONS
 
 //change a term of side
-change_side = document.getElementById("change_side");
-change_side.onclick = function() {
+document.getElementById("change_side").onclick = change_side;
+function change_side() {
+	if (selected_nodes[0].parent !== math_root) {return;}
 	var selected_width = tot_width($selected, true, true);
 	//different behaviour depending on which side of the eq., determined by existence of equal sign before or after
 	if ($selected.prevAll(".mrel").length === 0) { //before eq sign
@@ -578,40 +595,145 @@ change_side.onclick = function() {
 };
 
 //divide by factor.
-divide_factor = document.getElementById("divide_factor");
-divide_factor.onclick = function() {
+document.getElementById("divide_factor").onclick = divide_factor;
+function divide_factor() {
+	equals_node = math_root.first(function (node) {
+		if (node.children.length > 0) {
+	    	return node.children[0].type === "rel";
+	    }
+	});
+	for (var i=0; i<selected_nodes.length-1; i++) {//making sure all elemnts are of the same parent
+		if (selected_nodes[i].parent !== selected_nodes[i+1].parent) {return;}
+	}
 	equals_position = $equals.offset();
-	if ($selected.prevAll(".mrel").length === 0) { //before eq sign
-		RHS_width = tot_width($equals.nextAll(), false, false);
-		h_offset = $equals.offset().left - $selected.offset().left + tot_width($equals, true, false) + (RHS_width)/2;
-		v_offset = $selected.outerHeight(includeMargin=true)/2;
-		$equals.nextAll().animate({top:-v_offset, left:tot_width($selected, true, false)/2}, step_duration);
-		$selected.animate({left:h_offset, top:v_offset}, step_duration).promise().done(function() {
-			new_math_str = replace_in_mtstr(selected_nodes, "");
-			math_HS = new_math_str.split("="); //HS=hand sides
-			new_math_str = math_HS[0] + "=" + "\\frac{" + math_HS[1] + "}{" + selected_text + "}";
-			current_index++;
-			prepare(new_math_str);
-		});
-	} else { //after eq sign
-		LHS_width = tot_width($equals.prevAll(), false, false);
-		h_offset = $selected.offset().left - $equals.offset().left + (LHS_width)/2;
-		v_offset = $selected.outerHeight(includeMargin=true)/2;
-		$equals.prevAll().animate({top:-v_offset, left:tot_width($selected, true, false)/2}, step_duration);
-		$selected.animate({left:-h_offset, top:v_offset}, step_duration).promise().done(function() {
-			new_math_str = replace_in_mtstr(selected_nodes, "");
-			math_HS = new_math_str.split("="); //HS=hand sides
-			new_math_str = "\\frac{" + math_HS[0] + "}{" + selected_text + "}" + "=" + math_HS[1];
-			current_index++;
-			prepare(new_math_str);
-		});
+	if (selected_nodes[0].parent.type === "nominator" 
+		|| selected_nodes[0].type === "factor" 
+		|| selected_nodes[0].type === "nominator") {
+		if (selected_nodes[0].model.id.split("/")[1] < equals_node.model.id.split("/")[1]) { //before eq sign
+			RHS_width = tot_width($equals.nextAll(), false, false);
+			var after_eq = false, after_eq_nodes=[];
+			for (var i=0; i<math_root.children.length; i++) {
+				if (after_eq) {after_eq_nodes.push(math_root.children[i])}
+				if (math_root.children[i].children[0].type === "rel") {after_eq = true;}
+			}
+			var include_in_frac = after_eq_nodes.length === 1 
+					&& after_eq_nodes[0].children.length === 1
+					&& after_eq_nodes[0].children[0].type2 === "frac";
+			h_offset = $equals.offset().left - $selected.offset().left + tot_width($equals, true, false) + (RHS_width)/2;
+			v_offset = $selected.outerHeight(includeMargin=true)/2;
+			if (include_in_frac) {v_offset = 0;}
+			$equals.nextAll().animate({top:-v_offset, left:tot_width($selected, true, false)/2}, step_duration);
+			$selected.animate({left:h_offset, top:v_offset}, step_duration).promise().done(function() {
+				new_math_str = replace_in_mtstr(selected_nodes, "");
+				math_HS = new_math_str.split("="); //HS=hand sides
+				if (include_in_frac) {
+					new_math_str = math_HS[0] + "=" + "\\frac{" + after_eq_nodes[0].children[0].children[0].text + "}{" + after_eq_nodes[0].children[0].children[1].text + selected_text + "}";
+				} else {
+					new_math_str = math_HS[0] + "=" + "\\frac{" + math_HS[1] + "}{" + selected_text + "}";
+				}
+				current_index++;
+				new_math_str = new_math_str.replace(/=$/, "=1").replace(/^=/, "1=");
+				prepare(new_math_str);
+			});
+		} else if (selected_nodes[0].model.id.split("/")[1] > equals_node.model.id.split("/")[1]) { //after eq sign
+			LHS_width = tot_width($equals.prevAll(), false, false);
+			var before_eq = false, before_eq_nodes=[];
+			for (var i=math_root.children.length-1; i>=0; i--) {
+				if (before_eq) {before_eq_nodes.push(math_root.children[i])}
+				if (math_root.children[i].children[0].type === "rel") {before_eq = true;}
+			}
+			var include_in_frac = before_eq_nodes.length === 1 
+					&& before_eq_nodes[0].children.length === 1
+					&& before_eq_nodes[0].children[0].type2 === "frac";
+			h_offset = $selected.offset().left - $equals.offset().left + (LHS_width)/2;
+			v_offset = $selected.outerHeight(includeMargin=true)/2;
+			if (include_in_frac) {v_offset = 0;}
+			$equals.prevAll().animate({top:-v_offset, left:tot_width($selected, true, false)/2}, step_duration);
+			$selected.animate({left:-h_offset, top:v_offset}, step_duration).promise().done(function() {
+				new_math_str = replace_in_mtstr(selected_nodes, "");
+				math_HS = new_math_str.split("="); //HS=hand sides
+				if (include_in_frac) {
+					new_math_str = "\\frac{" + before_eq_nodes[0].children[0].children[0].text + "}{" + before_eq_nodes[0].children[0].children[1].text + selected_text + "}" + "=" + math_HS[1];
+				} else {
+					new_math_str = "\\frac{" + math_HS[0] + "}{" + selected_text + "}" + "=" + math_HS[1];
+				}
+				current_index++;
+				new_math_str = new_math_str.replace(/=$/, "=1").replace(/^=/, "1=");
+				prepare(new_math_str);
+			});
+		}
+	} else if (selected_nodes[0].parent.type == "denominator" || selected_nodes[0].type === "denominator") {
+		if (selected_nodes[0].model.id.split("/")[1] < equals_node.model.id.split("/")[1]) { //before eq sign
+			RHS_width = tot_width($equals.nextAll(), false, false);
+			var after_eq = false, after_eq_nodes=[];
+			for (var i=0; i<math_root.children.length; i++) {
+				if (after_eq) {after_eq_nodes.push(math_root.children[i])}
+				if (math_root.children[i].children[0].type === "rel") {after_eq = true;}
+			}
+			var include_in_frac = after_eq_nodes.length === 1 
+					&& after_eq_nodes[0].children.length === 1
+					&& after_eq_nodes[0].children[0].type2 === "frac";
+			h_offset = $equals.offset().left - $selected.offset().left + tot_width($equals, true, false) + (RHS_width)/2;
+			v_offset = $selected.outerHeight(includeMargin=true)/2;
+			if (include_in_frac) {v_offset*=2;}
+			$equals.nextAll().animate({left: tot_width($selected, true, false)/2}, step_duration);
+			if (include_in_frac) {
+				$equals.prevAll().animate({top: $selected.outerHeight(includeMargin=true)/2}, step_duration);
+				v_offset+=$selected.outerHeight(includeMargin=true)/2;
+			}
+			$selected.animate({left:h_offset, top:-v_offset}, step_duration).promise().done(function() {
+				new_math_str = replace_in_mtstr(selected_nodes, "");
+				math_HS = new_math_str.split("="); //HS=hand sides
+				if (include_in_frac) {
+					new_math_str = math_HS[0] + "=" + "\\frac{" + after_eq_nodes[0].children[0].children[0].text + selected_text + "}{" + after_eq_nodes[0].children[0].children[1].text + "}";
+				} else {
+					new_math_str = math_HS[0] + "=" + selected_text + math_HS[1] ;
+				}
+				current_index++;
+				new_math_str = new_math_str.replace(/\\frac{([ -~]+)}{}/, "$1").replace(/=$/, "=1").replace(/^=/, "1=");
+				prepare(new_math_str);
+			});
+		} else if (selected_nodes[0].model.id.split("/")[1] > equals_node.model.id.split("/")[1]) { //after eq sign
+			LHS_width = tot_width($equals.prevAll(), false, false);
+			var before_eq = false, before_eq_nodes=[];
+			for (var i=math_root.children.length-1; i>=0; i--) {
+				if (before_eq) {before_eq_nodes.push(math_root.children[i])}
+				if (math_root.children[i].children[0].type === "rel") {before_eq = true;}
+			}
+			var include_in_frac = before_eq_nodes.length === 1 
+					&& before_eq_nodes[0].children.length === 1
+					&& before_eq_nodes[0].children[0].type2 === "frac";
+			h_offset = $selected.offset().left - $equals.offset().left + (LHS_width)/2;
+			v_offset = $selected.outerHeight(includeMargin=true)/2;
+			if (include_in_frac) {v_offset*=2;}
+			$equals.prevAll().animate({left:tot_width($selected, true, false)/2}, step_duration);
+			if (include_in_frac) {
+				$equals.nextAll().animate({top: $selected.outerHeight(includeMargin=true)/2}, step_duration);
+				v_offset+=$selected.outerHeight(includeMargin=true)/2;
+			}
+			$selected.animate({left:-h_offset, top:v_offset}, step_duration).promise().done(function() {
+				new_math_str = replace_in_mtstr(selected_nodes, "");
+				math_HS = new_math_str.split("="); //HS=hand sides
+				if (include_in_frac) {
+					new_math_str = "\\frac{" + before_eq_nodes[0].children[0].children[0].text + selected_text + "}{" + before_eq_nodes[0].children[0].children[1].text + "}" + "=" + math_HS[1];
+				} else {
+					new_math_str = math_HS[0] + selected_text + "=" + math_HS[1];
+				}
+				current_index++;
+				new_math_str = new_math_str.replace(/\\frac{([ -~]+)}{}/, "$1").replace(/=$/, "=1").replace(/^=/, "1=");
+				prepare(new_math_str);
+			});
+		}
 	}
 
 }
 
 //evaulate simple sum or multiplication
-eval = document.getElementById("eval");
-eval.onclick = function() {
+document.getElementById("eval").onclick = eval;
+function eval() {
+	for (var i=0; i<selected_nodes.length-1; i++) { //making sure, all elements are of the same parent
+		if (selected_nodes[i].parent !== selected_nodes[i+1].parent) {return;}
+	}
 	//equals position not too well animated
 	$selected.animate({"font-size": 0, opacity: 0}, step_duration).css('overflow', 'visible').promise().done(function() {
 		new_term = eval_expression(selected_text); //only works for sqrts or fracs separately, but not together
@@ -622,14 +744,22 @@ eval.onclick = function() {
 }
 
 //move term within expression, or factor within term
-move_right = document.getElementById("move_right");
-move_right.onclick = function(){
+document.getElementById("move_right").onclick = move_right;
+function move_right(){
 	if ($selected.next().filter(".mrel").length === 0) {
-		var selected_width = tot_width($selected, true, true);
+		var include_op;
+		if (selected_nodes[0].type === "factor") {
+			include_op = false;
+		} else if (selected_nodes[0].type === "term") {
+			include_op = true;
+		} else {
+			return;
+		}
+		var selected_width = tot_width($selected, true, include_op);
 		var selected_text_str, next_text_str;
 		var next_node = get_next(selected_nodes);
 		var $selected_next = next_node.model.obj;
-		var selected_next_width = tot_width($selected_next, true, true);
+		var selected_next_width = tot_width($selected_next, true, include_op);
 		$selected_next.animate({left:-selected_width}, step_duration); //animation should take into account possibly missing operator
 		$selected.animate({left:selected_next_width}, step_duration).promise().done(function() {
 			if (!has_op($selected) && selected_nodes[0].type === "term") {selected_text_str = "+" + selected_text;} else {selected_text_str = selected_text;}
@@ -641,14 +771,22 @@ move_right.onclick = function(){
 		});
 	}
 }
-move_left = document.getElementById("move_left");
-move_left.onclick = function() {
+document.getElementById("move_left").onclick = move_left;
+function move_left() {
 	if ($selected.prev().filter(".mrel").length === 0) {
-		var selected_width = tot_width($selected, true, true);
+		var include_op;
+		if (selected_nodes[0].type === "factor") {
+			include_op = false;
+		} else if (selected_nodes[0].type === "term") {
+			include_op = true;
+		} else {
+			return;
+		}
+		var selected_width = tot_width($selected, true, include_op);
 		var selected_text_str, prev_text_str;
 		var prev_node = get_prev(selected_nodes);
 		var $selected_prev = prev_node.model.obj;
-		var selected_prev_width = tot_width($selected_prev, true, true);
+		var selected_prev_width = tot_width($selected_prev, true, include_op);
 		$selected_prev.animate({left:selected_width}, step_duration);
 		$selected.animate({left:-selected_prev_width}, step_duration).promise().done(function() {
 			if (!has_op($selected) && selected_nodes[0].type === "term") {selected_text_str = "+" + selected_text;} else {selected_text_str = selected_text;}
@@ -662,8 +800,9 @@ move_left.onclick = function() {
 }
 
 //change power of side.
-root_power = document.getElementById("root_power");
-root_power.onclick = function() {
+document.getElementById("root_power").onclick = root_power;
+function root_power() {
+	if (selected_nodes[0].type !== "power") {return;}
 	equals_position = $equals.offset();
 	if ($selected.parent().prevAll(".mrel").length === 0) { //before eq sign
 		var offset = end_of_equation.left - equals_position.left;
@@ -695,7 +834,7 @@ root_power.onclick = function() {
 
 }
 
-//Add something to both sides
+//Append something to both sides
 function add_both_sides(thing) {
 	math_HS = new_math_str.split("=");
 	new_math_str = math_HS[0] + thing + "=" +math_HS[1] + thing;
@@ -704,8 +843,8 @@ function add_both_sides(thing) {
 }
 
 //split fraction.
-split_frac = document.getElementById("split_frac");
-split_frac.onclick = function() {
+document.getElementById("split_frac").onclick = split_frac;
+function split_frac() {
 	//ANIMATION? SHOULD CLONE THE DENOMINATOR AND MOVE TO THE RIGHT PLACES
 	var new_term="";
 	for (var i=0; i<selected_nodes[0].children[0].children.length; i++) {
@@ -727,8 +866,8 @@ split_frac.onclick = function() {
 }
 
 //unbracket
-unbracket = document.getElementById("unbracket");
-unbracket.onclick = function() {
+document.getElementById("unbracket").onclick = unbracket;
+function unbracket() {
 	//animation?
 	var new_term="";
 	new_term += selected_text.replace(/^\(|\)$/g, "");
@@ -750,8 +889,8 @@ function replace(text) {
 }
 
 //remove something. Used for: cancelling something on both sides, or cancelling something on a fraction, among other things
-remove = document.getElementById("remove");
-remove.onclick = function () {
+document.getElementById("remove").onclick = remove;
+function remove() {
 	$selected.animate({"font-size": 0, opacity: 0}, step_duration)
     .css('overflow', 'visible')
     .promise()
@@ -763,8 +902,8 @@ remove.onclick = function () {
 }
 
 //distribute factor over group of terms (grouped factor)
-distribute_in = document.getElementById("distribute_in");
-distribute_in.onclick = function () {
+document.getElementById("distribute_in").onclick = distribute_in;
+function distribute_in() {
 	$selected.animate({"font-size": 0, opacity: 0}, step_duration) //IMPROVE ANIMATION (FOR EXAMPLE CLONE)
     .css('overflow', 'visible')
     .promise()
@@ -785,8 +924,8 @@ distribute_in.onclick = function () {
 }
 
 //factor factor from group of terms
-factor_out = document.getElementById("factor_out");
-factor_out.onclick = function () {
+document.getElementById("factor_out").onclick = factor_out;
+function factor_out() {
 	$selected.animate({"font-size": 0, opacity: 0}, step_duration) //AS USUAL, IMPROVE ANIMATION
     .css('overflow', 'visible')
     .promise()
@@ -822,10 +961,9 @@ factor_out.onclick = function () {
 
 //History
 //undo
-undo = document.getElementById("undo");
-undo.onclick = function () {
+document.getElementById("undo").onclick = undo;
+function undo() {
 	if (current_index > 0) {
-		console.log(current_index);
 		current_index--;
 		prepare(math_str[current_index]);
 	}
@@ -833,8 +971,8 @@ undo.onclick = function () {
 
 
 //redo
-redo = document.getElementById("redo");
-redo.onclick = function () {
+document.getElementById("redo").onclick = redo;
+function redo() {
 	if (current_index < math_str.length-1) {
 		current_index++;
 		prepare(math_str[current_index]);
