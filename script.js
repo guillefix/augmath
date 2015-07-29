@@ -14,7 +14,12 @@ var h_eq_shift=0,
 	selected_nodes = [], 
 	selected_text = "", 
 	math_str = [],
-	current_index = 0;
+	current_index = 0, 
+	selected_nodes_rec = [], 
+	math_str_rec = [], 
+	recording = false, 
+	recording_index = 0, 
+	manipulation_rec = [];
 
 //jQuery plugins
 (function($) {
@@ -61,6 +66,44 @@ math_str_el.keyup(function (e) {
     if (e.keyCode == 13) {
         prepare(math_str_el.get()[0].value);
     }
+});
+$("#recording").on("click", function () {recording = document.getElementById("recording").checked;});
+$("#play").on("click", function () {
+	document.getElementById("recording").checked = false;
+	recording = document.getElementById("recording").checked;
+	recording_index = 0;
+	math_str = math_str_rec[recording_index];
+	current_index = math_str.length-2;
+	prepare(math_str[current_index]);
+});
+$("#next_step").on("click", function () {
+	if (recording_index>=selected_nodes_rec.length-1) {return;}
+	math_str = math_str_rec[recording_index];
+	current_index = math_str.length-1;
+	selected_nodes = [];
+	$selected = $();
+	var nodes = selected_nodes_rec[recording_index];
+	for (i=0; i<nodes.length; i++) {
+		var selected_node = math_root.first(function (node) {
+   				return node.model.id === nodes[i].model.id;
+			});
+		selected_nodes.push(selected_node);
+		$selected = $selected.add(selected_node.model.obj);
+
+	}
+	console.log(selected_nodes);
+	console.log($selected);
+	$selected.toggleClass("selected");
+	manipulation_rec[recording_index].manipulation(manipulation_rec[recording_index].arg);
+	recording_index++;
+});
+
+$("#prev_step").on("click", function () {//fix this
+	if (recording_index>=selected_nodes_rec.length-1) {return;}
+	recording_index--;
+	math_str = math_str_rec[recording_index];
+	current_index = math_str.length-1;
+	prepare(math_str[current_index]);
 });
 
 //USEFUL FUNCTIONS
@@ -522,6 +565,11 @@ function prepare(math) {
 		current_index = math_str.push(math)-1;
 	}
 
+	if (recording) {
+		selected_nodes_rec.push(selected_nodes.slice());
+		math_str_rec.push(math_str.slice());
+	}
+
 	var math_el = document.getElementById("math");
 	katex.render(math, math_el, { displayMode: true });
 	math_str_el.get()[0].value = math_str[current_index];
@@ -563,8 +611,14 @@ $(document).ready(function() {prepare(initial_math_str);});
 //MANIPULATIONS
 
 //change a term of side
-document.getElementById("change_side").onclick = change_side;
+document.getElementById("change_side").onclick = function() {
+	change_side();
+	if (recording) {
+		manipulation_rec.push({manipulation:change_side});
+	}
+};
 function change_side() {
+	console.log("hi");
 	if (selected_nodes[0].parent !== math_root) {return;}
 	var selected_width = tot_width($selected, true, true);
 	//different behaviour depending on which side of the eq., determined by existence of equal sign before or after
@@ -595,7 +649,12 @@ function change_side() {
 };
 
 //divide by factor.
-document.getElementById("divide_factor").onclick = divide_factor;
+document.getElementById("divide_factor").onclick = function() {
+	divide_factor();
+	if (recording) {
+		manipulation_rec.push({manipulation:divide_factor});
+	}
+};
 function divide_factor() {
 	equals_node = math_root.first(function (node) {
 		if (node.children.length > 0) {
@@ -729,7 +788,12 @@ function divide_factor() {
 }
 
 //evaulate simple sum or multiplication
-document.getElementById("eval").onclick = eval;
+document.getElementById("eval").onclick = function() {
+	eval();
+	if (recording) {
+		manipulation_rec.push({manipulation:eval});
+	}
+};
 function eval() {
 	for (var i=0; i<selected_nodes.length-1; i++) { //making sure, all elements are of the same parent
 		if (selected_nodes[i].parent !== selected_nodes[i+1].parent) {return;}
@@ -744,7 +808,12 @@ function eval() {
 }
 
 //move term within expression, or factor within term
-document.getElementById("move_right").onclick = move_right;
+document.getElementById("move_right").onclick = function() {
+	move_right();
+	if (recording) {
+		manipulation_rec.push({manipulation:move_right});
+	}
+};
 function move_right(){
 	if ($selected.next().filter(".mrel").length === 0) {
 		var include_op;
@@ -771,7 +840,12 @@ function move_right(){
 		});
 	}
 }
-document.getElementById("move_left").onclick = move_left;
+document.getElementById("move_left").onclick = function() {
+	move_left();
+	if (recording) {
+		manipulation_rec.push({manipulation:move_left});
+	}
+};
 function move_left() {
 	if ($selected.prev().filter(".mrel").length === 0) {
 		var include_op;
@@ -800,7 +874,12 @@ function move_left() {
 }
 
 //change power of side.
-document.getElementById("root_power").onclick = root_power;
+document.getElementById("root_power").onclick = function() {
+	root_power();
+	if (recording) {
+		manipulation_rec.push({manipulation:root_power});
+	}
+};
 function root_power() {
 	if (selected_nodes[0].type !== "power") {return;}
 	equals_position = $equals.offset();
@@ -843,7 +922,12 @@ function add_both_sides(thing) {
 }
 
 //split fraction.
-document.getElementById("split_frac").onclick = split_frac;
+document.getElementById("split_frac").onclick = function() {
+	split_frac();
+	if (recording) {
+		manipulation_rec.push({manipulation:split_frac});
+	}
+};
 function split_frac() {
 	//ANIMATION? SHOULD CLONE THE DENOMINATOR AND MOVE TO THE RIGHT PLACES
 	var new_term="";
@@ -866,7 +950,12 @@ function split_frac() {
 }
 
 //unbracket
-document.getElementById("unbracket").onclick = unbracket;
+document.getElementById("unbracket").onclick = function() {
+	unbracket();
+	if (recording) {
+		manipulation_rec.push({manipulation:unbracket});
+	}
+};
 function unbracket() {
 	//animation?
 	var new_term="";
@@ -889,7 +978,12 @@ function replace(text) {
 }
 
 //remove something. Used for: cancelling something on both sides, or cancelling something on a fraction, among other things
-document.getElementById("remove").onclick = remove;
+document.getElementById("remove").onclick = function() {
+	remove();
+	if (recording) {
+		manipulation_rec.push({manipulation:remove});
+	}
+};
 function remove() {
 	$selected.animate({"font-size": 0, opacity: 0}, step_duration)
     .css('overflow', 'visible')
@@ -902,7 +996,12 @@ function remove() {
 }
 
 //distribute factor over group of terms (grouped factor)
-document.getElementById("distribute_in").onclick = distribute_in;
+document.getElementById("distribute_in").onclick = function() {
+	distribute_in();
+	if (recording) {
+		manipulation_rec.push({manipulation:distribute_in});
+	}
+};
 function distribute_in() {
 	$selected.animate({"font-size": 0, opacity: 0}, step_duration) //IMPROVE ANIMATION (FOR EXAMPLE CLONE)
     .css('overflow', 'visible')
@@ -924,7 +1023,12 @@ function distribute_in() {
 }
 
 //factor factor from group of terms
-document.getElementById("factor_out").onclick = factor_out;
+document.getElementById("factor_out").onclick = function() {
+	factor_out();
+	if (recording) {
+		manipulation_rec.push({manipulation:factor_out});
+	}
+};
 function factor_out() {
 	$selected.animate({"font-size": 0, opacity: 0}, step_duration) //AS USUAL, IMPROVE ANIMATION
     .css('overflow', 'visible')
