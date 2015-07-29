@@ -2,6 +2,10 @@
 	position: relative;
 }
 
+#math {
+	top:0px !important;
+}
+
 .mrel {
 	color: blue;
 	font-weight: bold;
