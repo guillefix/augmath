@@ -14,12 +14,14 @@ var h_eq_shift=0,
 	selected_nodes = [], 
 	selected_text = "", 
 	math_str = [],
+	//for recording
 	current_index = 0, 
-	selected_nodes_rec = [], 
+	selected_nodes_id_rec = [], 
 	math_str_rec = [], 
 	recording = false, 
 	recording_index = 0, 
-	manipulation_rec = [];
+	manipulation_rec = [], 
+	playing = false;
 
 //jQuery plugins
 (function($) {
@@ -67,43 +69,106 @@ math_str_el.keyup(function (e) {
         prepare(math_str_el.get()[0].value);
     }
 });
-$("#recording").on("click", function () {recording = document.getElementById("recording").checked;});
+$("#recording").on("click", function () {
+	recording = document.getElementById("recording").checked;
+});
 $("#play").on("click", function () {
+	math_str_rec.unshift([math_str_rec[0][0]]);
+	manipulation_rec.unshift({});
+	selected_nodes_id_rec.unshift([]);
+	playing = true;
 	document.getElementById("recording").checked = false;
 	recording = document.getElementById("recording").checked;
 	recording_index = 0;
 	math_str = math_str_rec[recording_index];
-	current_index = math_str.length-2;
+	current_index = math_str.length-1;
 	prepare(math_str[current_index]);
 });
 $("#next_step").on("click", function () {
-	if (recording_index>=selected_nodes_rec.length-1) {return;}
+	if (recording_index>selected_nodes_id_rec.length-2) {return;}
+	recording_index++;
 	math_str = math_str_rec[recording_index];
 	current_index = math_str.length-1;
 	selected_nodes = [];
 	$selected = $();
-	var nodes = selected_nodes_rec[recording_index];
-	for (i=0; i<nodes.length; i++) {
+	var ids = selected_nodes_id_rec[recording_index];
+	for (i=0; i<ids.length; i++) {
 		var selected_node = math_root.first(function (node) {
-   				return node.model.id === nodes[i].model.id;
+   				return node.model.id === ids[i];
 			});
 		selected_nodes.push(selected_node);
+		selected_node.selected = true;
 		$selected = $selected.add(selected_node.model.obj);
 
 	}
-	console.log(selected_nodes);
-	console.log($selected);
+	selected_text = "";
+	math_root.walk(function (node) {
+		if (node.selected) {selected_text += node.text;}
+	});
+	equals_position = $equals.offset();
+	selected_width = tot_width($selected, true);
+	selected_position = $selected.offset();
 	$selected.toggleClass("selected");
-	manipulation_rec[recording_index].manipulation(manipulation_rec[recording_index].arg);
-	recording_index++;
+	switch (manipulation_rec[recording_index].manipulation) {
+  		case 1:
+  			change_side()
+    		break;
+    	case 2:
+  			divide_factor()
+    		break;
+    	case 3:
+  			eval()
+    		break;
+    	case 4:
+  			move_right()
+    		break;
+    	case 5:
+  			move_left()
+    		break;
+    	case 6:
+  			root_power()
+    		break;
+    	case 7:
+  			add_both_sides(manipulation_rec[recording_index].arg)
+    		break;
+    	case 8:
+  			split_frac()
+    		break;
+    	case 9:
+  			unbracket()
+    		break;
+    	case 10:
+  			replace(manipulation_rec[recording_index].arg)
+    		break;
+    	case 11:
+  			remove()
+    		break;
+    	case 12:
+  			distribute_in()
+    		break;
+    	case 13:
+  			factor_out()
+    		break;
+    	default:
+    		break;
+	}
 });
 
-$("#prev_step").on("click", function () {//fix this
-	if (recording_index>=selected_nodes_rec.length-1) {return;}
+$("#prev_step").on("click", function () {//FIX THIS
+	if (!(recording_index>0)) {return;}
 	recording_index--;
 	math_str = math_str_rec[recording_index];
 	current_index = math_str.length-1;
 	prepare(math_str[current_index]);
+});
+
+$("#make_json").on("click", function () {
+	console.log("selected_nodes_id_rec");
+	console.log(JSON.stringify(selected_nodes_id_rec));
+	console.log("math_str_rec");
+	console.log(JSON.stringify(math_str_rec));
+	console.log("manipulation_rec");
+	console.log(JSON.stringify(manipulation_rec));
 });
 
 //USEFUL FUNCTIONS
@@ -155,6 +220,8 @@ function create_events(type, depth) {
 				$selected = $(".selected");
 				selected_width = tot_width($selected, true);
 				selected_position = $selected.offset();
+				var replace_el = document.getElementById("replace");
+				replace_el.value = selected_text;
 	    	})
 	    }
 	});
@@ -311,7 +378,6 @@ function eval_expression(expression) {
 			expression = expression.replace(/\\frac\{([ -~]+)\}\{([ -~]+)\}/g, "($1/$2)");
 		}
 	}
-	
 	if (expression.search(/[a-z]/) > -1) { //doesn't work with some expressions, as usual
 		expression = expression.split("").join("*");
 		expression = expression.replace(/\*?\+\*?/g, "+")
@@ -321,12 +387,12 @@ function eval_expression(expression) {
 								.replace(/\*?\)\*?/g, ")")
 								.replace(/\*?\/\*?/g, "/");
 		expression = expression.replace(/\*\^\*\{\*([0-9]+)\*\}/g, "**$1"); //need to check if this works
-
 		try {
 			new_term = CQ(expression).simplify().toLaTeX().replace("\\cdot", ""); //removing cdot format
 		}
 		catch(err) {
 			console.log("Error (from CQ): " + err);
+			console.log("Expression is : " + expression);
 		}
 		finally {
 			new_term = CQ(expression).simplify().toString().replace(/\*{2}(\d+)/, "^{$1}").replace(/\*/g, "")
@@ -559,14 +625,20 @@ function prepare(math) {
 				.replace(/^=/, "0=")
 				.replace(/\^{}/g, "");
 
-	if (current_index < math_str.length) {
-		math_str[current_index] = math;
-	} else {
-		current_index = math_str.push(math)-1;
+	if (!playing) {
+		if (current_index < math_str.length) {
+			math_str[current_index] = math;
+		} else {
+			current_index = math_str.push(math)-1;
+		}
 	}
 
 	if (recording) {
-		selected_nodes_rec.push(selected_nodes.slice());
+		var ids = [];
+		for (var i=0; i<selected_nodes.length; i++) {
+			ids.push(selected_nodes[i].model.id);
+		}
+		selected_nodes_id_rec.push(ids);
 		math_str_rec.push(math_str.slice());
 	}
 
@@ -614,11 +686,10 @@ $(document).ready(function() {prepare(initial_math_str);});
 document.getElementById("change_side").onclick = function() {
 	change_side();
 	if (recording) {
-		manipulation_rec.push({manipulation:change_side});
+		manipulation_rec.push({manipulation:1});
 	}
 };
 function change_side() {
-	console.log("hi");
 	if (selected_nodes[0].parent !== math_root) {return;}
 	var selected_width = tot_width($selected, true, true);
 	//different behaviour depending on which side of the eq., determined by existence of equal sign before or after
@@ -652,7 +723,7 @@ function change_side() {
 document.getElementById("divide_factor").onclick = function() {
 	divide_factor();
 	if (recording) {
-		manipulation_rec.push({manipulation:divide_factor});
+		manipulation_rec.push({manipulation:2});
 	}
 };
 function divide_factor() {
@@ -791,7 +862,7 @@ function divide_factor() {
 document.getElementById("eval").onclick = function() {
 	eval();
 	if (recording) {
-		manipulation_rec.push({manipulation:eval});
+		manipulation_rec.push({manipulation:3});
 	}
 };
 function eval() {
@@ -811,7 +882,7 @@ function eval() {
 document.getElementById("move_right").onclick = function() {
 	move_right();
 	if (recording) {
-		manipulation_rec.push({manipulation:move_right});
+		manipulation_rec.push({manipulation:4});
 	}
 };
 function move_right(){
@@ -843,7 +914,7 @@ function move_right(){
 document.getElementById("move_left").onclick = function() {
 	move_left();
 	if (recording) {
-		manipulation_rec.push({manipulation:move_left});
+		manipulation_rec.push({manipulation:5});
 	}
 };
 function move_left() {
@@ -877,7 +948,7 @@ function move_left() {
 document.getElementById("root_power").onclick = function() {
 	root_power();
 	if (recording) {
-		manipulation_rec.push({manipulation:root_power});
+		manipulation_rec.push({manipulation:6});
 	}
 };
 function root_power() {
@@ -914,6 +985,15 @@ function root_power() {
 }
 
 //Append something to both sides
+$("#add_both_sides").keyup(function (e) {
+    if (e.keyCode == 13) {
+    	var thing = $("#add_both_sides").get()[0].value;
+        add_both_sides(thing);
+		if (recording) {
+			manipulation_rec.push({manipulation:7, arg:thing});
+		}
+    }
+});
 function add_both_sides(thing) {
 	math_HS = new_math_str.split("=");
 	new_math_str = math_HS[0] + thing + "=" +math_HS[1] + thing;
@@ -925,7 +1005,7 @@ function add_both_sides(thing) {
 document.getElementById("split_frac").onclick = function() {
 	split_frac();
 	if (recording) {
-		manipulation_rec.push({manipulation:split_frac});
+		manipulation_rec.push({manipulation:8});
 	}
 };
 function split_frac() {
@@ -953,7 +1033,7 @@ function split_frac() {
 document.getElementById("unbracket").onclick = function() {
 	unbracket();
 	if (recording) {
-		manipulation_rec.push({manipulation:unbracket});
+		manipulation_rec.push({manipulation:9});
 	}
 };
 function unbracket() {
@@ -966,6 +1046,15 @@ function unbracket() {
 }
 
 //replace something
+$("#replace").keyup(function (e) {
+    if (e.keyCode == 13) {
+    	var thing = $("#replace").get()[0].value;
+        replace(thing);
+		if (recording) {
+			manipulation_rec.push({manipulation:10, arg:thing});
+		}
+    }
+});
 function replace(text) {
 	$selected.animate({"font-size": 0, opacity: 0}, step_duration)
     .css('overflow', 'visible')
@@ -981,7 +1070,7 @@ function replace(text) {
 document.getElementById("remove").onclick = function() {
 	remove();
 	if (recording) {
-		manipulation_rec.push({manipulation:remove});
+		manipulation_rec.push({manipulation:11});
 	}
 };
 function remove() {
@@ -999,7 +1088,7 @@ function remove() {
 document.getElementById("distribute_in").onclick = function() {
 	distribute_in();
 	if (recording) {
-		manipulation_rec.push({manipulation:distribute_in});
+		manipulation_rec.push({manipulation:12});
 	}
 };
 function distribute_in() {
@@ -1026,7 +1115,7 @@ function distribute_in() {
 document.getElementById("factor_out").onclick = function() {
 	factor_out();
 	if (recording) {
-		manipulation_rec.push({manipulation:factor_out});
+		manipulation_rec.push({manipulation:13});
 	}
 };
 function factor_out() {

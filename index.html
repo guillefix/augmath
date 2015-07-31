@@ -53,7 +53,7 @@
 </div>
 <br>
 <div class="row more_ops">
-	<label>Append to both sides: <input id="add_both_sides" size="20" onchange="add_both_sides(this.value)" /></label>
+	<label>Append to both sides: <input id="add_both_sides" size="20"/></label>
 	&nbsp;
 	<button type="button" class="btn btn-default" id="split_frac">Split fraction</button>
 	&nbsp;
@@ -64,7 +64,7 @@
 	&nbsp;
 	<button type="button" class="btn btn-default" id="unbracket">Unbracket</button>
 	&nbsp;
-	<label>Replace: <input id="replace" size="20" onchange="replace(this.value)" /></label>
+	<label>Replace: <input id="replace" size="20" /></label>
 	&nbsp;
 	<button type="button" class="btn btn-default" id="distribute_in">Distribute in</button>
 	&nbsp;
@@ -73,18 +73,23 @@
 </div>
 <br>
 <div class="row more_ops">
-	<button type="button" class="btn btn-default" id="undo">Undo</button>
-	&nbsp;
-	<button type="button" class="btn btn-default" id="redo">Redo</button>
-	&nbsp;
-	<label><input type="checkbox" id="recording"/> Recording</span></label>
-	&nbsp;
-	<button type="button" class="btn btn-default" id="play">Play</button>
-	&nbsp;
-	<button type="button" class="btn btn-default" id="next_step">Next Step</button>
-	&nbsp;
-	<button type="button" class="btn btn-default" id="prev_step">Previous Step</button>
-	&nbsp;
+    <button type="button" class="btn btn-default" id="undo">Undo</button>
+    &nbsp;
+    <button type="button" class="btn btn-default" id="redo">Redo</button>
+    &nbsp;
+    <label><input type="checkbox" id="recording"/> Recording</span></label>
+    &nbsp;
+    <button type="button" class="btn btn-default" id="make_json">Save JSON</button>
+    &nbsp;
+</div>
+<br>
+<div class="row more_ops play_mode">
+    <button type="button" class="btn btn-default" id="next_step">Next Step</button>
+    &nbsp;
+    <button type="button" class="btn btn-default" id="prev_step">Previous Step</button>
+    &nbsp;
+    <button type="button" class="btn btn-default" id="play">Play</button>
+    &nbsp;
 </div>
 </div>
 
