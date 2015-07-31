@@ -227,7 +227,7 @@ function create_events(type, depth) {
 	});
 }
 //get all the indices of searchStr within str
-function getIndicesOf(searchStr, str) {
+function getIndicesOf(searchStr, str) { //should fix the getIndicesOf to work with regexes
     var startIndex = 0, searchStrLen = searchStr.length;
     var index, indices = [];
     while ((index = str.indexOf(searchStr, startIndex)) > -1) {
@@ -239,8 +239,10 @@ function getIndicesOf(searchStr, str) {
 
 //ignore matches due to LaTeX sintax
 function cleanIndices(arr, str) {
-	var indices = getIndicesOf("\\frac", str);
+	var indices = getIndicesOf("\\frac", str); //should fix the getIndicesOf to work with regexes
 	indices = indices.concat(getIndicesOf("\\sqrt", str));
+	indices = indices.concat(getIndicesOf("\\text", str));
+	indices = indices.concat(getIndicesOf("\\int", str));
 	for (var i=0; i < arr.length; i++) {
 		for (var j=0; j < indices.length; j++) {
 			if (arr[i] >= indices[j] && arr[i] <= indices[j]+4) {
@@ -290,6 +292,8 @@ function parse_mtstr(root, node_arr, str_arr) {
 				poly_str+=grandchild.text;
 			} else if (grandchild.type === "op") {
 				term_text+=grandchild.text;
+			} else if (grandchild.type === "text") {
+				term_text+="\\text{" + grandchild.text + "}";
 			} else {
 				switch (grandchild.type2) {
 					case "normal":
@@ -370,14 +374,8 @@ function replace_in_mtstr(nodes, str_arr) {
 //evaluate an expression with Coffeeequate. An incomplete LaTeX to AsciiMath conversion is performed. Should complete it further
 function eval_expression(expression) {
 	var new_term;
-	if (expression.indexOf("\\sqrt") > -1) {
-		expression = expression.replace(/\\sqrt\{([ -~]+)\}/g, "($1)**0.5");
-	} else if (expression.indexOf("\\frac") > -1) {
-		var occurences = getIndicesOf("\\frac", expression).length;
-		for (var i=0; i<occurences; i++) {
-			expression = expression.replace(/\\frac\{([ -~]+)\}\{([ -~]+)\}/g, "($1/$2)");
-		}
-	}
+	expression = expression.replace(/\\sqrt\{([a-z0-9]+)\}/g, "($1)**0.5");
+	expression = expression.replace(/\}\{/g, ")/(").replace(/\\frac{/g, "(").replace(/\}/g, ")");
 	if (expression.search(/[a-z]/) > -1) { //doesn't work with some expressions, as usual
 		expression = expression.split("").join("*");
 		expression = expression.replace(/\*?\+\*?/g, "+")
@@ -385,18 +383,20 @@ function eval_expression(expression) {
 								.replace(/\*?=\*?/g, "=")
 								.replace(/\*?\(\*?/g, "(")
 								.replace(/\*?\)\*?/g, ")")
-								.replace(/\*?\/\*?/g, "/");
+								.replace(/\*?\/\*?/g, "/")
+								.replace(/\(\+/g, "(");
 		expression = expression.replace(/\*\^\*\{\*([0-9]+)\*\}/g, "**$1"); //need to check if this works
+		console.log("Expression is : " + expression);
 		try {
 			new_term = CQ(expression).simplify().toLaTeX().replace("\\cdot", ""); //removing cdot format
 		}
 		catch(err) {
 			console.log("Error (from CQ): " + err);
 			console.log("Expression is : " + expression);
+			new_term = CQ(expression).simplify().toString().replace(/\*{2}(\d+)/, "^{$1}").replace(/\*/g, "")
+															.replace(/([a-z0-9]+)\/([a-z0-9]+)/, "\\frac{$1}{$2}");
 		}
 		finally {
-			new_term = CQ(expression).simplify().toString().replace(/\*{2}(\d+)/, "^{$1}").replace(/\*/g, "")
-															.replace(/([ -~]+)\/([ -~]+)/, "\\frac{$1}{$2}");
 		}
 	} else {
 		new_term = math.eval(expression).toString();
@@ -610,6 +610,10 @@ function parse_poly(root, poly, parent_id, is_container) {
 				factor.addChild(base);
 				factor.addChild(power);
 				factor.text = "(" + base.text + ")" + "^{" + power.text + "}";
+				term.text+=factor.text;
+			} else if (thing.is(".text")) { //text
+				factor.type = "text";
+				factor.text = thing.text();
 				term.text+=factor.text;
 			}
 		}
@@ -1056,7 +1060,7 @@ $("#replace").keyup(function (e) {
     }
 });
 function replace(text) {
-	$selected.animate({"font-size": 0, opacity: 0}, step_duration)
+	$selected.animate({"font-size": 0, opacity: 0}, step_duration/2)
     .css('overflow', 'visible')
     .promise()
     .done(function() {
