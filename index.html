@@ -31,6 +31,8 @@
 			<option value="base">Base</option>
 			<option value="nominator">Nominator</option>
 			<option value="denominator">Denominator</option>
+			<option value="available">Available (binom)</option>
+			<option value="chosen">Chosen (binom)</option>
 		</select>
 	</label>
 	&nbsp;
@@ -40,6 +42,8 @@
 </div>
 <br>
 <div class="row basic_ops">
+	<button type="button" class="btn btn-default" id="flip_equation">Flip equation</button>
+	&nbsp;
 	<button type="button" class="btn btn-default" id="change_side">Change side</button>
 	&nbsp;
 	<button type="button" class="btn btn-default" id="divide_factor">Divide by factor</button>
@@ -102,6 +106,7 @@
 
 
 <!-- local front end dependencies -->
+<script src="https://rawgit.com/Khan/KaTeX/476eebf3c5d187eb1ce84ffe2fbd4ede2dfb91ec/src/symbols.js"></script>
 <script src="bower_components/katex/dist/katex.min.js"></script>
 <script src="bower_components/jquery/dist/jquery.js"></script>
 <script src="bower_components/mathjs/dist/math.js"></script>

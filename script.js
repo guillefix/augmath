@@ -49,7 +49,11 @@ manip_el.on("change", function () {
 		remove_events(manip, depth); 
 		depth = parseInt(depth_el[0].value, 10); 
 		create_events(manip, depth);	
-	} else if (manip === "power" || manip === "nominator" || manip === "denominator") {
+	} else if (manip === "power" 
+		|| manip === "available" 
+		|| manip === "chosen" 
+		|| manip === "nominator" 
+		|| manip === "denominator") {
 		depth_el[0].value = "3";
 		remove_events(manip, depth); 
 		depth = parseInt(depth_el[0].value, 10); 
@@ -243,6 +247,7 @@ function cleanIndices(arr, str) {
 	indices = indices.concat(getIndicesOf("\\sqrt", str));
 	indices = indices.concat(getIndicesOf("\\text", str));
 	indices = indices.concat(getIndicesOf("\\int", str));
+	indices = indices.concat(getIndicesOf("\\hat", str));
 	for (var i=0; i < arr.length; i++) {
 		for (var j=0; j < indices.length; j++) {
 			if (arr[i] >= indices[j] && arr[i] <= indices[j]+4) {
@@ -275,7 +280,7 @@ function parse_mtstr(root, node_arr, str_arr) {
 		j = 0;
 		while (j < child.children.length) {
 			var factor_text="";
-			var frac_text = [], exp_text = [];
+			var frac_text = [], exp_text = [], binom_text = [];
 			var grandchild = child.children[j];
 			//console.log("grandchild");
 			//console.log(grandchild);
@@ -293,7 +298,7 @@ function parse_mtstr(root, node_arr, str_arr) {
 			} else if (grandchild.type === "op") {
 				term_text+=grandchild.text;
 			} else if (grandchild.type === "text") {
-				term_text+="\\text{" + grandchild.text + "}";
+				term_text+="\\text{" + grandchild.text.replace(/[^\x00-\x7F]/g, " ") + "}"; //change strange whitespaces to standard whitespace
 			} else {
 				switch (grandchild.type2) {
 					case "normal":
@@ -314,6 +319,19 @@ function parse_mtstr(root, node_arr, str_arr) {
 							}
 						}
 						factor_text = "\\frac{" + frac_text[0] + "}{" + frac_text[1] + "}"
+						break;
+					case "binom":
+						binom_text[0] = parse_mtstr(grandchild.children[0], node_arr, str_arr);
+						binom_text[1] = parse_mtstr(grandchild.children[1], node_arr, str_arr);
+						for (var l=0; l<2; l++) {
+							for (var k=0; k<node_arr.length; k++) {
+								if (grandchild.children[l].model.id === node_arr[k].model.id) {
+									binom_text[l] = str_arr[k];
+									break;
+								}
+							}
+						}
+						factor_text = "\\binom{" + binom_text[0] + "}{" + binom_text[1] + "}"
 						break;
 					case "sqrt":
 						factor_text = "\\sqrt{" + parse_mtstr(grandchild, node_arr, str_arr) + "}";
@@ -470,6 +488,7 @@ function has_op(obj) {
 
 //MANIPULATIVES
 //This creates a tree by going through the terms in an expression, and going through its factors. Factors that can contain whole expressions within them are then recursively analyzed in the same way.
+//This is tied to the way KaTeX renders maths. A good thing would be to do this for MathML, as it's likely to be a standard in the future.
 function parse_poly(root, poly, parent_id, is_container) {
 	var poly_str = "";
 	var term_cnt = 0;
@@ -503,7 +522,6 @@ function parse_poly(root, poly, parent_id, is_container) {
 			if (!factor_obj.last().is(".mclose:has(.vlist)")) {
 				inside_text = parse_poly(factor, inside, factor_id, false);
 				factor.text = "(" + inside_text + ")";
-				term.text+=factor.text;
 			}
 		}
 		//if not grouped, deal with individual element
@@ -514,7 +532,6 @@ function parse_poly(root, poly, parent_id, is_container) {
 			if (!thing.is(":has(*)")) {
 				factor.text = thing.text();
 				if (factor.text === "−") {factor.text = "-";}
-				term.text+=factor.text;
 			}
 			term.addChild(factor);
 			term_obj = term_obj.add(thing);
@@ -530,6 +547,7 @@ function parse_poly(root, poly, parent_id, is_container) {
 			term = tree.parse({id: term_id});
 			term_obj = $();
 			term.text = "";
+			factor.text = "";
 			term.type = "term";
 			if (thing.is(".mbin")) {
 				root.addChild(term);
@@ -545,6 +563,7 @@ function parse_poly(root, poly, parent_id, is_container) {
 				op.type = "rel";
 				op.text = thing.text();
 				term_cnt++;
+				term.text+=op.text;
 				poly_str+=term.text;
 				factor_cnt = 0;
 				term_id = parent_id.toString() + "/" + (term_cnt+1).toString();
@@ -559,7 +578,7 @@ function parse_poly(root, poly, parent_id, is_container) {
 
 		//deal with things with children, recursivelly.
 		if (factor_obj.is(":has(*)")) {
-			if (thing.is(".minner") || thing.children(".mfrac").length !== 0) {//fractions
+			if (thing.is(".minner") || (thing.children(".mfrac").length !== 0 && thing.children(".mfrac").children(".vlist").children().length === 4)) {//fractions
 				factor.type2 = "frac";
 				denominator = thing.closest_n_descendents(".mord", 2).first();
 				nominator = thing.closest_n_descendents(".mord", 2).last();
@@ -575,13 +594,11 @@ function parse_poly(root, poly, parent_id, is_container) {
 				denom_str = parse_poly(child2, denominator, factor_id + "/" + "2", true);
 				child2.text = denom_str;
 				factor.text = "\\frac{" + nom_str + "}{" + denom_str + "}"
-				term.text+=factor.text;
 			} else if (thing.is(".sqrt")) {//square roots
 				factor.type2 = "sqrt";
 				inside = thing.find(".mord").first();
 				factor.text = "\\sqrt{" + parse_poly(factor, inside, factor_id, true) + "}";
-				term.text+=factor.text;
-			} else if (thing.is(":has(.vlist)")) {//exponentials
+			} else if (thing.is(":has(.vlist)") && !thing.is(".accent") && thing.children(".mfrac").length === 0) {//exponentials
 				base_obj = thing.find(".mord").first();
 				power_obj = thing.find(".vlist").first();
 				inside = power_obj.find(".mord").first();
@@ -595,7 +612,6 @@ function parse_poly(root, poly, parent_id, is_container) {
 				factor.addChild(power);
 				factor.type2 = "exp";
 				factor.text = base.text + "^{" + power.text + "}";//needs the standard power format in latex
-				term.text+=factor.text;
 			} else if (factor_obj.last().is(".mclose:has(.vlist)")) {//exponentiated group
 				factor.type2 = "group_exp";
 				base_obj = inside;
@@ -610,13 +626,35 @@ function parse_poly(root, poly, parent_id, is_container) {
 				factor.addChild(base);
 				factor.addChild(power);
 				factor.text = "(" + base.text + ")" + "^{" + power.text + "}";
-				term.text+=factor.text;
 			} else if (thing.is(".text")) { //text
 				factor.type = "text";
 				factor.text = thing.text();
-				term.text+=factor.text;
+			} else if (thing.is(".accent")) { //accent
+				factor.type2 = "normal";
+				factor.text = "\\hat{" + thing.text().replace(/[^\x00-\x7F]/g, "").slice(0, -1) + "}"; //I guess there are more types of accent, but I'll add them latter.
+			} else if (thing.children(".mfrac").length !== 0 && thing.children(".mfrac").children(".vlist").children().length === 3) {
+				factor.type2 = "binom";
+				denominator = thing.closest_n_descendents(".mord", 2).first();
+				nominator = thing.closest_n_descendents(".mord", 2).last();
+				child1 = tree.parse({id: factor_id + "/" + "1", obj: nominator});
+				child1.type = "available";
+				child2 = tree.parse({id: factor_id + "/" + "2", obj: denominator});
+				child2.type = "chosen";
+				factor.addChild(child1);
+				factor.addChild(child2);
+				nom_str = parse_poly(child1, nominator, factor_id + "/" + "1", true);
+				child1.text = nom_str;
+				denom_str = parse_poly(child2, denominator, factor_id + "/" + "2", true);
+				child2.text = denom_str;
+				factor.text = "\\binom{" + nom_str + "}{" + denom_str + "}"
 			}
 		}
+		for (symbol in symbols.math) {
+				if (factor.text === symbols.math[symbol].replace) {
+					factor.text = symbol;
+				}
+		}
+		term.text+=factor.text;
 		if (i === things.length) {term.model.obj = term_obj; poly_str+=term.text;}
 	};
 	return poly_str;
@@ -672,7 +710,7 @@ function prepare(math) {
 	if (equals_position.left !== 0) {h_eq_shift += equals_position.left-new_equals_position.left;}
 	if (equals_position.top !== 0) {v_eq_shift += equals_position.top-new_equals_position.top;}
 	math_el.setAttribute("style", "left:"+h_eq_shift.toString()+"px;"+"top:"+v_eq_shift.toString()+"px;");
-
+	equals_position = $equals.offset();
 	//useful variables
 	beginning_of_equation = math_root.children[0].model.obj.offset();
 	width_last_term = tot_width(math_root.children[math_root.children.length-1].model.obj, true, true);
@@ -1154,6 +1192,27 @@ function factor_out() {
   		current_index++;
 		prepare(new_math_str);
   	});
+}
+
+//factor factor from group of terms
+document.getElementById("flip_equation").onclick = function() {
+	flip_equation();
+	if (recording) {
+		manipulation_rec.push({manipulation:14});
+	}
+};
+function flip_equation() {
+	var offset1 = tot_width($equals.prevAll(), true, false) + tot_width($equals, true, false);
+	var offset2 = tot_width($equals.nextAll(), true, false) + tot_width($equals, true, false);
+	$equals.prevAll().animate({left:offset1}, step_duration);
+	$equals.nextAll().animate({left:-offset2}, step_duration)
+    .promise()
+    .done(function() {
+		math_HS = math_str[current_index].split("=");
+		new_math_str = math_HS[1] + "=" + math_HS[0];
+		current_index++;
+		prepare(new_math_str);
+	});
 }
 
 //History
