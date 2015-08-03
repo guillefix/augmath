@@ -136,7 +136,7 @@ $("#next_step").on("click", function () {
   			add_both_sides(manipulation_rec[recording_index].arg)
     		break;
     	case 8:
-  			split_frac()
+  			push()
     		break;
     	case 9:
   			unbracket()
@@ -151,7 +151,7 @@ $("#next_step").on("click", function () {
   			distribute_in()
     		break;
     	case 13:
-  			factor_out()
+  			pull()
     		break;
     	default:
     		break;
@@ -244,10 +244,11 @@ function getIndicesOf(searchStr, str) { //should fix the getIndicesOf to work wi
 //ignore matches due to LaTeX sintax
 function cleanIndices(arr, str) {
 	var indices = getIndicesOf("\\frac", str); //should fix the getIndicesOf to work with regexes
-	indices = indices.concat(getIndicesOf("\\sqrt", str));
+	indices = indices.concat(getIndicesOf("\\sqrt", str)); //should add all of the ones in symbols.js
 	indices = indices.concat(getIndicesOf("\\text", str));
 	indices = indices.concat(getIndicesOf("\\int", str));
 	indices = indices.concat(getIndicesOf("\\hat", str));
+	indices = indices.concat(getIndicesOf("\\pi", str));
 	for (var i=0; i < arr.length; i++) {
 		for (var j=0; j < indices.length; j++) {
 			if (arr[i] >= indices[j] && arr[i] <= indices[j]+4) {
@@ -302,7 +303,7 @@ function parse_mtstr(root, node_arr, str_arr) {
 			} else {
 				switch (grandchild.type2) {
 					case "normal":
-						term_text+=grandchild.text;
+						factor_text+=grandchild.text;
 						break;
 					case "group":
 						factor_text = "(" + parse_mtstr(grandchild, node_arr, str_arr) + ")";
@@ -523,9 +524,10 @@ function parse_poly(root, poly, parent_id, is_container) {
 				inside_text = parse_poly(factor, inside, factor_id, false);
 				factor.text = "(" + inside_text + ")";
 			}
+			factor_text = factor.text;
 		}
 		//if not grouped, deal with individual element
-		if (!thing.is(".mbin, .mopen, .mclose, .mrel")) {
+		if (!thing.is(".mbin, .mopen, .mclose, .mrel") || thing.text() === "!") {
 			factor = tree.parse({id: factor_id, obj: factor_obj});
 			factor.type = "factor";
 			factor.type2 = "normal";
@@ -533,6 +535,7 @@ function parse_poly(root, poly, parent_id, is_container) {
 				factor.text = thing.text();
 				if (factor.text === "−") {factor.text = "-";}
 			}
+			factor_text = factor.text;
 			term.addChild(factor);
 			term_obj = term_obj.add(thing);
 			factor_cnt++;
@@ -547,7 +550,7 @@ function parse_poly(root, poly, parent_id, is_container) {
 			term = tree.parse({id: term_id});
 			term_obj = $();
 			term.text = "";
-			factor.text = "";
+			factor_text = "";
 			term.type = "term";
 			if (thing.is(".mbin")) {
 				root.addChild(term);
@@ -562,6 +565,7 @@ function parse_poly(root, poly, parent_id, is_container) {
 				term.addChild(op);
 				op.type = "rel";
 				op.text = thing.text();
+				term.text+=op.text;
 				term_cnt++;
 				term.text+=op.text;
 				poly_str+=term.text;
@@ -648,13 +652,15 @@ function parse_poly(root, poly, parent_id, is_container) {
 				child2.text = denom_str;
 				factor.text = "\\binom{" + nom_str + "}{" + denom_str + "}"
 			}
+			factor_text = factor.text;
 		}
 		for (symbol in symbols.math) {
-				if (factor.text === symbols.math[symbol].replace) {
-					factor.text = symbol;
+				if (factor_text === symbols.math[symbol].replace) {
+					factor.text = symbol + " ";
+					factor_text = factor.text;
 				}
 		}
-		term.text+=factor.text;
+		term.text+=factor_text;
 		if (i === things.length) {term.model.obj = term_obj; poly_str+=term.text;}
 	};
 	return poly_str;
@@ -706,11 +712,13 @@ function prepare(math) {
 
 	//repositioning equals so that it's always in the same place
 	$equals = $(".base").find(".mrel");
-	new_equals_position = $equals.offset();
-	if (equals_position.left !== 0) {h_eq_shift += equals_position.left-new_equals_position.left;}
-	if (equals_position.top !== 0) {v_eq_shift += equals_position.top-new_equals_position.top;}
-	math_el.setAttribute("style", "left:"+h_eq_shift.toString()+"px;"+"top:"+v_eq_shift.toString()+"px;");
-	equals_position = $equals.offset();
+	if ($equals.length !== 0) {
+		new_equals_position = $equals.offset();
+		if (equals_position.left !== 0) {h_eq_shift += equals_position.left-new_equals_position.left;}
+		if (equals_position.top !== 0) {v_eq_shift += equals_position.top-new_equals_position.top;}
+		math_el.setAttribute("style", "left:"+h_eq_shift.toString()+"px;"+"top:"+v_eq_shift.toString()+"px;");
+		equals_position = $equals.offset();
+	}
 	//useful variables
 	beginning_of_equation = math_root.children[0].model.obj.offset();
 	width_last_term = tot_width(math_root.children[math_root.children.length-1].model.obj, true, true);
@@ -724,7 +732,7 @@ $(document).ready(function() {prepare(initial_math_str);});
 
 //MANIPULATIONS
 
-//change a term of side
+//change side
 document.getElementById("change_side").onclick = function() {
 	change_side();
 	if (recording) {
@@ -732,43 +740,7 @@ document.getElementById("change_side").onclick = function() {
 	}
 };
 function change_side() {
-	if (selected_nodes[0].parent !== math_root) {return;}
-	var selected_width = tot_width($selected, true, true);
-	//different behaviour depending on which side of the eq., determined by existence of equal sign before or after
-	if ($selected.prevAll(".mrel").length === 0) { //before eq sign
-		offset = (end_of_equation.left-selected_position.left);
-		$selected.first().prevAll().animate({left:selected_width}, step_duration);
-		$selected.animate({left:offset}, step_duration).promise().done(function() {
-			$selected = $(".selected").add($(".selected").find("*"));
-			new_term = change_sign(selected_nodes);
-			new_math_str = replace_in_mtstr(selected_nodes, "")+new_term;
-			current_index++;
-			prepare(new_math_str);
-		});
-
-	} else { //after eq sign
-		offset = (equals_position.left-selected_position.left)-tot_width($selected, true, false);
-		$selected.prevAll(".mrel").first().prevAll().animate({left:-selected_width}, step_duration);
-		$selected.last().nextAll().animate({left:-tot_width($selected, true, false)}, step_duration);
-		$selected.animate({left:offset}, step_duration).promise().done(function() {
-			$selected = $(".selected").add($(".selected").find("*"));
-			new_term = change_sign(selected_nodes);
-			new_math_str = replace_in_mtstr(selected_nodes, "");
-			new_math_str = new_math_str.replace("=", new_term+"=");
-			current_index++;
-			prepare(new_math_str);
-		});
-	}
-};
-
-//divide by factor.
-document.getElementById("divide_factor").onclick = function() {
-	divide_factor();
-	if (recording) {
-		manipulation_rec.push({manipulation:2});
-	}
-};
-function divide_factor() {
+	equals_position = $equals.offset();
 	equals_node = math_root.first(function (node) {
 		if (node.children.length > 0) {
 	    	return node.children[0].type === "rel";
@@ -777,8 +749,33 @@ function divide_factor() {
 	for (var i=0; i<selected_nodes.length-1; i++) {//making sure all elemnts are of the same parent
 		if (selected_nodes[i].parent !== selected_nodes[i+1].parent) {return;}
 	}
-	equals_position = $equals.offset();
-	if (selected_nodes[0].parent.type === "nominator" 
+	if (selected_nodes[0].parent === math_root) {
+		var selected_width = tot_width($selected, true, true);
+		if ($selected.prevAll(".mrel").length === 0) { //before eq sign
+			offset = (end_of_equation.left-selected_position.left);
+			$selected.first().prevAll().animate({left:selected_width}, step_duration);
+			$selected.animate({left:offset}, step_duration).promise().done(function() {
+				$selected = $(".selected").add($(".selected").find("*"));
+				new_term = change_sign(selected_nodes);
+				new_math_str = replace_in_mtstr(selected_nodes, "")+new_term;
+				current_index++;
+				prepare(new_math_str);
+			});
+
+		} else { //after eq sign
+			offset = (equals_position.left-selected_position.left)-tot_width($selected, true, false);
+			$selected.prevAll(".mrel").first().prevAll().animate({left:-selected_width}, step_duration);
+			$selected.last().nextAll().animate({left:-tot_width($selected, true, false)}, step_duration);
+			$selected.animate({left:offset}, step_duration).promise().done(function() {
+				$selected = $(".selected").add($(".selected").find("*"));
+				new_term = change_sign(selected_nodes);
+				new_math_str = replace_in_mtstr(selected_nodes, "");
+				new_math_str = new_math_str.replace("=", new_term+"=");
+				current_index++;
+				prepare(new_math_str);
+			});
+		}
+	} else if (selected_nodes[0].parent.type === "nominator" 
 		|| selected_nodes[0].type === "factor" 
 		|| selected_nodes[0].type === "nominator") {
 		if (selected_nodes[0].model.id.split("/")[1] < equals_node.model.id.split("/")[1]) { //before eq sign
@@ -896,29 +893,36 @@ function divide_factor() {
 				prepare(new_math_str);
 			});
 		}
+	} else if (selected_nodes[0].type === "power") {
+		if ($selected.parent().prevAll(".mrel").length === 0) { //before eq sign
+		var offset = end_of_equation.left - equals_position.left;
+		$selected.animate({left:offset}, step_duration).promise().done(function() {
+			new_math_str = replace_in_mtstr(selected_nodes, "");
+			math_HS = new_math_str.split("="); //HS=hand sides
+			if (selected_nodes[0].text === "2") {
+				new_math_str = math_HS[0] + "=" + "\\sqrt{" + math_HS[1] + "}";
+			} else {
+				new_math_str = math_HS[0] + "=" + "(" + math_HS[1] + ")" + "^{" + "\\frac{1}{" + selected_text + "}}"; //ad brackets
+			}
+			current_index++;
+			prepare(new_math_str);
+		});
+		} else {
+		var offset = end_of_equation.left - equals_position.left;
+		$selected.animate({left:-offset}, step_duration).promise().done(function() {
+			new_math_str = replace_in_mtstr(selected_nodes, "");
+			math_HS = new_math_str.split("="); //HS=hand sides
+			if (selected_nodes[0].text === "2") {
+				new_math_str = "\\sqrt{" + math_HS[0] + "}" + "=" + math_HS[1];
+			} else {
+				new_math_str = "(" + math_HS[0] + ")" + "^{" + "\\frac{1}{" + selected_text + "}}" + "=" + math_HS[1]; //ad brackets
+			}
+			current_index++;
+			prepare(new_math_str);
+		});
 	}
-
-}
-
-//evaulate simple sum or multiplication
-document.getElementById("eval").onclick = function() {
-	eval();
-	if (recording) {
-		manipulation_rec.push({manipulation:3});
-	}
+	} 
 };
-function eval() {
-	for (var i=0; i<selected_nodes.length-1; i++) { //making sure, all elements are of the same parent
-		if (selected_nodes[i].parent !== selected_nodes[i+1].parent) {return;}
-	}
-	//equals position not too well animated
-	$selected.animate({"font-size": 0, opacity: 0}, step_duration).css('overflow', 'visible').promise().done(function() {
-		new_term = eval_expression(selected_text); //only works for sqrts or fracs separately, but not together
-		new_math_str = replace_in_mtstr(selected_nodes, new_term);
-		current_index++;
-		prepare(new_math_str);
-	});
-}
 
 //move term within expression, or factor within term
 document.getElementById("move_right").onclick = function() {
@@ -986,44 +990,184 @@ function move_left() {
 	}
 }
 
-//change power of side.
-document.getElementById("root_power").onclick = function() {
-	root_power();
+//split fraction.
+document.getElementById("push").onclick = function() {
+	push();
 	if (recording) {
-		manipulation_rec.push({manipulation:6});
+		manipulation_rec.push({manipulation:8});
 	}
 };
-function root_power() {
-	if (selected_nodes[0].type !== "power") {return;}
-	equals_position = $equals.offset();
-	if ($selected.parent().prevAll(".mrel").length === 0) { //before eq sign
-		var offset = end_of_equation.left - equals_position.left;
-		$selected.animate({left:offset}, step_duration).promise().done(function() {
-			new_math_str = replace_in_mtstr(selected_nodes, "");
-			math_HS = new_math_str.split("="); //HS=hand sides
-			if (selected_nodes[0].text === "2") {
-				new_math_str = math_HS[0] + "=" + "\\sqrt{" + math_HS[1] + "}";
-			} else {
-				new_math_str = math_HS[0] + "=" + "(" + math_HS[1] + ")" + "^{" + "\\frac{1}{" + selected_text + "}}"; //ad brackets
-			}
-			current_index++;
-			prepare(new_math_str);
+function push() {
+	if (selected_nodes[0].type2 === "fraction") {
+		//ANIMATION? SHOULD CLONE THE DENOMINATOR AND MOVE TO THE RIGHT PLACES
+		var new_term="";
+		for (var i=0; i<selected_nodes[0].children[0].children.length; i++) {
+			new_term += "+" + "\\frac{" + selected_nodes[0].children[0].children[i].text + "}{" + selected_nodes[0].children[1].text + "}";
+		}
+		var parent = math_root.first(function (node) {
+	    	for (var j=0; j<node.children.length; j++) {
+	    		if (node.children[j].model.id === selected_nodes[0].model.id) {
+	    			return true;
+	    		}
+	    	}
 		});
-	} else {
-		var offset = end_of_equation.left - equals_position.left;
-		$selected.animate({left:-offset}, step_duration).promise().done(function() {
-			new_math_str = replace_in_mtstr(selected_nodes, "");
-			math_HS = new_math_str.split("="); //HS=hand sides
-			if (selected_nodes[0].text === "2") {
-				new_math_str = "\\sqrt{" + math_HS[0] + "}" + "=" + math_HS[1];
-			} else {
-				new_math_str = "(" + math_HS[0] + ")" + "^{" + "\\frac{1}{" + selected_text + "}}" + "=" + math_HS[1]; //ad brackets
-			}
-			current_index++;
+		if (parent.type === "term") {
+			new_term = "(" + new_term + ")";
+		}
+		new_math_str = replace_in_mtstr(selected_nodes, new_term);
+		current_index++;
+		prepare(new_math_str);
+	} else if (selected_nodes[0].type2 === "normal") {
+		$selected.animate({"font-size": 0, opacity: 0}, step_duration) //IMPROVE ANIMATION (FOR EXAMPLE CLONE)
+	    .css('overflow', 'visible')
+	    .promise()
+	    .done(function() {
+	    	var next_node = get_next(selected_nodes);
+	    	var text = "";
+	    	for (var i=0; i<next_node.children.length; i++) {
+	    		if (next_node.children[i].text.search(/[+-]/) === 0) {
+	    			text += next_node.children[i].text.slice(0, 1) + selected_text + next_node.children[i].text.slice(1, next_node.children[i].text.length);
+	    		} else {
+	    			text += selected_text + next_node.children[i].text;
+	    		}
+	    	}
+	  		new_math_str = replace_in_mtstr(selected_nodes.concat(next_node), "(" + text + ")");
+	  		current_index++;
 			prepare(new_math_str);
-		});
+	  	});
+	} else if (selected_nodes[0].type2 === "sqrt" && selected_nodes[0].children.length === 1) {
+		//ANIMATION??
+		var factors = selected_nodes[0].children[0].children;
+		var text = "";
+		for (var i=0; i<factors.length; i++) {
+	    		text+="\\sqrt{" + factors[i].text + "}";
+	    	}
+		new_math_str = replace_in_mtstr(selected_nodes, text);
+		current_index++;
+		prepare(new_math_str);
 	}
+}
 
+//factor factor from group of terms
+document.getElementById("pull").onclick = function() {
+	pull();
+	if (recording) {
+		manipulation_rec.push({manipulation:13});
+	}
+};
+function pull() {
+	var same_parents = true, same_type = true, same_type2 = true, same_text = true;
+	for (var i=0; i<selected_nodes.length-1; i++) {//making sure all elemnts are of the same parent
+		if (selected_nodes[i].parent !== selected_nodes[i+1].parent) {same_parents = false}
+	}
+	for (var i=0; i<selected_nodes.length-1; i++) {//making sure all elemnts are of the same parent
+		if (selected_nodes[i].type !== selected_nodes[i+1].type) {same_type = false}
+	}
+	for (var i=0; i<selected_nodes.length-1; i++) {//making sure all elemnts are of the same parent
+		if (selected_nodes[i].type2 !== selected_nodes[i+1].type2) {same_type2 = false}
+	}
+	for (var i=0; i<selected_nodes.length-1; i++) {//making sure all elemnts are of the same parent
+		if (selected_nodes[i].text !== selected_nodes[i+1].text) {same_text = false}
+	}
+	if (selected_nodes[0].type === "factor" && !same_parents && same_type && same_text) {
+		$selected.animate({"font-size": 0, opacity: 0}, step_duration) //AS USUAL, IMPROVE ANIMATION
+	    .css('overflow', 'visible')
+	    .promise()
+	    .done(function() {
+	    	var term_ids = [], selected_terms = [];
+	    	var selected_text = selected_nodes[0].text;
+	  		new_math_str = replace_in_mtstr(selected_nodes, "");
+	  		var new_text = "";
+	  		for (var i=0; i<selected_nodes.length; i++) {
+		    	var parent = math_root.first(function (node) {
+			    	for (var j=0; j<node.children.length; j++) {
+			    		if (node.children[j].model.id === selected_nodes[i].model.id) {
+			    			return true;
+			    		}
+			    	}
+				});
+				term_ids.push(parent.model.id);
+			}
+	  		prepare(new_math_str);
+	  		for (var k=0; k<term_ids.length; k++) {
+	  			var term = math_root.first(function (node) {
+	  				return node.model.id === term_ids[k];
+	  			});
+	  			new_text += term.text;
+	  			selected_terms.push(term);
+	  		}
+	  		new_text = selected_text + "(" + new_text + ")";
+	  		console.log(new_text);
+	  		console.log(selected_terms);
+	  		new_math_str = replace_in_mtstr(selected_terms, new_text);
+	  		current_index++;
+			prepare(new_math_str);
+	  	});
+	} else if (selected_nodes[0].type2 === "frac" && same_parents && same_type && same_type2) {
+		//ANIMATION??
+		var nominator_text = "", denominator_text = "";
+		for (var i=0; i<selected_nodes.length; i++) {
+			nominator_text+=selected_nodes[i].children[0].text;
+			denominator_text+=selected_nodes[i].children[1].text;
+		}
+		var new_text = "\\frac{" + nominator_text + "}{" + denominator_text + "}";
+		new_math_str = replace_in_mtstr(selected_nodes, new_text);
+		current_index++;
+		prepare(new_math_str);
+
+	} else if (selected_nodes[0].type2 === "exp" && same_parents && same_type && same_type2) {
+		var same_base = true;
+		for (var i=0; i<selected_nodes.length-1; i++) {//making sure all elemnts are of the same parent
+			if (selected_nodes[i].base !== selected_nodes[i+1].base) {same_base = false}
+		}
+		if (!same_base) {return;}
+		//ANIMATION??
+		var power_text = "", base_text = selected_node[0].children[0].text;
+		for (var i=0; i<selected_nodes.length; i++) {
+			if (i > 0) {power_text+="+";}
+			power_text+=selected_nodes[i].children[1].text;
+		}
+		var new_text = base_text + "^{" + power_text + "}";
+		new_math_str = replace_in_mtstr(selected_nodes, new_text);
+		current_index++;
+		prepare(new_math_str);
+	}
+}
+
+//unbracket
+document.getElementById("unbracket").onclick = function() {
+	unbracket();
+	if (recording) {
+		manipulation_rec.push({manipulation:9});
+	}
+};
+function unbracket() {
+	//animation?
+	var new_term="";
+	new_term += selected_text.replace(/^\(|\)$/g, "");
+	new_math_str = replace_in_mtstr(selected_nodes, new_term);
+	current_index++;
+	prepare(new_math_str);
+}
+
+//evaulate simple sum or multiplication
+document.getElementById("eval").onclick = function() {
+	eval();
+	if (recording) {
+		manipulation_rec.push({manipulation:3});
+	}
+};
+function eval() {
+	for (var i=0; i<selected_nodes.length-1; i++) { //making sure, all elements are of the same parent
+		if (selected_nodes[i].parent !== selected_nodes[i+1].parent) {return;}
+	}
+	//equals position not too well animated
+	$selected.animate({"font-size": 0, opacity: 0}, step_duration).css('overflow', 'visible').promise().done(function() {
+		new_term = eval_expression(selected_text); //only works for sqrts or fracs separately, but not together
+		new_math_str = replace_in_mtstr(selected_nodes, new_term);
+		current_index++;
+		prepare(new_math_str);
+	});
 }
 
 //Append something to both sides
@@ -1039,50 +1183,6 @@ $("#add_both_sides").keyup(function (e) {
 function add_both_sides(thing) {
 	math_HS = new_math_str.split("=");
 	new_math_str = math_HS[0] + thing + "=" +math_HS[1] + thing;
-	current_index++;
-	prepare(new_math_str);
-}
-
-//split fraction.
-document.getElementById("split_frac").onclick = function() {
-	split_frac();
-	if (recording) {
-		manipulation_rec.push({manipulation:8});
-	}
-};
-function split_frac() {
-	//ANIMATION? SHOULD CLONE THE DENOMINATOR AND MOVE TO THE RIGHT PLACES
-	var new_term="";
-	for (var i=0; i<selected_nodes[0].children[0].children.length; i++) {
-		new_term += "+" + "\\frac{" + selected_nodes[0].children[0].children[i].text + "}{" + selected_nodes[0].children[1].text + "}";
-	}
-	var parent = math_root.first(function (node) {
-    	for (var j=0; j<node.children.length; j++) {
-    		if (node.children[j].model.id === selected_nodes[0].model.id) {
-    			return true;
-    		}
-    	}
-	});
-	if (parent.type === "term") {
-		new_term = "(" + new_term + ")";
-	}
-	new_math_str = replace_in_mtstr(selected_nodes, new_term);
-	current_index++;
-	prepare(new_math_str);
-}
-
-//unbracket
-document.getElementById("unbracket").onclick = function() {
-	unbracket();
-	if (recording) {
-		manipulation_rec.push({manipulation:9});
-	}
-};
-function unbracket() {
-	//animation?
-	var new_term="";
-	new_term += selected_text.replace(/^\(|\)$/g, "");
-	new_math_str = replace_in_mtstr(selected_nodes, new_term);
 	current_index++;
 	prepare(new_math_str);
 }
@@ -1126,75 +1226,7 @@ function remove() {
   	});
 }
 
-//distribute factor over group of terms (grouped factor)
-document.getElementById("distribute_in").onclick = function() {
-	distribute_in();
-	if (recording) {
-		manipulation_rec.push({manipulation:12});
-	}
-};
-function distribute_in() {
-	$selected.animate({"font-size": 0, opacity: 0}, step_duration) //IMPROVE ANIMATION (FOR EXAMPLE CLONE)
-    .css('overflow', 'visible')
-    .promise()
-    .done(function() {
-    	var next_node = get_next(selected_nodes);
-    	var text="";
-    	for (var i=0; i<next_node.children.length; i++) {
-    		if (next_node.children[i].text.search(/[+-]/) === 0) {
-    			text += next_node.children[i].text.slice(0, 1) + selected_text + next_node.children[i].text.slice(1, next_node.children[i].text.length);
-    		} else {
-    			text += selected_text + next_node.children[i].text;
-    		}
-    	}
-  		new_math_str = replace_in_mtstr(selected_nodes.concat(next_node), "(" + text + ")");
-  		current_index++;
-		prepare(new_math_str);
-  	});
-}
-
-//factor factor from group of terms
-document.getElementById("factor_out").onclick = function() {
-	factor_out();
-	if (recording) {
-		manipulation_rec.push({manipulation:13});
-	}
-};
-function factor_out() {
-	$selected.animate({"font-size": 0, opacity: 0}, step_duration) //AS USUAL, IMPROVE ANIMATION
-    .css('overflow', 'visible')
-    .promise()
-    .done(function() {
-    	var term_ids = [], selected_terms = [];
-    	var selected_text = selected_nodes[0].text;
-  		new_math_str = replace_in_mtstr(selected_nodes, "");
-  		var new_text = "";
-  		for (var i=0; i<selected_nodes.length; i++) {
-	    	var parent = math_root.first(function (node) {
-		    	for (var j=0; j<node.children.length; j++) {
-		    		if (node.children[j].model.id === selected_nodes[i].model.id) {
-		    			return true;
-		    		}
-		    	}
-			});
-			term_ids.push(parent.model.id);
-		}
-  		prepare(new_math_str);
-  		for (var k=0; k<term_ids.length; k++) {
-  			var term = math_root.first(function (node) {
-  				return node.model.id === term_ids[k];
-  			});
-  			new_text += term.text;
-  			selected_terms.push(term);
-  		}
-  		new_text = selected_text + "(" + new_text + ")";
-  		new_math_str = replace_in_mtstr(selected_terms, new_text);
-  		current_index++;
-		prepare(new_math_str);
-  	});
-}
-
-//factor factor from group of terms
+//flip equation
 document.getElementById("flip_equation").onclick = function() {
 	flip_equation();
 	if (recording) {
@@ -1215,7 +1247,7 @@ function flip_equation() {
 	});
 }
 
-//History
+//HISTORY
 //undo
 document.getElementById("undo").onclick = undo;
 function undo() {
@@ -1224,7 +1256,6 @@ function undo() {
 		prepare(math_str[current_index]);
 	}
 }
-
 
 //redo
 document.getElementById("redo").onclick = redo;
