@@ -671,7 +671,8 @@ function prepare(math) {
 	math = math.replace(/\\frac{}/g, "\\frac{1}")
 				.replace(/=$/, "=0")
 				.replace(/^=/, "0=")
-				.replace(/\^{}/g, "");
+				.replace(/\^{}/g, "")
+				.replace(/\+/g, '--').replace(/(--)+-/g, '-').replace(/--/g, '+');
 
 	if (!playing) {
 		if (current_index < math_str.length) {
@@ -957,6 +958,7 @@ function move_right(){
 		});
 	}
 }
+
 document.getElementById("move_left").onclick = function() {
 	move_left();
 	if (recording) {
@@ -984,6 +986,116 @@ function move_left() {
 			prev_text = prev_node.text;
 			if (!has_op($selected_prev) && selected_nodes[0].type === "term") {prev_text_str = "+" + prev_text;} else {prev_text_str = prev_text;}
 			new_math_str = replace_in_mtstr([prev_node].concat(selected_nodes), [selected_text_str, prev_text_str]);
+			current_index++;
+			prepare(new_math_str);
+		});
+	}
+}
+
+document.getElementById("move_up").onclick = function() {
+	move_up();
+	if (recording) {
+		manipulation_rec.push({manipulation:5}); //change number
+	}
+};
+function move_up() {
+	var same_parents = true, same_type = true;
+	for (var i=0; i<selected_nodes.length-1; i++) {//making sure all elemnts are of the same type2
+		if (selected_nodes[i].type !== selected_nodes[i+1].type) {same_type = false}
+	}
+	for (var i=0; i<selected_nodes.length-1; i++) {//making sure all elemnts are of the same parent
+		if (selected_nodes[i].parent !== selected_nodes[i+1].parent) {same_parents = false}
+	}
+	if ($selected.prev().filter(".mrel").length === 0 
+		&& selected_nodes[0].type === "factor" 
+		&& same_type 
+		&& same_parents
+		&& selected_nodes[0].parent.parent.parent.type2 === "frac"
+		&& selected_nodes[0].parent.parent.children.length === 1) {
+		var nominator = selected_nodes[0].parent.parent.parent.children[0];
+		var new_nom_text = "";
+		for (var i=0; i<selected_nodes.length; i++) {
+			switch (selected_nodes[0].type2) {
+				case "exp":
+					new_nom_text+=selected_nodes[i].children[0].text + "^{" + "-" + selected_nodes[i].children[1].text + "}";
+					break;
+				case "group_exp":
+					new_nom_text+="(" + selected_nodes[i].children[0].text + ")" + "^{" + "-" + selected_nodes[i].children[1].text + "}";
+					break;
+				case "frac":
+					new_nom_text+="(" + selected_nodes[i].text + ")" + "^{-1}";
+					break;
+				default:
+					new_nom_text+=selected_nodes[i].children[0].text + "^{-1}";
+			}
+		}
+		if (nominator.children.length === 1) {
+			new_nom_text+=nominator.text;
+		} else {
+			new_nom_text+="(" + nominator.text + ")";
+		}
+		var selected_width = tot_width($selected, true, false);
+		var extra_selected_width = tot_width(math_root.first(function(node) {return node.type2 === "normal"}).model.obj, true, false)*1;
+		var h_offset = $selected.offset().left - nominator.model.obj.offset().left + selected_width/2 + extra_selected_width/2;
+		var v_offset = $selected.outerHeight()*1.5;
+		nominator.model.obj.animate({left:selected_width/2+extra_selected_width/2}, step_duration);
+		$selected.last().nextAll().animate({left:-selected_width-extra_selected_width/2}, step_duration);
+		$selected.first().prevAll().animate({left:-extra_selected_width/2}, step_duration);
+		$selected.animate({left:-h_offset, top:-v_offset}, step_duration).promise().done(function() {
+			new_math_str = replace_in_mtstr([nominator].concat(selected_nodes), new_nom_text);
+			current_index++;
+			prepare(new_math_str);
+		});
+	}
+}
+
+document.getElementById("move_down").onclick = function() {
+	move_down();
+	if (recording) {
+		manipulation_rec.push({manipulation:5}); //change number
+	}
+};
+function move_down() {
+	var same_parents = true;
+	for (var i=0; i<selected_nodes.length-1; i++) {//making sure all elemnts are of the same parent
+		if (selected_nodes[i].parent !== selected_nodes[i+1].parent) {same_parents = false}
+	}
+	if ($selected.prev().filter(".mrel").length === 0 
+		&& selected_nodes[0].type === "factor" 
+		&& selected_nodes[0].parent.parent.parent.type2 === "frac"
+		&& same_parents
+		&& selected_nodes[0].parent.parent.children.length === 1) {
+		var denominator = selected_nodes[0].parent.parent.parent.children[1];
+		var new_denom_text = "";
+		for (var i=0; i<selected_nodes.length; i++) {
+			switch (selected_nodes[0].type2) {
+				case "exp":
+					new_denom_text+=selected_nodes[i].children[0].text + "^{" + "-" + selected_nodes[i].children[1].text + "}";
+					break;
+				case "group_exp":
+					new_denom_text+="(" + selected_nodes[i].children[0].text + ")" + "^{" + "-" + selected_nodes[i].children[1].text + "}";
+					break;
+				case "frac":
+					new_denom_text+="(" + selected_nodes[i].text + ")" + "^{-1}";
+					break;
+				default:
+					new_denom_text+=selected_nodes[i].children[0].text + "^{-1}";
+			}
+		}
+		if (denominator.children.length === 1) {
+			new_denom_text+=denominator.text;
+		} else {
+			new_denom_text+="(" + denominator.text + ")";
+		}
+		var selected_width = tot_width($selected, true, false);
+		var extra_selected_width = tot_width(math_root.first(function(node) {return node.type2 === "normal"}).model.obj, true, false)*1;
+		var h_offset = $selected.offset().left - denominator.model.obj.offset().left + selected_width/2 + extra_selected_width/2;
+		var v_offset = $selected.outerHeight()*1.5;
+		denominator.model.obj.animate({left:selected_width/2+extra_selected_width/2}, step_duration);
+		$selected.last().nextAll().animate({left:-selected_width-extra_selected_width/2}, step_duration);
+		$selected.first().prevAll().animate({left:-extra_selected_width/2}, step_duration);
+		$selected.animate({left:-h_offset, top:v_offset}, step_duration).promise().done(function() {
+			new_math_str = replace_in_mtstr([denominator].concat(selected_nodes), new_denom_text);
 			current_index++;
 			prepare(new_math_str);
 		});
@@ -1060,13 +1172,13 @@ function pull() {
 	for (var i=0; i<selected_nodes.length-1; i++) {//making sure all elemnts are of the same parent
 		if (selected_nodes[i].parent !== selected_nodes[i+1].parent) {same_parents = false}
 	}
-	for (var i=0; i<selected_nodes.length-1; i++) {//making sure all elemnts are of the same parent
+	for (var i=0; i<selected_nodes.length-1; i++) {//making sure all elemnts are of the same type
 		if (selected_nodes[i].type !== selected_nodes[i+1].type) {same_type = false}
 	}
-	for (var i=0; i<selected_nodes.length-1; i++) {//making sure all elemnts are of the same parent
+	for (var i=0; i<selected_nodes.length-1; i++) {//making sure all elemnts are of the same type2
 		if (selected_nodes[i].type2 !== selected_nodes[i+1].type2) {same_type2 = false}
 	}
-	for (var i=0; i<selected_nodes.length-1; i++) {//making sure all elemnts are of the same parent
+	for (var i=0; i<selected_nodes.length-1; i++) {//making sure all elemnts have the same text
 		if (selected_nodes[i].text !== selected_nodes[i+1].text) {same_text = false}
 	}
 	if (selected_nodes[0].type === "factor" && !same_parents && same_type && same_text) {
