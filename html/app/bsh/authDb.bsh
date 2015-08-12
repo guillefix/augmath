@@ -1,0 +1,184 @@
+/*
+	DB AUTH METHODS
+	Methods to handel user athentication against DB.
+*/
+
+import android.content.Context;
+import android.content.ContentValues;
+
+/*
+	Common settings
+*/
+AUTH_DATABASE_NAME = "authDB";
+AUTH_DATABASE_TABLE ="auth";
+AUTH_VALID_HOURS = 24;
+
+// Get the servie
+service = server.props.get("serviceContext");
+
+// Methods -- START
+
+/*
+	Returns the current session ID.
+*/
+getSessionId() {
+        cookieName = "cookie";
+	cookieRes = null;
+
+        if(request.headers.get("Cookie") != null) {
+                cookieRes = request.headers.get("Cookie").replaceAll("^.*?" + cookieName + "=([^;]*).*$", "$1");
+        }
+        
+        return cookieRes != null && !cookieRes.equals(request.headers.get("Cookie")) ? cookieRes: null;
+        
+}
+
+/*
+	Checks if the authentication database exists.
+*/
+existsAuthDatabase() {
+	dbList = service.databaseList();
+
+	for(dbListEntry : dbList) {
+		if(dbListEntry .equals(AUTH_DATABASE_NAME)) {
+			return true;
+		}
+	}
+	return false;
+}
+
+/*
+	Creates and initializes the authenticaton database.
+*/
+createAuthDatabase() {
+	// Create database
+	db = service.openOrCreateDatabase(AUTH_DATABASE_NAME, Context.MODE_PRIVATE, null);
+	// Create table
+	db.execSQL("CREATE TABLE IF NOT EXISTS " + AUTH_DATABASE_TABLE + " (sessionid varchar(255) PRIMARY KEY, timestamp int, remoteaddress varchar(20), useragent varchar(255))");
+	
+	db.close();
+}
+
+/*
+	Check if valid session in database.
+*/
+isSessionInDatabase(String id, String addr, String ua) {
+	if(id == null || addr == null || ua == null || !existsAuthDatabase()) {
+		return false;
+	}
+	
+	rows = 0;
+	
+	db = service.openOrCreateDatabase(AUTH_DATABASE_NAME, Context.MODE_PRIVATE, null);
+	cursor = db.query(AUTH_DATABASE_TABLE, new String[] {"sessionid"}, 
+		"sessionid=? and remoteaddress=? and useragent=? and timestamp>=?", new String[] { id,  addr, ua, Long.toString(System.currentTimeMillis() - AUTH_VALID_HOURS * 3600 * 1000)}, null, null, null);
+		
+	if(cursor != null) {
+		rows = cursor.getCount();
+		cursor.close();
+	}
+	db.close();
+
+	return rows > 0 ? true : false;
+}
+
+/*
+	Check if valid session in database.
+*/
+isSessionInDatabase() {
+	return isSessionInDatabase(sessionId,  remoteAddress, userAgent);
+}
+
+/*
+	Inserts new authentication entry.
+*/
+insertAuthEntry() {
+  try {
+	insertValues = new ContentValues();
+        insertValues.put("timestamp", (Long) System.currentTimeMillis());
+        insertValues.put("sessionid", sessionId);
+	insertValues.put("remoteaddress", remoteAddress);
+	insertValues.put("useragent", userAgent);
+
+	db = service.openOrCreateDatabase(AUTH_DATABASE_NAME, Context.MODE_PRIVATE, null);
+	id = db.insert(AUTH_DATABASE_TABLE, null, insertValues);
+	db.close();
+        return id != -1 ? true : false;
+  }
+  catch(e) {
+     return false;
+  }
+}
+
+/*
+	Deletes current session from database.
+*/
+deleteAuthSession() {
+	deleteAuthSession(sessionId);
+}
+
+/*
+	Deletes the session with the specified session ID.
+*/
+deleteAuthSession(String id) {
+	db = service.openOrCreateDatabase(AUTH_DATABASE_NAME, Context.MODE_PRIVATE, null);
+	db.delete(AUTH_DATABASE_TABLE, "sessionid=?", new String[] { id });
+	db.close();
+}
+
+/*
+	Cleans up invalid sessions (older than AUTH_VALID_HOURS).
+*/
+deleteOldAuthDbEntries() {
+	db = service.openOrCreateDatabase(AUTH_DATABASE_NAME, Context.MODE_PRIVATE, null);
+	db.delete(AUTH_DATABASE_TABLE, "timestamp<?", new String[] { Long.toString(System.currentTimeMillis() - AUTH_VALID_HOURS * 3600 * 1000) });
+	db.close();
+}
+
+/*
+	Deletes all session except the current one.
+*/
+deleteAllOtherSessions() {
+	db = service.openOrCreateDatabase(AUTH_DATABASE_NAME, Context.MODE_PRIVATE, null);
+	db.delete(AUTH_DATABASE_TABLE, "sessionid<>?", new String[] { sessionId });
+	db.close();
+}
+
+/*
+	Returns a List containing "sessionid", "timestamp", "remoteaddress", "useragent" as
+	String array.
+*/
+getValidAuthSessionList() {
+	db = service.openOrCreateDatabase(AUTH_DATABASE_NAME, Context.MODE_PRIVATE, null);
+	c= db.query(AUTH_DATABASE_TABLE, new String[] { "sessionid", "timestamp", "remoteaddress", "useragent"  }, "timestamp>=?", new String[] { Long.toString(System.currentTimeMillis() - AUTH_VALID_HOURS * 3600 * 1000)}, null, null, null);
+
+	sessionList = new ArrayList();
+	
+    if (c.moveToFirst()) {
+        
+        do {
+			sessionEntry = new String[] { c.getString(0), Long.toString(c.getLong(1)), c.getString(2), c.getString(3) };
+			sessionList.add(sessionEntry);
+        } while(c.moveToNext());
+		
+		c.close();
+	}
+	db.close();
+	
+	return sessionList;
+  }
+
+
+// Methods -- END
+
+// Get common variables
+sessionId = getSessionId();
+remoteAddress = request.getSocket().getInetAddress().getHostAddress();
+// Only first 255 characters of user User-Agent
+userAgent = request.headers.get("User-Agent").replaceAll("^(.{0,255})","$1");
+
+// Create database if it does not exist
+if(!existsAuthDatabase()) {
+	createAuthDatabase();
+}
+

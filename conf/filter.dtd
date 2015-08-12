@@ -1,0 +1,10 @@
+  <!ELEMENT filters (handler*)>
+  <!ELEMENT filter (name, description, removable, id, files?, params?)>
+  <!ATTLIST filter status (active|inactive) #REQUIRED>
+  <!ELEMENT name (#PCDATA)> 
+  <!ELEMENT description (#PCDATA)> 
+  <!ELEMENT files (file*)> 
+  <!ELEMENT file (#PCDATA)> 
+  <!ELEMENT params (param*)> 
+  <!ATTLIST param name (#PCDATA) #REQUIRED
+                  value (#PCDATA) #REQUIRED>

@@ -1,0 +1,10 @@
+service = server.props.get("serviceContext");
+source(service.pawHome + "/html/app/bsh/authDb.bsh");
+
+if(!isSessionInDatabase()) {
+    request.redirect("/app/login.xhtml", null);
+    request.out.flush();
+    request.out.close();
+    clear(); // Stop script processing!
+}
+

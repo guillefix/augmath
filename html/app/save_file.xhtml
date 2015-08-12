@@ -1,0 +1,29 @@
+<html>
+<body>
+<bsh>source(server.props.get("serviceContext").pawHome + "/html/app/auth.bsh");</bsh>
+<bsh>
+import org.json.*;
+
+jsonLogin = new JSONObject();
+
+try {
+		file = parameters.get("file");
+		content = parameters.get("content");
+		
+		fos = new FileOutputStream(file);
+		fos.write(content.getBytes());
+		fos.close();
+		
+		jsonLogin.put("success", true);
+}
+catch(e) {
+	jsonLogin.put("success", false);
+	jsonLogin.put("message", "Error saving file!");
+}
+
+request.sendResponse(jsonLogin.toString().getBytes(), "text/plain");
+request.out.flush();
+request.out.close();
+</bsh>
+</body>
+</html>

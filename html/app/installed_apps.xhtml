@@ -1,0 +1,40 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+<bsh>source(server.props.get("serviceContext").pawHome + "/html/app/bsh/i18n.bsh");</bsh>
+
+<script type="text/javascript" src="js/jquery.js"></script>
+<script type="text/javascript">
+	function startPackage(packageName) {
+		$.post("start_app.xhtml", {packageName: packageName}, function(data) {});
+		return false;
+	}
+</script>
+<title><bsh>translate("installed_apps.title");</bsh></title>
+<link rel="stylesheet" href="css/default.css">
+</head>
+<body>
+<bsh>source(server.props.get("serviceContext").pawHome + "/html/app/auth.bsh");</bsh>
+<h3><bsh>translate("installed_apps.title");</bsh></h3>
+<bsh>translate("installed_apps.info");</bsh>
+<p></p>
+<bsh>
+import android.app.Service;
+import android.content.pm.PackageManager;
+import android.content.pm.ApplicationInfo;
+
+service = (Service) server.props.get("serviceContext");
+pkgManager = service.getPackageManager();
+
+apps = pkgManager.getInstalledApplications(PackageManager.GET_META_DATA);
+
+for (int i=0;i<apps.size();i++) {
+	//if((apps.get(i).flags & ApplicationInfo.FLAG_SYSTEM) == ApplicationInfo.FLAG_SYSTEM) { continue; }		
+	print("<a href='#' onclick='startPackage(\"" + apps.get(i).processName + "\"); return false'><img width='35' height='35' src='get_app_icon.xhtml?processname=" + apps.get(i).processName + "' title='" + apps.get(i).loadLabel(pkgManager) +"'></a>");
+}
+
+</bsh>
+</table>
+</form>
+</body>
+</html>

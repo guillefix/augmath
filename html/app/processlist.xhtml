@@ -1,0 +1,70 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+<bsh>source(server.props.get("serviceContext").pawHome + "/html/app/bsh/i18n.bsh");</bsh>
+
+<script type="text/javascript" src="js/jquery.js"></script>
+<script type="text/javascript">
+	function startPackage(packageName) {
+		$.post("start_app.xhtml", {packageName: packageName}, function(data) {});
+		return false;
+	}
+</script>
+<title><bsh>translate("process_list.title");</bsh></title>
+<link rel="stylesheet" href="css/default.css">
+</head>
+<body>
+<bsh>source(server.props.get("serviceContext").pawHome + "/html/app/auth.bsh");</bsh>
+<h3><bsh>translate("process_list.title");</bsh></h3>
+<bsh>
+import android.app.Service;
+import android.content.pm.PackageManager;
+import android.app.ActivityManager;
+import android.content.Context;
+import android.app.ActivityManager.RunningAppProcessInfo;
+import android.content.pm.ApplicationInfo;
+import android.os.Process;
+
+service = (Service) server.props.get("serviceContext");
+
+actmgr=(ActivityManager) service.getSystemService
+(Context.ACTIVITY_SERVICE);
+pkgManager = service.getPackageManager();
+
+
+kill = parameters.get("kill");
+if(kill != null) {
+	actmgr.restartPackage(kill);
+}
+
+apps = pkgManager.getInstalledApplications(PackageManager.GET_META_DATA);
+
+appList = actmgr.getRunningAppProcesses();
+</bsh>
+<bsh>
+sdkVersion = Integer.parseInt(android.os.Build.VERSION.SDK);
+if(sdkVersion >= 8) {
+	print("<span style='color: black;'><p>" + translateRaw("process_list.label.info") + "</p></span>");
+}
+</bsh>
+<form metod="post">
+<input type="submit" value="<bsh>translate("process_list.button.refresh_list");</bsh>">
+<table border="0">
+<bsh>
+for (int i=0;i<appList.size();i++) {
+        RunningAppProcessInfo appInfo = (RunningAppProcessInfo)appList.get(i);
+
+	for (int j=0;j<apps.size();j++) {
+		//if((apps.get(j).flags & ApplicationInfo.FLAG_SYSTEM) == ApplicationInfo.FLAG_SYSTEM) { continue; }
+    		if(apps.get(j).processName.equals(appInfo.processName)) {
+			print("<tr><td>" + apps.get(j).loadLabel(pkgManager) +"</td><td><a href='#' title='" + translateRaw("process_list.tooltip.switch_to_app") + "' onclick='startPackage(\"" + apps.get(j).processName + "\"); return false'><img width='35' height='35' src='get_app_icon.xhtml?processname=" + apps.get(j).processName + "'></a>&nbsp;<a href='processlist.xhtml?kill=" + apps.get(j).processName + "'><img src='images/stop.png' border='0' title='" + translateRaw("process_list.tooltip.kill_process") + "'></a></td></tr>");
+       			break;
+    		}
+
+	}
+}
+</bsh>
+</table>
+</form>
+</body>
+</html>

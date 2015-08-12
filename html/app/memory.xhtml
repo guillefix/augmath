@@ -1,0 +1,201 @@
+<html>
+<!-- THREE STEPS TO INSTALL CONCENTRATION:
+
+  1.  Copy the coding into the HEAD of your HTML document
+  2.  Add the onLoad event handler into the BODY tag
+  3.  Put the last coding into the BODY of your HTML document  -->
+
+<!-- STEP ONE: Paste this code into the HEAD of your HTML document  -->
+
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+<bsh>source(server.props.get("serviceContext").pawHome + "/html/app/bsh/i18n.bsh");</bsh>
+
+<script LANGUAGE="JavaScript">
+<!-- Original:  Brian Gosselin (bgaudiodr@aol.com) -->
+<!-- Web Site:  http://www.bgaudiodr.iwarp.com -->
+
+<!-- This script and many more are available free online at -->
+<!-- The JavaScript Source!! http://javascript.internet.com -->
+
+var pics = new Array();
+//for (i = 0; i <= 18; i++) {
+//pics[i] = new Image();
+//pics[i].src = 'image' + i + '.gif';
+//}
+</script>
+
+<bsh>
+import android.app.Service;
+import android.content.pm.PackageManager;
+import android.content.pm.ApplicationInfo;
+
+service = (Service) server.props.get("serviceContext");
+pkgManager = service.getPackageManager();
+NUM_TILES = 18;
+
+apps = pkgManager.getInstalledApplications(PackageManager.GET_META_DATA);
+
+availableIcons = 0;
+print("<script>");
+print("pics[0] = new Image();");
+print("pics[0] = 'image0.gif'");
+for (int i=1;i<apps.size() && availableIcons < NUM_TILES;i++) {
+	if((apps.get(i).flags & ApplicationInfo.FLAG_SYSTEM) == ApplicationInfo.FLAG_SYSTEM) { continue; }
+	availableIcons++;	
+        print("pics[" + availableIcons + "] = new Image();");
+        print("pics[" + availableIcons + "].src = 'get_app_icon.xhtml?processname=" + apps.get(i).processName + "'");
+	
+}
+print("</script>");
+</bsh>
+
+<script>
+var map=new Array(1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6, 7, 7, 8, 8, 9, 9, 10, 10, 11, 11, 12, 12, 13, 13, 14, 14, 15, 15, 16, 16, 17, 17, 18, 18);
+var user = new Array();
+var temparray = new Array();
+var clickarray = new Array(0, 0);
+var ticker, sec, min, ctr, id, oktoclick, finished;
+function init() {
+clearTimeout(id);
+for (i = 0; i <= 35 ;i++) {
+user[i] = 0;
+}
+ticker = 0;
+min = 0;
+sec = 0;
+ctr = 0;
+oktoclick = true;
+finished = 0;
+document.f.b.value = "";
+scramble();
+runclk();
+for (i = 0; i <= 35; i++) {
+document.f[('img'+i)].src = "image0.gif";
+   }
+}
+function runclk() {
+min = Math.floor(ticker/60);
+sec = (ticker-(min*60))+'';
+if(sec.length == 1) {sec = "0"+sec};
+ticker++;
+document.f.b.value = min+":"+sec;
+id = setTimeout('runclk()', 1000);
+}
+function scramble() {
+for (z = 0; z < 5; z++) {
+for (x = 0; x <= 35; x++) {
+temparray[0] = Math.floor(Math.random()*36);
+temparray[1] = map[temparray[0]];
+temparray[2] = map[x];
+map[x] = temparray[1];
+map[temparray[0]] = temparray[2];
+      }
+   }
+}
+function showimage(but) {
+if (oktoclick) {
+oktoclick = false; 
+//document.f[('img'+but)].src = 'image'+map[but]+'.gif';
+document.f[('img'+but)].src = pics[map[but]].src;
+if (ctr == 0) {
+ctr++;
+clickarray[0] = but;
+oktoclick = true;
+} else {
+clickarray[1] = but;
+ctr = 0;
+setTimeout('returntoold()', 600);
+      }
+   }
+}
+function returntoold() {
+if ((clickarray[0] == clickarray[1]) && (!user[clickarray[0]])) {
+document.f[('img'+clickarray[0])].src = "image0.gif";
+oktoclick = true;
+} else {
+if (map[clickarray[0]] != map[clickarray[1]]) {
+if (user[clickarray[0]] == 0) {
+document.f[('img'+clickarray[0])].src = "image0.gif";
+}
+if (user[clickarray[1]] == 0) {
+document.f[('img'+clickarray[1])].src = "image0.gif";
+   }
+}
+if (map[clickarray[0]] == map[clickarray[1]]) {
+if (user[clickarray[0]] == 0&&user[clickarray[1]] == 0) { finished++; }
+user[clickarray[0]] = 1;
+user[clickarray[1]] = 1;
+}
+if (finished >= 18) {
+alert('<bsh>translate("memory.label.won");</bsh> '+document.f.b.value+' !');
+init();
+} else {
+oktoclick = true;
+      }
+   }
+}
+</script>
+<title><bsh>translate("memory.title")</bsh></title>
+<link rel="stylesheet" href="css/default.css">
+</head>
+
+<!-- STEP TWO: Insert the onLoad event handler into your BODY tag  -->
+
+<bsh>
+if(availableIcons >= NUM_TILES) {
+  print("<body onLoad='init()'>");
+}
+else {
+  print("<body>");
+}
+</bsh>
+<bsh>source(server.props.get("serviceContext").pawHome + "/html/app/auth.bsh");</bsh>
+<h3><bsh>translate("memory.title")</bsh></h3>
+<bsh>translate("memory.info")</bsh>
+<p>
+
+
+<!-- STEP THREE: Copy this code into the BODY of your HTML document  -->
+
+<bsh>
+if(availableIcons < NUM_TILES) {
+	print(translateRaw("memory.label.error", new Object[] {NUM_TILES, availableIcons}));
+}
+</bsh>
+<div style="width: 300px; text-align: center;">
+<center>
+<form name="f"> 
+<table cellpadding="0" cellspacing="0" border="0">
+<script language="javascript">
+<!-- Begin
+for (r = 0; r <= 5; r++) {
+document.write('<tr>');
+for (c = 0; c <= 5; c++) {
+document.write('<td align="center">');
+document.write('<a href="javascript:showimage('+((6*r)+c)+')" onClick="document.f.b.focus()">');
+document.write('<img src="image0.gif" width="40" height="40" name="img'+((6*r)+c)+'" border="0">');
+document.write('</a></td>');
+}
+document.write('</tr>');
+}
+// End -->
+</script>
+</table>
+<br><br>
+<bsh>
+if(availableIcons >= NUM_TILES) {
+	print("<input type='button' value='         ' name='b' onClick='init()'>");
+}
+</bsh>
+<br>
+<bsh>translate("memory.label.scriptinfo")</bsh>
+<p>
+</form>
+</center>
+<div>
+
+
+
+</body>
+</html>

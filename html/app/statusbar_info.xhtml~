@@ -1,0 +1,228 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+</head>
+<body>
+
+<bsh>source(server.props.get("serviceContext").pawHome + "/html/app/bsh/i18n.bsh");</bsh>
+
+<bsh>
+import de.fun2code.android.pawserver.util.*;
+import android.content.Intent;
+import android.app.Service;
+import android.os.BatteryManager;
+import android.content.Context;
+import android.media.AudioManager;
+import android.app.ActivityManager;
+import android.app.ActivityManager.MemoryInfo;
+import android.database.Cursor;
+import android.net.Uri;
+import de.fun2code.android.pawserver.AndroidInterface;
+import android.net.wifi.WifiInfo;
+import android.content.Context;
+
+res = "";
+
+service = server.props.get("serviceContext");
+source(service.pawHome + "/html/app/bsh/authDb.bsh");
+
+source(server.props.get("serviceContext").pawHome + "/html/app/bsh/constantsToolbar.bsh");
+preferences = service.getSharedPreferences("PawServer", 0);
+toolbarSettings = preferences.getInt("toolbarHide", 0);
+
+if((toolbarSettings & TOOLBAR_HIDE_BATTERY) != TOOLBAR_HIDE_BATTERY) {
+	intent = IntentUtil.getIntentResultFromBroadcast(service, Intent.ACTION_BATTERY_CHANGED);
+
+	rawlevel = intent.getIntExtra("level", -1);
+	scale = intent.getIntExtra("scale", -1);
+	status = intent.getIntExtra("status", -1);
+	if (rawlevel >= 0 && scale > 0) {
+		level = (rawlevel * 100) / scale;
+	}
+
+	chargingStr = status == BatteryManager.BATTERY_STATUS_CHARGING ?	"-charging" : "";
+
+	if(level >= 100) {
+		img = "battery" + chargingStr + "-100";
+	}
+	else if(level >= 75) {
+		img = "battery" + chargingStr + "-075";
+	}
+	else if(level >= 50) {
+		img = "battery" + chargingStr + "-050";
+	}
+	else if(level >= 25) {
+		img = "battery" + chargingStr + "-025";
+	}
+	else if(level > 5) {
+		img = "battery" + chargingStr + "-caution";
+	}
+	else {
+		img = "battery" + chargingStr + "-low";
+	}
+}
+
+if((toolbarSettings & TOOLBAR_HIDE_RINGER_VOLUME) != TOOLBAR_HIDE_RINGER_VOLUME) {
+	audio = service.getSystemService(Context.AUDIO_SERVICE);
+	ringerVol = audio.getStreamVolume(AudioManager.STREAM_RING);
+}
+
+if((toolbarSettings & TOOLBAR_HIDE_MEMORY) != TOOLBAR_HIDE_MEMORY) {
+	activityManager = (ActivityManager) service.getSystemService(Context.ACTIVITY_SERVICE);
+	memInfo = new ActivityManager.MemoryInfo();
+	activityManager.getMemoryInfo(memInfo); 
+}
+
+loggedIn = isSessionInDatabase();
+
+if(loggedIn) {
+
+	if((toolbarSettings & TOOLBAR_HIDE_MESSAGE) != TOOLBAR_HIDE_MESSAGE) {
+		// Get SMS count (only if user is logged on)
+		SMS_CONTENT_URI = Uri.parse("content://sms");
+		SMS_INBOX_CONTENT_URI = Uri.withAppendedPath(SMS_CONTENT_URI, "inbox");
+		SORT_ORDER = "date DESC";
+
+		cursor = service.getContentResolver().query(
+			SMS_INBOX_CONTENT_URI,
+			new String[] { "_id", "thread_id", "address", "person", "date", "body" },
+			null,
+			null,
+			SORT_ORDER);
+
+		smsCount = 0;
+
+		if (cursor != null) {
+			try {
+				smsCount = cursor.getCount();
+			}
+			finally {
+				cursor.close();
+			}
+		}
+
+		// Initialize session variable if not present
+		if((_smsCount = sessionGet("_smsCount")) == null) {
+			sessionPut("_smsCount", smsCount);
+		}
+		else {
+			if(smsCount > _smsCount) {
+				res += "<a href='sms/sms_threads.xhtml'  target='content' title='" + translateRaw("toolbar.tooltip.sms") + ": " + (smsCount - _smsCount) + "'><img src='images/mail.png' style='height: 24px;' align='middle'></a>";
+				res += "&nbsp;&nbsp;&nbsp;";
+			}
+		}
+	}
+
+	// Sharing
+	if((toolbarSettings & TOOLBAR_HIDE_SHARING) != TOOLBAR_HIDE_SHARING && server.props.get("de.fun2code.andoid.pawserver.key.share") != null) {
+		sharings = server.props.get("de.fun2code.andoid.pawserver.key.share").size();
+		if(sharings > 0) {
+				res += "<a href='share/share.xhtml'  target='content' title='" + translateRaw("toolbar.tooltip.shared_content") + ": " + sharings + "'><img src='images/share.png' style='height: 24px;' align='middle'></a>";
+				res += "&nbsp;&nbsp;&nbsp;";
+			}
+	}
+
+
+	// Since Froyo this is not working any more
+	if((toolbarSettings & TOOLBAR_HIDE_MEDIA_PLAYER) != TOOLBAR_HIDE_MEDIA_PLAYER && Integer.parseInt(android.os.Build.VERSION.SDK) < 8) {
+		// Get Media Player Info
+		try {
+			mp = AndroidInterface.getMediaPlayerService().getPlayBackService();
+			if(mp != null && mp.isPlaying()) {
+				duration =String.format("%02d:%02d", new Object[] { new Long(mp.duration() / 1000 / 60), new Long((mp.duration() / 1000) % 60)});
+				position =String.format("%02d:%02d", new Object[] { new Long(mp.position() / 1000 / 60), new Long((mp.position() / 1000) % 60)}); 
+
+				musicToolTip = mp.getArtistName() + " - " + mp.getTrackName() + " (" + position + "/" + duration;
+				musicToolTip = musicToolTip.replaceAll("'", "&#39;");
+				res += "<a href='mediaplayer_control.xhtml'  target='content'><img src='images/play.png' style='height: 24px;' align='middle' title='" + musicToolTip + ")" + "'></a>";
+			}
+	
+			res += "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;";
+		}
+		catch(e) {}
+	}
+}
+
+// Build result
+res += "&nbsp;&nbsp;&nbsp;&nbsp;";
+
+if((toolbarSettings & TOOLBAR_HIDE_LOAD) != TOOLBAR_HIDE_LOAD) {
+	// Get system load
+	source(server.props.get("serviceContext").pawHome + "/html/app/bsh/systemLoad.bsh");
+	cpus = getCpus();
+	load = getSystemLoad().get("load");
+
+	res += "<a href='server_stats.xhtml'  target='content'><img id='loadImg' src='images/transparent.png' alt='' title='" + translateRaw("toolbar.tooltip.load", new Object[] {cpus, load}) + "' align='middle'></a>&nbsp;" + (load < 10 ? "&nbsp;" + load : load) + "%&nbsp;&nbsp;";
+
+/*
+var img = new Image();
+	img.onload = function() {
+		$("#full_image").attr("src", url);
+	};
+
+	img.src = url;
+*/
+
+	// Preload the image and then display it
+	res += "<script type='text/javascript'>var url = 'graphics/system_load_image.xhtml?width=20&height=20&value=" + load + "'; var img = new Image(); img.onload = function() { document.getElementById('loadImg').src = url; }; img.src = url;</script>";
+}
+
+if((toolbarSettings & TOOLBAR_HIDE_WIFI) != TOOLBAR_HIDE_WIFI) {
+	// Get WiFi info
+	wifiService = service.getSystemService(Context.WIFI_SERVICE);
+	      
+	// Check for connected WiFi network
+	wifiInfo = wifiService.getConnectionInfo();
+
+	wifiActive = false;
+
+	if(wifiInfo != null && wifiInfo.getIpAddress() != 0) {
+		wifiActive = true;
+	}
+
+	if(wifiActive) {
+		SSID = wifiInfo.getSSID();
+		if(SSID == null) { SSID = "unknown"; }
+
+		linkspeed = wifiInfo.getLinkSpeed() + " " + WifiInfo.LINK_SPEED_UNITS;
+		if(wifiInfo.getLinkSpeed() < 0) { linkspeed = "unknown"; }
+
+		wifiStrengthPercent = (100 + wifiInfo.getRssi() + 20);
+
+		 // Not sure if this is correct
+		if(wifiStrengthPercent > 100) { wifiStrengthPercent = 100; }
+		if(wifiStrengthPercent < 0) { wifiStrengthPercent = 0; }
+
+		 // Not sure if this is correct
+		wifiBars = wifiStrengthPercent / 20;
+		if(wifiBars > 4) { wifiBars = 4; }
+		if(wifiBars < 0) { wifiBars = 0; }
+	}
+
+
+	// Wifi output
+	if(wifiActive) {
+		res += "<img src='images/wifi-" + wifiBars + ".png' style='height: 30px; width: 30px' align='middle' title='" + translateRaw("toolbar.tooltip.wifi") + ": " + SSID + " / " + linkspeed  +"'> " + wifiStrengthPercent + "%&nbsp;&nbsp;";
+	}
+}
+
+if((toolbarSettings & TOOLBAR_HIDE_MEMORY) != TOOLBAR_HIDE_MEMORY) {
+	res += "<img src='images/memory.png' style='height: 30px;' align='middle' title='" + translateRaw("toolbar.tooltip.memory") + "'>&nbsp;" + (memInfo.availMem / 1024 /1024) + "M";
+}
+
+if((toolbarSettings & TOOLBAR_HIDE_RINGER_VOLUME) != TOOLBAR_HIDE_RINGER_VOLUME) {
+	res += "&nbsp;&nbsp;" + "<a href='volumes.xhtml'  target='content'><img src='images/speaker.png' style='height: 30px;' align='middle' title='" + translateRaw("toolbar.tooltip.ringer_volume") + "'></a>&nbsp;" + ringerVol;
+}
+
+if((toolbarSettings & TOOLBAR_HIDE_BATTERY) != TOOLBAR_HIDE_BATTERY) {
+	res += "&nbsp;&nbsp;<img src='images/" + img + ".png' style='height: 30px;' align='middle' title='" + translateRaw("toolbar.tooltip.battery") + "'>&nbsp;" + level + "%";
+}
+
+request.sendResponse(res.getBytes(), "text/plain");
+request.out.flush();
+request.out.close();
+</bsh>
+
+</body>
+
+</html>

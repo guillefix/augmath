@@ -1,0 +1,29 @@
+<bsh>
+/*
+Resource a drawable resource as PNG
+*/
+
+import android.graphics.*;
+import android.graphics.Bitmap.CompressFormat;
+import android.net.Uri;
+import android.provider.Contacts.People;
+
+source(server.props.get("serviceContext").pawHome + "/html/app/auth.bsh");
+
+service = server.props.get("serviceContext");
+
+contactId  = parameters.get("contactId");
+
+if(contactId != null) {
+	bitmap = People.loadContactPhoto(service, Uri.parse("content://contacts/people/" + contactId), com.android.internal.R.drawable.ic_contact_picture, null);
+	bos = new ByteArrayOutputStream();
+	bitmap.compress(CompressFormat.PNG, 0 /*ignored for PNG*/, bos);
+	byte[] bitmapdata = bos.toByteArray();
+
+	request.sendResponse(bitmapdata, "image/png");
+	request.out.flush();
+	request.out.close();
+	
+}
+
+</bsh>

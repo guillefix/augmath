@@ -1,0 +1,50 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+<title>Changelog 0.60</title>
+<link rel="stylesheet" href="../css/default.css">
+<script type="text/javascript" src="../js/jquery.js"></script>
+<script type="text/javascript" src="../js/executeScript.js"></script>
+</head>
+<body>
+<bsh>source(server.props.get("serviceContext").pawHome + "/html/app/auth.bsh");</bsh>
+<h1>Changelog - Version 0.60</h1>
+<p>The biggest change in this version is the support for dynamic DEX class loading.<br />
+This enables the use of external classes, filters and handlers. In previous versions these components could only be used if embedded inside the PAW APK.</p>
+<p>
+It is planned to demonstrate these new features in more detail in upcoming <a href="http://fun2code-blog.blogspot.com/" class="link" target="_blank">blog</a> posts.
+</p>
+<h2>App</h2>
+<ul>
+<li>A new menu entry has been added that opens the current server URL in the browser of the Android device.</li>
+</ul>
+<h2>Web Application</h2>
+<ul>
+<li>Session management has been added to the <i>Server</i> Menu.</li>
+</ul>
+<h2>Dynamic DEX Class Loading</h2>
+<b>Note: </b> Due to a <a href="http://code.google.com/p/android/issues/detail?id=15893" target="_blank" class="link">bug</a> in Honeycomb, dynamic class loading might not work.
+<h3>Class Loading on Startup</h3>
+Classes in DEX format included in JAR and APK files can be dynamically loaded on startup.<br />
+All JAR and APK files present in the folder <tt>paw/webconf/dex</tt> will be added to a new classloader called <tt>dexClassLoader</tt>.<br />
+The <tt>dexClassLoader</tt> can be retrieved by calling <tt>server.props.get("serviceContext").getDexClassLoader()</tt>.<br />
+To use the classe loaded by this classloader simply use the BeanShell command <tt>useDexClasses()</tt>.
+<h3>Dynamic Handler</h3>
+There is a new Brazil Handler class called <tt>org.paw.handler.AndroidDynamicHandler</tt> that allows the wrapping of Handlers that are only available in external DEX format.<br />
+The Handler has two parameters:<br />
+<ul>
+	<li><tt>handlerJars</tt>: Colon separated list of JAR or APK files to load. This parameter is optional. If all necessary classes are available by the <tt>dexClassLoader</tt> (see "Dynamic DEX Class Loading"), this parameter is not necessary.</li>
+	<li><tt>handlerClass</tt>: The Handler class to use.
+</ul>
+All other parameters defined in the Handler definition are passed to the Handler defined in the <tt>handlerClass</tt> parameter.
+<h3>Dynamic Filter</h3>
+Equivalent to the Dynamic Handler but for Filters. The class is called <tt>org.paw.filter.AndroidDynamicFilter</tt>.
+The Filter has two parameters:<br />
+<ul>
+	<li><tt>filterJars</tt>: Colon separated list of JAR or APK files to load. This parameter is optional. If all necessary classes are available by the <tt>dexClassLoader</tt> (see "Dynamic DEX Class Loading"), this parameter is not necessary.</li>
+	<li><tt>filterClass</tt>: The Filter class to use.
+</ul>
+All other parameters defined in the Filter definition are passed to the Filter defined in the <tt>filterClass</tt> parameter.
+<p></p>
+</body>
+</html>

@@ -1,0 +1,18 @@
+<bsh>source(server.props.get("serviceContext").pawHome + "/html/app/auth.bsh");</bsh>
+<bsh>
+/* Provides sensor data */
+import de.fun2code.android.pawserver.AndroidInterface;
+import org.json.*;
+
+json = new JSONObject();
+sensor = AndroidInterface.getSensorListener();
+
+json.put("x", sensor.getX());
+json.put("y", sensor.getY());
+json.put("z", sensor.getZ());
+json.put("force", sensor.getForce());
+
+request.sendResponse(json.toString().getBytes(), "text/plain");
+request.out.flush();
+request.out.close();
+</bsh>

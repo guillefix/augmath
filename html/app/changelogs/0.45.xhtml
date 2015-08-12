@@ -1,0 +1,94 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+<title>Changelog 0.45</title>
+<link rel="stylesheet" href="../css/default.css">
+<script type="text/javascript" src="../js/jquery.js"></script>
+<script type="text/javascript" src="../js/executeScript.js"></script>
+<script type="text/javascript" src="../js/jquery.rotate.js"></script>
+</head>
+<body>
+<bsh>source(server.props.get("serviceContext").pawHome + "/html/app/auth.bsh");</bsh>
+<h1>Changelog - Version 0.45</h1>
+
+<p>
+This version adds mainly camera preview support and the possibility to use the camera of the device as webcam.<br>
+<b>Note:</b> Works only on Froyo (Android 2.2) and up!
+</p>
+
+<h2>Web App</h2>
+<ul>
+<li>WebCam has been added to the Media menu.</li>
+<li>System load information has been added to the server status information.</li>
+
+</ul>
+<p></p>
+
+<h2>Android Functions</h2>
+<h3>Camera Preview</h3>
+<p>
+<b>Note:</b> Works only on Froyo (Android 2.2) and up!
+</p>
+<p style="border: 1px dotted white; padding: 5px;">
+A simple script than demonstrates the use of the camera preview as public webcam can be found <a href="/app/download/webcam_simple.txt" target="_blank" class="link">here</a>. Just download it to your <tt>/sdcard/paw/html</tt> directory and change the file extension to <tt>xhtml</tt>.
+</p>
+<p>
+<b>The camera is not a shared resource, so the camera has to be stopped (closed) before it can be reused by another application!</b>
+<p>
+The <tt>CameraPreview</tt> class in the <tt>de.fun2code.android.pawserver.media</tt> package provides the following methods:
+<br><br>
+<table cellpadding=">5"
+<tr><td><tt>CameraPreview getInstance()</tt></td><td>Return the <tt>CameraPreview</tt> instance. Because the camera is not a shared resource this is a singleton.</td></tr>
+<tr><td><tt>setFile(File file)</tt></td><td>Sets the output file.</td></tr>
+<tr><td><tt>setQuality(int quality)</tt></td><td>Sets the image quality in %. Has to be between 0 and 100. Defaults to 100.</td></tr>
+<tr><td><tt>int getQuality()</tt></td><td>Gets the image quality in %.</td></tr>
+<tr><td><tt>setSize(int width, int height)</tt></td><td>Sets the preview size. Has to be a valid size! Valid sizes can be retrieved by the <tt>getSupportedSizes()</tt> method.</td></tr>
+<tr><td><tt>List<Camera.Size> getSupportedSizes()</tt></td><td>Returns a list of supported sizes.</td></tr>
+<tr><td><tt>setFormat(Bitmap.CompressFormat format)</tt></td><td>Sets the image output format. Defaults to JPEG.</td></tr>
+<tr><td><tt>Bitmap.CompressFormat getFormat()</tt></td><td>Returns the image output format.</td></tr>
+<tr><td><tt>setInterval(Integer interval)</tt></td><td>Defines how often images are written. Defaults to 0.</td></tr>
+<tr><td><tt>setPrintDate(boolean enable, String foregroundRGB, String backgroundRGB)</tt></td><td>Specifies if and in which color the date footer is printed.</td></tr>
+<tr><td><tt>setPrintGeoLocation(boolean enable, String foregroundRGB, String backgroundRGB)</tt></td><td>Specifies if and in which color the geo location header is printed.</td></tr>
+<tr><td><tt>Camera getCamera()</tt></td><td>Returns the camera object, or <tt>null</tt> if preview has not been started.</td></tr>
+<tr><td><tt>boolean start()</tt></td><td>Aquires the camera and starts the preview. Returns <tt>true</tt> on success otherwise <tt>false</tt>.</td></tr>
+<tr><td><tt>stop()</tt></td><td>Stops the preview and releases the camera.</td></tr>
+
+</table>
+</p>
+<p>
+The preview supports header and footer information. If specified the  header contains geo information provided by the Google Geocoder. The footer contains the date if specified.
+</p>
+Below is a sample image:<br><br>
+<img src="/app/images/camera_preview.jpg">
+</p>
+<p>
+The following script will create an image in the <tt>/sdcard</tt> directory with the name <tt>webcam_test.jpg</tt> with the size of 320x240 pixels, a geo header, date footer  and the image quality of 50%.<br>
+It starts the camera preview, waits four seconds and stops the preview.<br><br>
+You can use the buttons below the script to view and delete the image.
+</p>
+<textarea cols="80" rows="12" id="previewScript">
+import de.fun2code.android.pawserver.media.*;
+
+cp = CameraPreview.getInstance();
+cp.setSize(320, 240);
+cp.setFile(new File("/sdcard/webcam_test.jpg"));
+cp.setQuality(50);
+cp.setPrintDate(true, "#ffffff", "#55000000");
+cp.setPrintGeoLocation(true, "#ffffff", "#55000000");
+cp.start();
+Thread.sleep(4000);
+cp.stop();
+</textarea>
+<p></p>
+<button onClick="executeScript('previewScript', 'previewScriptLoader');">Execute Script</button>&nbsp;<img id="previewScriptLoader" src="../images/loader.gif" style="display: none;" width="16">
+<br><br>
+<button onClick="window.open('../get_file.xhtml?file=/sdcard/webcam_test.jpg', 'cameraPreviewTest');">Show Image</button>
+<button onClick="executeScript('deleteFileScript', 'deleteScriptLoader');">Delete Image</button>
+&nbsp;<img id="deleteScriptLoader" src="../images/loader.gif" style="display: none;" width="16">
+
+<p>&nbsp;</p>
+<textarea id="deleteFileScript" style="display: none;">
+new File("/sdcard/webcam_test.jpg").delete();
+</textarea>
+</body>
+</html>

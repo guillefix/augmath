@@ -1,0 +1,121 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+<title>I18N - Internationalization</title>
+<link rel="stylesheet" href="../css/default.css">
+<style type="text/css">
+      .CodeMirror-line-numbers {
+        width: 2.2em;
+        color: #aaa;
+        background-color: #eee;
+        text-align: right;
+        padding-right: .3em;
+        font-size: 10pt;
+        font-family: monospace;
+        padding-top: .4em;
+      }
+	  .CodeMirror-wrapping {
+		background: white;
+	  }
+    </style>
+
+<script type="text/javascript" src="../js/jquery.js"></script>
+<script type="text/javascript" src="../js/executeScript.js"></script>
+
+<script type="text/javascript" src="../js/codemirror/js/codemirror.js"></script>
+<script type="text/javascript" src="../js/codemirror/js/mirrorframe.js"></script>
+
+<script type="text/javascript">
+	var editor;
+	$(document).ready(function() {
+		// Setup syntax colouring
+		var textarea = document.getElementById('code');
+		   editor = CodeMirror.fromTextArea('code', {
+			height: "350px",
+			content: textarea.value,
+			parserfile: ["tokenizejavascript.js", "parsejavascript.js"],
+			stylesheet: "../js/codemirror/css/jscolors.css",
+			path: "../js/codemirror/js/",
+			autoMatchParens: true,
+			lineNumbers: true
+		  });
+
+		   var i18nTextarea = document.getElementById('i18n');
+		   CodeMirror.fromTextArea('i18n', {
+			height: "350px",
+			content: i18nTextarea.value,
+			parserfile: ["tokenizejavascript.js", "parsejavascript.js"],
+			stylesheet: "../js/codemirror/css/jscolors.css",
+			path: "../js/codemirror/js/",
+			autoMatchParens: true,
+			lineNumbers: true
+		  });
+	
+		// Set focus on first textarea
+		$("textarea:visible:first").focus();
+
+		// Add line numbers
+		//$("#code").linedtextarea();
+ 	});
+
+	function execute() {
+		$("#code2").val(editor.getCode());
+		executeScript('code2', 'loader', 'output');
+	}
+</script>
+
+
+</head>
+<body>
+<bsh>source(server.props.get("serviceContext").pawHome + "/html/app/auth.bsh");</bsh>
+<h1>I18N - Internationalization</h1>
+<p>
+This shows how internationalization can be included into a web app using the <tt>de.fun2code.android.pawserver.util.I18N</tt> PAW utility class.
+<p>
+All the property files are located in the directory <tt>/sdcard/paw/html/app/code_snippets/i18n</tt>.
+</p>
+
+
+<p><p>
+The property files used are just standard Java property file.<br>
+Below is the property file <tt>i18n_de.properties</tt> for German in the <tt>/sdcard/paw/html/app/i18n</tt> directory:<br><br>
+<textarea cols="80" rows="5">
+<bsh>cat(server.props.get("serviceContext").pawHome + "/html/app/code_snippets/i18n/i18n_de.properties");</bsh>
+</textarea>
+<p>
+
+Below is the code that you could use in webpage for translation. It translates the key <b>snippet.test</b> into different languages.<br>
+You can execute the script, change your device's language and run the code again.<br>
+Available languages are: English (default), French, German, Spanish
+
+</p>
+Code:<br>
+<textarea id="code">
+import de.fun2code.android.pawserver.util.I18N;
+
+/* 
+   Unregister the language bundle.
+   This is only necessary to be able to change the language.
+*/
+I18N.unregister("i18nTest");
+
+/*
+   Register language bundle. Normally this has to be done only once.
+*/
+I18N.register("i18nTest", server.props.get("serviceContext").pawHome + "/html/app/code_snippets/i18n/i18n");
+
+// Translate and print
+print(I18N.translate("i18nTest", "snippet.test"));
+</textarea>
+<!-- Hidden text area to which the code is copied before submission -->
+<textarea id="code2" style="display: none;"></textarea>
+
+<br>
+Result:<br><textarea type="text" id="output" cols="80" rows="6"></textarea><p></p>
+<p></p>
+<button onClick="execute();">Execute Script</button>&nbsp;<img id="loader" src="../images/loader.gif" style="display: none;" width="16">
+
+<p></p>
+
+</body>
+</html>

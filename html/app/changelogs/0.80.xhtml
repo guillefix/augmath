@@ -1,0 +1,60 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+<title>Changelog 0.80</title>
+<link rel="stylesheet" href="../css/default.css">
+<script type="text/javascript" src="../js/jquery.js"></script>
+<script type="text/javascript" src="../js/executeScript.js"></script>
+</head>
+<body>
+<bsh>source(server.props.get("serviceContext").pawHome + "/html/app/auth.bsh");</bsh>
+<h1>Changelog - Version 0.80</h1>
+<p>This release contains:
+<ul>
+ <li>Bug fixes.</li>
+ <li>Front facing camera support. Camera now works on ICS.</li>
+ <li>NFC support.</li>
+</ul>
+</p>
+
+<h2>PAW Functions</h2>
+<h3>Camera Preview</h3>
+The followng methods have been added to the Camera Preview to support multiple camera:
+<blockquote>
+<table cellpadding="5">
+<tr><td><tt>boolean isCameraIdSupported()</tt></td><td>Checks if camera IDs (since Gingerbread) are supported. Returns <tt>true</tt> on success, othewise <tt>false</tt>.</td></tr>
+<tr><td><tt>int getBackCameraId()</tt></td><td>Returns the ID of the back facing camera. If no camera is found <tt>-1</tt> is returned.</td></tr>
+<tr><td><tt>int getFrontCameraId()</tt></td><td>Returns the ID of the front facing camera. If no camera is found <tt>-1</tt> is returned.</td></tr>
+<tr><td><tt>void setSurfaceEnabled(boolean state)</tt></td><td>The surface view can be enabled or disabled. Without surface, camera preview might not work on some devices! It's enabled by default.</td></tr>
+<tr><td><tt>void setSurfaceSize(int width, int heigt)</tt></td><td>Sets the size of the surface view. Default is width=-1 and height=-1 which results in a full screen view.</td></tr>
+</table>
+</blockquote>
+<p></p>
+<h3>NFC</h3>
+Reading of NFC tags is supported by the <tt>AndroidInterface</tt> class method <tt>Intent getNfcIntent(int timeoutSec)</tt>.<br/>
+The method expects a timeout parameter in seconds.
+<p>
+Here is an example, that shows how to retrieve the Tag from the resulting Intent:<br/>
+</p>
+<textarea cols="80" rows="14" id="nfcScript">
+import de.fun2code.android.pawserver.AndroidInterface;
+import android.nfc.NfcAdapter;
+
+intent = AndroidInterface.getNfcIntent(5); // 5 secs timeout
+if(intent != null) {
+  tag = intent.getParcelableExtra(NfcAdapter.EXTRA_TAG);
+  print(tag);
+}
+else {
+  print("No Tag found!");
+}
+
+</textarea>
+<br>
+Result:<br><textarea type="text" id="nfcScriptResult" cols="80" rows="2"></textarea>
+<p></p>
+<button onclick="executeScript('nfcScript', 'nfcScriptLoader', 'nfcScriptResult');">Execute Script</button>&nbsp;<img id="nfcScriptLoader" src="../images/loader.gif" style="display: none;" width="16">
+
+<p></p>
+</body>
+</html>

@@ -1,0 +1,87 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+<title>Changelog 0.43</title>
+<link rel="stylesheet" href="../css/default.css">
+<script type="text/javascript" src="../js/jquery.js"></script>
+<script type="text/javascript" src="../js/executeScript.js"></script>
+<script type="text/javascript" src="../js/jquery.rotate.js"></script>
+<script type="text/javascript">
+		$(document).ready(function() {
+			updateCompass();
+		});
+
+		function updateCompass() {
+			executeScript('compassScript', 'compassScriptLoader', 'compassScriptResult');
+			$("#compass").rotate($("#compassScriptResult").val() * -1, 'abs');
+			setTimeout("updateCompass();", 2000);
+		}
+	</script>
+</head>
+<body>
+<bsh>source(server.props.get("serviceContext").pawHome + "/html/app/auth.bsh");</bsh>
+<h1>Changelog - Version 0.43</h1>
+
+<h2>Server</h2>
+<ul>
+  <li>Tablet support. App adjusts to device rotation.<br><br></li>
+  <li>Home Screen widget is now available.<br><img src="../images/widget.png"><br><br></li>
+  <li>Locale plug-in support.<br><img src="../images/locale_plugin.png"><br><br></li>
+</ul>
+<p></p>
+
+<h2>Web App</h2>
+<ul>
+<li>New code snippet: <b><i>Proximity Sensor and LED Flash</i></b></li>
+</ul>
+<p></p>
+
+<h2>Android Functions</h2>
+<h3>Orientation Sensor</h3>
+In addition to GPS functions the compass orientation can be queried.<br>
+The following script retrieves the current bearing every two seconds.<br><br>
+<textarea cols="80" rows="6" id="compassScript">
+import de.fun2code.android.pawserver.AndroidInterface;
+
+sensorListener = AndroidInterface.getSensorListener();
+bearing = sensorListener.getOrientBearing();
+$$.print(bearing);
+</textarea><br>
+Result:<br><input type="text" id="compassScriptResult">&nbsp;&nbsp;<img id="compassScriptLoader" src="../images/loader.gif" style="display: none;" width="16"><p></p>
+Bearing of device:<br>
+<img id="compass" src="../images/compass_rose.png">
+<p></p>
+The sensor listener provided the following orientation methods:
+<ul>
+	<li><tt>getOrientBearing()</tt> - Returns the bearing</li>
+	<li><tt>getOrientAccuracy()</tt> - Gets the accuracy (0=unreliable, 1=low, 2=medium, 3=high)</li>
+	<li><tt>getLastOrientTimestamp()</tt> - Timestamp of last update in millis</li>
+</ul>
+<p></p>
+<h3>Proximity Sensor</h3>
+To get the value of the proximity sensor the method <tt>getProximity()</tt> is provided by the sensor listener.<br><br>
+<textarea cols="80" rows="4" id="proximityScript">
+import de.fun2code.android.pawserver.AndroidInterface;
+
+sensorListener = AndroidInterface.getSensorListener();
+$$.print( sensorListener.getProximity());
+</textarea><br>
+Result:<br><textarea type="text" id="proximityScriptResult" cols="40" rows="1"></textarea><p></p>
+<p></p>
+<button onClick="executeScript('proximityScript', 'proximityScriptLoader', 'proximityScriptResult');">Execute Script</button>&nbsp;<img id="proximityScriptLoader" src="../images/loader.gif" style="display: none;" width="16">
+<p></p>
+<h3>Light Sensor</h3>
+To get the brightness in Lux of the ligh sensor the method <tt>getBrightness()</tt> is provided by the sensor listener.<br><br>
+<textarea cols="80" rows="4" id="lightScript">
+import de.fun2code.android.pawserver.AndroidInterface;
+
+sensorListener = AndroidInterface.getSensorListener();
+$$.print( sensorListener.getBrightness());
+</textarea><br>
+Result:<br><textarea type="text" id="lightScriptResult" cols="40" rows="1"></textarea><p></p>
+<p></p>
+<button onClick="executeScript('lightScript', 'lightScriptLoader', 'lightScriptResult');">Execute Script</button>&nbsp;<img id="lightScriptLoader" src="../images/loader.gif" style="display: none;" width="16">
+<p></p>
+
+</body>
+</html>

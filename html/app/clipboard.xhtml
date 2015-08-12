@@ -1,0 +1,64 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+<bsh>source(server.props.get("serviceContext").pawHome + "/html/app/bsh/i18n.bsh");</bsh>
+
+<title><bsh>translate("clipboard.title");</bsh></title>
+<link rel="stylesheet" href="css/default.css">
+
+<script type="text/javascript" src="js/jquery.js"></script>
+<script type="text/javascript" src="js/executeScript.js"></script>
+
+<script type="text/javascript">
+	$(document).ready(function() {
+		
+
+	});
+
+	function setClipboard() {
+		text = $("#text").val().replace(/\r/g, "").replace(/\n/g, "\\n");
+
+		scriptOrg = $("#setScript").val();
+		script = scriptOrg;
+		script = script.replace(/%text%/, text);
+		$("#setScript").val(script);
+
+		executeScript('setScript', 'loader');
+		$("#setScript").val(scriptOrg);
+	}
+
+</script>
+</head>
+
+<body>
+<bsh>source(server.props.get("serviceContext").pawHome + "/html/app/auth.bsh");</bsh>
+<h3><bsh>translate("clipboard.title");</bsh></h3>
+
+<p>
+<bsh>translate("clipboard.info");</bsh>
+</p>
+
+<p>
+
+<bsh>translate("clipboard.label.clipboard_content");</bsh>:<br>
+<textarea id="text" cols="80" rows="10">
+</textarea>
+<p>
+<button onClick="executeScript('getScript', 'loader', 'text');"><bsh>translate("clipboard.button.read_from_device");</bsh></button>
+<button onClick="setClipboard();"><bsh>translate("clipboard.button.send_to_device");</bsh></button>
+<button onClick="$('#text').val('');"><bsh>translate("clipboard.button.clear");</bsh></button>
+&nbsp;<img id="loader" src="images/loader.gif" style="display: none;" width="16">
+</p>
+<p>&nbsp;</p>
+
+<!-- The script -->
+<textarea id="getScript" cols="80" rows="4" id="rescanScript" style="visibility:hidden; display: none;">
+$$.print(readFromClipboard());
+</textarea>
+
+<textarea id="setScript" cols="80" rows="4" id="rescanScript" style="visibility:hidden; display: none;">
+writeToClipboard("%text%");
+</textarea>
+
+</body>
+</html>

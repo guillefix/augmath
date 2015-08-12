@@ -1,0 +1,13 @@
+<bsh>
+service = server.props.get("serviceContext");
+
+request.headers.put("Cookie", "cookie=" + parameters.get("sessionid") != null ? parameters.get("sessionid") : "UNKNOWN");
+request.headers.put("User-Agent", parameters.get("useragent") != null ? parameters.get("useragent") : "UNKNOWN");
+
+source(service.pawHome + "/html/app/bsh/authDb.bsh");
+
+result = isSessionInDatabase(parameters.get("sessionid"), parameters.get("remoteaddress"), parameters.get("useragent")) ? "VALID" : "INVALID";
+request.sendResponse(result.getBytes(), "text/plain");
+request.out.flush();
+request.out.close();
+</bsh>

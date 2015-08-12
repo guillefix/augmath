@@ -1,0 +1,51 @@
+<bsh>
+/*
+Resource a drawable resource as PNG
+*/
+
+import android.graphics.*;
+import android.graphics.Bitmap.CompressFormat;
+import android.net.Uri;
+import android.content.ContentUris;
+
+source(server.props.get("serviceContext").pawHome + "/html/app/auth.bsh");
+
+service = server.props.get("serviceContext");
+
+albumId  = parameters.get("albumId");
+defaultPng  = parameters.get("defaultPng");
+
+if(albumId != null) {
+	try {
+		id = Integer.parseInt(albumId);
+		artworkUri = Uri.parse("content://media/external/audio/albumart");
+		uri = ContentUris.withAppendedId(artworkUri, id);
+	 	res = service.getContentResolver();
+		in = res.openInputStream(uri);
+		bitmap = BitmapFactory.decodeStream(in);
+		bos = new ByteArrayOutputStream();
+		bitmap.compress(CompressFormat.PNG, 0 /*ignored for PNG*/, bos);
+		byte[] bitmapdata = bos.toByteArray();
+
+		request.sendResponse(bitmapdata, "image/png");
+		request.out.flush();
+		request.out.close();
+	}
+	catch(e) {
+		if(defaultPng != null) {
+			filePath = server.props.get("serviceContext").pawHome + "/html/app/" + defaultPng;
+			imagefile = new File(filePath);
+			byte[] data = new byte[(int) imagefile.length()];
+			fis = new FileInputStream(imagefile);
+			fis.read(data);
+			fis.close();
+
+			request.sendResponse(data, "image/png");
+			request.out.flush();
+			request.out.close();
+		}
+	}
+	
+}
+
+</bsh>

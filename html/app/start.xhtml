@@ -1,0 +1,99 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+<bsh>source(server.props.get("serviceContext").pawHome + "/html/app/bsh/i18n.bsh");</bsh>
+<title><bsh>translate("startpage.title.frame");</bsh></title>
+<link type="text/css" href="css/overcast/jquery-ui.css" rel="Stylesheet" />
+<link rel="stylesheet" href="css/default.css">
+
+<script type="text/javascript" src="js/jquery.js"></script>
+<script type="text/javascript" src="js/jquery-ui.js"></script>
+<script type="text/javascript" src="js/executeScript.js"></script>
+
+<script type="text/javascript">
+	$(document).ready(function() {
+		$("#dialog").dialog({ width: 480 });
+	});
+</script>
+</head>
+<body>
+
+
+<bsh>
+import android.os.SystemClock;
+import java.text.DateFormat;
+</bsh>
+<bsh>source(server.props.get("serviceContext").pawHome + "/html/app/auth.bsh");</bsh>
+<h3><bsh>translate("startpage.title");</bsh></h3>
+<bsh>
+String[] opts = { "BOARD", "BRAND", "DISPLAY", "MODEL", "PRODUCT", "TIME", "TYPE", "USER", "VERSION.INCREMENTAL", "VERSION.RELEASE", "VERSION.SDK"};
+
+for(o : opts) {
+ eval(o + "=android.os.Build." + o);
+}
+</bsh>
+
+<bsh>
+import android.os.StatFs;
+import android.os.Environment;
+
+
+getStorageInfo(type) {
+  // Default type is "sdcard"
+  stat = new StatFs(type.equals("int") ? Environment.getDataDirectory().getPath() : Environment.getExternalStorageDirectory().getPath());
+
+  megsTotal = (long)stat.getBlockSize() *(long)stat.getBlockCount() / 1024D / 1024D;
+  megsAvailable = (long)stat.getBlockSize() *(long)stat.getAvailableBlocks() / 1024D /   1024D;
+
+  String[] vals = { String.format("%.2f", new Object[] { megsTotal }),            String.format("%.2f", new Object[] { megsAvailable }) };
+  return vals;
+}
+</bsh>
+
+<img src="images/phone.png" width="32" alt="phone"><b><bsh>translate("startpage.label.device");</bsh></b><br>
+&nbsp;&nbsp;
+<bsh>print(BRAND + " " + MODEL + " " + PRODUCT);</bsh>
+<p></p>
+<img src="images/android.png" width="32" alt="phone"><b><bsh>translate("startpage.label.android_version");</bsh></b><br>
+&nbsp;&nbsp;
+<bsh>print("Android " + VERSION.RELEASE);</bsh>
+<p></p>
+<img src="images/time_elapsed.png" width="32" alt="phone"><b><bsh>translate("startpage.label.uptime");</bsh></b><br>
+&nbsp;&nbsp;
+<bsh>print(DateFormat.getDateTimeInstance(DateFormat.LONG, DateFormat.LONG).format(new Date(System.currentTimeMillis() -SystemClock.elapsedRealtime())));</bsh>
+<p></p>
+<img src="images/internal-storage.png" width="32" alt="phone">&nbsp;<b><bsh>translate("startpage.label.storage_internal");</bsh></b><br>
+&nbsp;&nbsp;<bsh>translate("startpage.label.total");</bsh>: <bsh>$$.print(getStorageInfo("int")[0]);</bsh> Mbytes<br>
+&nbsp;&nbsp;<bsh>translate("startpage.label.free");</bsh>: <bsh>$$.print(getStorageInfo("int")[1]);</bsh> Mbytes
+<p></p>
+<img src="images/sdcard.png" width="32" alt="phone"><b><bsh>translate("startpage.label.storage_sdcard");</bsh></b><br>
+&nbsp;&nbsp;<bsh>translate("startpage.label.total");</bsh>: <bsh>$$.print(getStorageInfo("sdcard")[0]);</bsh> Mbytes<br>
+&nbsp;&nbsp;<bsh>translate("startpage.label.free");</bsh>: <bsh>$$.print(getStorageInfo("sdcard")[1]);</bsh> Mbytes
+
+<!-- Dialog -->
+
+<div id="dialog" title="<bsh>translate("startpage.dialog.title");</bsh>" style="font-size: 12px; display: none;">
+<bsh>translate("startpage.dialog.message");</bsh>
+	<!-- Paypal button start -->
+	<center>
+	<form action="https://www.paypal.com/cgi-bin/webscr" target="_blank" method="post">
+	<input type="hidden" name="cmd" value="_donations">
+	<input type="hidden" name="business" value="paypal@fun2code.de">
+	<input type="hidden" name="lc" value="US">
+	<input type="hidden" name="item_name" value="PAW Server">
+	<input type="hidden" name="no_note" value="0">
+	<input type="hidden" name="currency_code" value="EUR">
+	<input type="hidden" name="bn" value="PP-DonationsBF:btn_donateCC_LG.gif:NonHostedGuest">
+	<input type="image" src="https://www.paypal.com/en_US/i/btn/btn_donateCC_LG.gif" border="0" name="submit" alt="PayPal - The safer, easier way to pay online!">
+	<img alt="" border="0" src="https://www.paypal.com/en_US/i/scr/pixel.gif" width="1" height="1">
+	</form>
+	</center>
+	<!-- Paypal button end -->
+
+		</p>
+	</p>
+	<p><br><br><br></p>
+</div>
+
+</body>
+</html>

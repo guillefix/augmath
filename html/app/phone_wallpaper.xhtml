@@ -1,0 +1,25 @@
+<html>
+<body>
+<bsh>source(server.props.get("serviceContext").pawHome + "/html/app/auth.bsh");</bsh>
+<bsh>
+import android.app.Service;
+import android.graphics.*;
+import android.graphics.drawable.*;
+import android.graphics.Bitmap.CompressFormat;
+
+
+Service service = (Service) server.props.get("serviceContext");
+BitmapDrawable wallpaper = service.getApplicationContext().peekWallpaper();
+
+Bitmap bitmap = wallpaper.getBitmap();
+
+ByteArrayOutputStream bos = new ByteArrayOutputStream();
+bitmap.compress(CompressFormat.PNG, 0 /*ignored for PNG*/, bos);
+byte[] bitmapdata = bos.toByteArray();
+
+request.sendResponse(bitmapdata, "image/png");
+request.out.flush();
+request.out.close();
+</bsh>
+</body>
+</html>

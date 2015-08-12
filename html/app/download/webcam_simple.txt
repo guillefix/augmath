@@ -1,0 +1,62 @@
+<html>
+<bsh>
+/****************************
+  Configuration parameters
+*****************************/
+// Page reload in sec
+reloadSec = 2; 
+
+// Output image path and name
+imagePath = server.props.get("serviceContext").pawHome + "/html";
+imageName = "webcam_simple.jpg";
+
+// Image URL
+imageUrl = imageName;
+
+// Image size and quality
+imageWidth = 480;
+imageHeight = 320;
+imageQuality = 50;
+
+// Date footer
+printDate = true;
+dateForeground = "#ffffff";
+dateBackground = "#55000000";
+
+// Geo header
+printGeo = true;
+geoForeground = "#ffffff";
+geoeBackground = "#55000000";
+</bsh>
+
+<head>
+	<title>Simple WebCam</title>
+	<script type="text/javascript" src="app/js/webcam.js"></script>
+	<script type="text/javascript">
+		function init() {
+			initWebcamImages('img1', 'img2', '<bsh>$$.print(imageUrl);</bsh>');
+			setWaitTime(<bsh>$$.print(reloadSec);</bsh>);
+		}
+	</script>
+</head>
+
+<bsh>
+import de.fun2code.android.pawserver.media.*;
+
+ci = CameraPreview.getInstance();
+ci.setSize(imageWidth, imageHeight);
+ci.setFile(new File(imagePath + "/" + imageName));
+ci.setQuality(imageQuality);
+ci.setPrintDate(printDate, dateForeground, dateBackground);
+ci.setPrintGeoLocation(printGeo, geoForeground, geoeBackground);
+ci.setInterval(reloadSec);
+ci.start();
+</bsh>
+
+<body onLoad="init();">
+	<div>
+		<img id="img1" onError="onImageLoadError(this)" style="display: none;"/>
+		<img id="img2" onError="onImageLoadError(this)" style="display: none;"/>
+	</div>
+</body>
+</html>

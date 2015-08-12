@@ -1,0 +1,47 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+<bsh>source(server.props.get("serviceContext").pawHome + "/html/app/bsh/i18n.bsh");</bsh>
+
+<title><bsh>translate("logfile.title");</bsh></title>
+<link rel="stylesheet" href="css/default.css">
+<link type="text/css" href="css/overcast/jquery-ui.css" rel="Stylesheet" />
+
+<script type="text/javascript" src="js/jquery.js"></script>
+<script type="text/javascript" src="js/jquery-ui.js"></script>
+<script type="text/javascript" src="js/executeScript.js"></script>
+
+<bsh>service = server.props.get("serviceContext");</bsh>
+<bsh>
+logfile = service.pawHome + "/logs/server.log";
+
+delete = parameters.get("delete");
+if(delete != null) {
+  new File(logfile).delete();
+}
+</bsh>
+
+</head>
+
+<body>
+<bsh>source(server.props.get("serviceContext").pawHome + "/html/app/auth.bsh");</bsh>
+<h3><bsh>translate("logfile.title");</bsh></h3>
+<p>
+<form method="post">
+<input type="submit" name="refresh" value="<bsh>translate("logfile.button.refresh");</bsh>" />
+&nbsp;
+<input type="submit" name="delete" value="<bsh>translate("logfile.button.delete");</bsh>" />
+</form>
+</p>
+
+<p>
+<textarea style="width: 95%; height: 90%">
+<bsh>
+if(new File(logfile).exists()) {
+    cat(logfile);
+}
+</bsh>
+</textarea>
+</p>
+</body>
+</html>

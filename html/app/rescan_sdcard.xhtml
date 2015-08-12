@@ -1,0 +1,31 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+<bsh>source(server.props.get("serviceContext").pawHome + "/html/app/bsh/i18n.bsh");</bsh>
+<title><bsh>translate("rescan_sdcard.title");</bsh></title>
+<link rel="stylesheet" href="css/default.css">
+<script type="text/javascript" src="js/jquery.js"></script>
+<script type="text/javascript" src="js/executeScript.js"></script>
+</head>
+<body>
+<bsh>source(server.props.get("serviceContext").pawHome + "/html/app/auth.bsh");</bsh>
+<h3><bsh>translate("rescan_sdcard.title");</bsh></h3>
+<img src="images/sdcard.png" align="middle">
+&nbsp;
+<bsh>translate("rescan_sdcard.info");</bsh>
+
+<textarea cols="80" rows="4" id="rescanScript" style="visibility:hidden; display: none;">
+import android.content.Intent;
+import android.os.Environment;
+import android.net.Uri;
+
+service = server.props.get("serviceContext");
+service.sendBroadcast(new Intent(Intent.ACTION_MEDIA_MOUNTED, Uri.parse
+("file://" + Environment.getExternalStorageDirectory())));
+</textarea>
+<p></p>
+<button onClick="executeScript('rescanScript', 'rescanScriptLoader');"><bsh>translate("rescan_sdcard.button.rescan");</bsh></button>&nbsp;<img id="rescanScriptLoader" src="images/loader.gif" style="display: none;" width="16">
+<p></p>
+
+</body>
+</html>

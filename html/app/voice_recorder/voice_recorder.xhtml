@@ -1,0 +1,114 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+<bsh>source(server.props.get("serviceContext").pawHome + "/html/app/bsh/i18n.bsh");</bsh>
+<title><bsh>translate("voice_recorder.title");</bsh></title>
+</head>
+<bsh>source(server.props.get("serviceContext").pawHome + "/html/app/auth.bsh");</bsh>
+<bsh>
+import android.media.MediaRecorder;
+import android.net.Uri;
+import android.content.Intent;
+import de.fun2code.android.pawserver.AndroidInterface;
+
+outputDir = System.getProperty("java.io.tmpdir") != null ? System.getProperty("java.io.tmpdir") : "/sdcard";
+outputFile = outputDir + "/voice_recorder.3gp";
+
+recorder = serverGet("recorder");
+
+record = parameters.get("record");
+action = parameters.get("action");
+
+if(record != null) {
+	if(record.equals("on") && recorder == null) {
+		recorder = new MediaRecorder();
+		serverPut("recorder", recorder);
+		serverPut("recordingDate", new Date());
+
+		recorder.setAudioSource(MediaRecorder.AudioSource.MIC);
+		recorder.setOutputFormat(MediaRecorder.OutputFormat.THREE_GPP);
+		recorder.setAudioEncoder(MediaRecorder.AudioEncoder.AMR_NB);
+		recorder.setOutputFile(outputFile);
+		recorder.prepare();
+		recorder.start();
+        }
+
+	if(record.equals("off") && recorder != null) {
+		recorder.stop();
+		recorder.release();
+		recorder = null;
+		serverPut("recorder", recorder);
+	}
+}
+
+if(action != null && new File(outputFile).exists()) {
+	if(action.equals("download") ) {
+		file = new File(outputFile);
+		mime ="application/x-download";
+		request.responseHeaders.put("Content-disposition", "attachment; filename=\"" + file.getName() + "\"");
+		fis = new FileInputStream(file);
+
+		request.sendResponse(fis, (int)file.length(), mime, 200);
+		fis.close();
+		request.out.flush();
+		request.out.close();
+	}
+
+	if(action.equals("open")) {
+		intent = new Intent();  
+		intent.setAction(android.content.Intent.ACTION_VIEW);  
+		file = new File(outputFile);  
+		intent.setDataAndType(Uri.fromFile(file), "audio/*");  
+		AndroidInterface.sendIntent(intent);
+	}
+
+	if(action.equals("delete")) {
+		new File(outputFile).delete();
+	}
+}
+</bsh>
+
+<link rel="stylesheet" href="../css/default.css">
+
+<body>
+<h3><bsh>translate("voice_recorder.title");</bsh></h3>
+
+<p>
+<bsh>translate("voice_recorder.info", new Object[] {outputFile});</bsh>
+</p>
+
+<p>
+<bsh>translate("voice_recorder.info2");</bsh>
+</p>
+
+<div id="notRecording" style="width: 400px; text-align: center;display: <bsh>$$.print(recorder == null ? "block" : "none");</bsh>;">
+<fieldset style="color: white_;">
+<legend><bsh>translate("voice_recorder.label.not_recording");</bsh></legend>
+<img src="images/mic_off.png"><br>
+<bsh>translate("voice_recorder.button.start");</bsh><br>
+<a href="voice_recorder.xhtml?record=on"><img src="images/record.png" style="width: 22px; border: 0;"></a>
+</fieldset>
+</div>
+
+
+<div id="recording" style="width: 400px; text-align: center; display: <bsh>$$.print(recorder != null ? "block" : "none");</bsh>;">
+<fieldset style="color: white_;">
+<legend><bsh>translate("voice_recorder.label.recording");</bsh> (<bsh>translate("voice_recorder.label.started");</bsh>: <bsh>$$.print(serverGet("recordingDate"));</bsh>)</legend>
+<img src="images/mic_on.png"><br>
+<bsh>translate("voice_recorder.button.stop");</bsh><br>
+<a href="voice_recorder.xhtml?record=off"><img src="images/stop.png" style="width: 24px; border: 0;"></a>
+</fieldset>
+</div>
+
+<div id="fileOptions" style="width: 400px; text-align: center; display: <bsh>$$.print(recorder == null && new File(outputFile).exists() ? "block" : "none");</bsh>;">
+<fieldset style="color: white_;">
+<legend><bsh>translate("voice_recorder.label.file_options");</bsh></legend>
+<button onClick="location.href = 'voice_recorder.xhtml?action=open';"><bsh>translate("voice_recorder.button.open_on_device");</bsh></button>
+<button onClick="location.href = 'voice_recorder.xhtml?action=download';"><bsh>translate("voice_recorder.button.download_file");</bsh></button>
+<button onClick="location.href = 'voice_recorder.xhtml?action=delete';"><bsh>translate("voice_recorder.button.delete_file");</bsh></button>
+
+</fieldset>
+</div>
+
+</body>
+</html>

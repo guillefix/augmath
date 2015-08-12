@@ -1,0 +1,27 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+<title>Changelog 0.56</title>
+<link rel="stylesheet" href="../css/default.css">
+<script type="text/javascript" src="../js/jquery.js"></script>
+<script type="text/javascript" src="../js/executeScript.js"></script>
+<script type="text/javascript" src="../js/jquery.rotate.js"></script>
+</head>
+<body>
+<bsh>source(server.props.get("serviceContext").pawHome + "/html/app/auth.bsh");</bsh>
+<h1>Changelog - Version 0.56</h1>
+
+<h2>Server</h2>
+<ul>
+<li>Icon changed.</li>
+<li>Added pre (<tt>/sdcard/paw/autostart/sys/pre</tt>) and post (<tt>/sdcard/paw/autostart/sys/post</tt>) boot autostart directories to be used by the server on startup.</li>
+</ul>
+<p></p>
+<h2>Web App</h2>
+<ul>
+<li>MP3 Player added to the <b>Media</b> menu. The information used by the player is extracted from the Android device's media database. The coverart will be presented by using the <a class="link" href="http://www.jcoverflip.com/" target="_blank">jCoverflip</a> jQuery plugin.<br>
+For playback the very lightweight (9k) <a href="http://flash-mp3-player.net/" class="link" target="_blank">Flash MP3 Player</a> is used.</li>
+</ul>
+<p></p>
+</body>
+</html>

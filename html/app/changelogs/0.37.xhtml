@@ -1,0 +1,31 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+<title>Changelog 0.37</title>
+<link rel="stylesheet" href="../css/default.css">
+<script type="text/javascript" src="../js/jquery.js"></script>
+<script type="text/javascript" src="../js/executeScript.js"></script>
+</head>
+<body>
+<bsh>source(server.props.get("serviceContext").pawHome + "/html/app/auth.bsh");</bsh>
+<h1>Changelog - Version 0.37</h1>
+<p>
+This is mainly an Eclair/Froyo compatibility realease.
+</p>
+
+<h2>Server</h2>
+<ul>
+  <li>Some server bugfixes concerning shutdown.</li>
+  <li>Froyo no longer supports the restarting of packages, so the server shutdown has been changed.<br>This also affects the process list in the web app.</li>
+</ul>
+<p></p>
+
+<h2>Web App</h2>
+<ul>
+  <li>A Froyo info message has been added to the process list application that stopping processes might not work as before, because restarting packages is no longer possible.</li>
+  <li>READ_LOG permission has been added to the manifest, so logcat should now work again. This was broken for devices running Eclair.</li>
+</ul>
+<p></p>
+
+</body>
+</html>

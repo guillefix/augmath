@@ -1,0 +1,180 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+<title>Changelog 0.89</title>
+<link rel="stylesheet" href="../css/default.css">
+<script type="text/javascript" src="../js/jquery.js"></script>
+<script type="text/javascript" src="../js/executeScript.js"></script>
+<script type="text/javascript" src="../js/jquery.rotate.js"></script>
+</head>
+<body>
+<bsh>source(server.props.get("serviceContext").pawHome + "/html/app/auth.bsh");</bsh>
+<h1>Changelog - Version 0.89</h1>
+
+<h2>App</h2>
+<ul>
+<li>Missing preferences were added and the preference screen was reorganized.</li>
+<li>PageKite (http://www.pagekite.net) has been added to the preferences.<br>
+PageKite is a system for connecting your localhost servers to the public Internet, giving them names and making them globally accessible.<br/>
+It can be used over WiFi/3G and works very well in combination with PAW server.</li>
+</ul>
+<p></p>
+
+<h2>Server</h2>
+<ul>
+<li>BeanShell Handler updated.</li>
+</ul>
+<p></p>
+
+<h2>Web Interface</h2>
+<ul>
+<li>From the <i>Server&rarr;Shutdown</i> page it is now possible to restart the server.</li>
+<li>Loglevel can be adjusted from the <i>Server&rarr;Settings</i> page.
+<li>New page to display server logfile.</li>
+</ul>
+<p></p>
+
+<h2>PAW Functions</h2>
+<h3>Bootup Preference Injection</h3>
+To make it easier to change app preferences without starting the app a mechnism was implemented to inject preference on bootup of the device.
+<p>
+<b>Note:</b> This is only done at bootup of the device an not on each start of the app.
+</p>
+Preferences that should be set can be specified inside the file <tt>PAW_HOME/etc/preferences</tt>.<br/>
+The file follows the Java properties file definition. The types <tt>String</tt>, <tt>Integer</tt>, <tt>Float</tt> and <tt>Boolean</tt> are auto detected.<br/>
+<br/>
+This mechanism can also be used within own web apps. The preferences are located inside the shared preferences within the PAW application.<br/>
+The preference is named <tt>PawServer</tt>.<br/>
+<br/>
+Here is a sample <tt>preferences</tt> file with the available PAW preferences:
+<pre>
+#------------------------------------------------
+# Allows to change PAW preferences upon boot.
+#------------------------------------------------
+#AutoStart=true
+#HideNotificationIcon=true
+#ShowUrlInNotification=true
+#ExecAutostartScripts=true
+#UseWakeLock=true
+#FreezeContent=true
+</pre>
+
+<h3>Camera Preview</h3>
+Some new methods have been added to the <tt>CameraPreview</tt> class:
+<p>
+<table cellpadding="5">
+<tr><td><tt>File getFile()</tt></td><td>Returns the output file.</td></tr>
+<tr><td><tt>setBackupDirectory(File dir)</tt></td><td>Sets the backup directory which stores copies of the images. The directory must exist. File format is: <tt>yyyyMMddHHmmss.&lt;ext&gt;</tt></td></tr>
+<tr><td><tt>File getBackupDirectory()</tt></td><td>Returns the backup directory.</td></tr>
+</table>
+</p>
+<p></p>
+<h3>WebSockets</h3>
+PAW supports WebSockets with a <tt>WebSocket</tt> handler that can be inserted into the <tt>handler.xml</tt> file.<br/>
+The handler has two parameters, <tt>config</tt> and <tt>basedir</tt>. The <tt>config</tt> parameter defines where the WebSocket configuration is located, the <tt>basedir</tt> parameter defines the root directoty for BeanShell scripts.
+<p>
+Here is a sample handler configuration, which should be located before the authentication handler:
+<pre>
+  &lt;handler status="active"&gt;
+    &lt;name&gt;WebSocket Handler&lt;/name&gt;
+    &lt;description>WebSocket Handler&lt;/description&gt;
+    &lt;removable>true&lt;/removable&gt;
+    &lt;id>websocket&lt;/id&gt;
+    &lt;files/&gt;
+    &lt;params&gt;
+      &lt;param name="websocket.class" value="org.paw.handler.android.websocket.WebSocketHandler" /&gt;
+      &lt;param name="websocket.basedir" value="[PAW_HOME]" /&gt;
+      &lt;param name="websocket.config" value="[PAW_HOME]/webconf/websocket.conf" /&gt;
+    &lt;/params&gt;
+  &lt;/handler&gt;
+</pre>
+</p>
+
+<h4>WebSocket Configuration</h4>
+The WebSocket configuration file is a simple textfile whith the following format:
+<pre>&lt;WebSocket protocol&gt;:&lt;BeanShell file (extension .bsh) or native class&gt;</pre>
+The first parameter is the WebSocket protocol which defined by the <tt>sec-websocket-protocol</tt> header field.
+Regular Expression are supported as protocol name.<br/>
+The second is a BeanShell script with the extension <tt>.bsh</tt> or a native class.
+<p>
+Sample configuration file:
+<pre>
+# Format:
+# Protocol:Bsh script (.bsh extension) or class name
+#
+chat.*:webSocketTest.WebSocketTest
+echo:html/websocket_echo.bsh
+</pre>
+</p>
+
+<h4>BeanShell Scripts</h4>
+The easiest way to use WebSockets are BeanShell scripts. These are quite slow, so in a production environmant you should consider using native classes.<br/>
+The following variables are passed: <tt>action</tt>, <tt>protocol</tt>, <tt>socket</tt>, <tt>sockets</tt>, <tt>message</tt>.<br/><br/>
+The <tt>action</tt> variable can be <tt>"connect"</tt>, <tt>"disconnect"</tt> or <tt>"text"</tt>. The value <tt>"connect"</tt> is set if a client connects to a socket and <tt>"disconnect"</tt> if a client disconnects. In addition the used protocol name and the <i>Socket</i> are passed. The <tt>sockets</tt> and <tt>message</tt> variables are not present in these cases.<br/><br/>
+If a text message is received, the <tt>message</tt> and <tt>sockets</tt> variables are passed. The variable <tt>message</tt> contains the text message as <i>String</i>. All sockets belonging to the protocol are stored inside the <tt>sockets</tt> variable which is a <i>List<i> of <i>Socket</i>s.
+<br/><br/>
+To send a message to a socket, the following call can be used:<br/>
+<tt>de.fun2code.android.pawserver.websocket.WebSocketMessage.sendMessage(message, socket)</tt>
+<p>
+Here is a sample scripts, which sends the received message to all connected clients:<br/>
+<pre>
+if(action.equals("text")) {
+    for(sock : sockets) {
+        try {
+            de.fun2code.android.pawserver.websocket.WebSocketMessage.sendMessage(message, sock);
+        }
+        catch(e) {}
+    }
+}
+</pre>
+</p>
+
+<h4>Native Classes</h4>
+Using native classes significantly increases performance, but they are not as easy to use in comparison to BeanShell scripts.<br/>
+<p>
+To get started, put the following <i>JAR</i> file to the classpath of your project: <a class="link" href="../get_file.xhtml?file=<bsh>$$.print(server.props.get("serviceContext").pawHome + "/html/app/download/pawWebSocket.jar");</bsh>" target="_blank">pawWebSocket.jar</a>
+</p>
+
+After the code is compiled, you have to convert the calses into <i>DEX</i> format and put them into the <tt>PAW_HOME/webconf/dex</tt> directory.<br/>
+A detailed description can be found inside the following blog post: <a class="link" href="http://fun2code-blog.blogspot.de/2011/07/paw-dynamic-dex-class-loading.html" target="_blank">PAW - Dynamic DEX Class Loading</a>
+
+<p>
+Here is a sample Java classfile that does exactly the same as the BeanShell sample above:<br7>
+<pre>
+import java.io.IOException;
+import java.net.Socket;
+import java.util.List;
+
+import de.fun2code.android.pawserver.websocket.WebSocketListener;
+import de.fun2code.android.pawserver.websocket.WebSocketMessage;
+
+public class WebSocketTest implements WebSocketListener{
+
+	@Override
+	public void onConnect(Socket socket, String protocol) {
+	}
+
+	@Override
+	public void onDisconnect(Socket socket, String protocol) {
+	}
+
+	@Override
+	public void onMessage(String message, Socket socket, String protocol,
+			List<Socket> connectedSockets) {
+		for(Socket sock : connectedSockets) {
+			try {
+				WebSocketMessage.sendMessage(message, sock);
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
+	}
+
+}
+</pre>
+</p>
+<p></p>
+
+
+</body>
+</html>

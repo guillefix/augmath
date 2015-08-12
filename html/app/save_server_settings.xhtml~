@@ -1,0 +1,39 @@
+<html>
+<body>
+<bsh>source(server.props.get("serviceContext").pawHome + "/html/app/auth.bsh");</bsh>
+<bsh>
+import org.json.*;
+import android.app.Service;
+
+service = (Service) server.props.get("serviceContext");
+
+// server_port: $("[name=serverPort]").val(), http_proxy: httpProxy, https_proxy
+
+jsonLogin = new JSONObject();
+try {
+	serverPort = request.getQueryData().get("server_port");
+	httpProxy = request.getQueryData().get("http_proxy");
+	httpsProxy = request.getQueryData().get("https_proxy");
+
+	serverXml = ServerConfigUtil.buildServerConfig(service.getPawServer(),
+		serverPort != null ? Integer.parseInt(serverPort) : 8080,
+		httpProxy != null && httpProxy.equals("on") ? true : false,
+		httpsProxy != null && httpsProxy.equals("on") ? true : false);
+
+	out = new BufferedWriter(new FileWriter(server.props.get("serviceContext").pawHome + "/conf/server.xml"));
+	out.write(serverXml);
+	out.close();
+
+	jsonLogin.put("success", true);
+}
+catch(Exception e) {
+	jsonLogin.put("success", false);
+	jsonLogin.put("message", "Settings could not be saved!");
+}
+
+request.sendResponse(jsonLogin.toString().getBytes(), "text/plain");
+request.out.flush();
+request.out.close();
+</bsh>
+</body>
+</html>

@@ -1,0 +1,10 @@
+  <!ELEMENT reg-filters (reg-filter*)>
+  <!ELEMENT reg-filter (name, description, file?, regexp*)>
+  <!ATTLIST reg-filter type (replace|size) #REQUIRED
+                   status (active|inactive) #REQUIRED>
+  <!ELEMENT name (#PCDATA)> 
+  <!ELEMENT description (#PCDATA)> 
+  <!ELEMENT file (#PCDATA)> 
+  <!ELEMENT regexp (match, subst)> 
+  <!ELEMENT match (#PCDATA)> 
+  <!ELEMENT subst (#PCDATA)> 

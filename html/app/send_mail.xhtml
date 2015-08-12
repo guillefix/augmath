@@ -1,0 +1,8 @@
+<bsh>source(server.props.get("serviceContext").pawHome + "/html/app/auth.bsh");</bsh>
+<bsh>
+recipient = parameters.get("recipient");
+subject = parameters.get("subject");
+body = parameters.get("body");
+
+sendMail(recipient, subject, body);
+</bsh>

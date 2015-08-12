@@ -1,0 +1,33 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+<bsh>source(server.props.get("serviceContext").pawHome + "/html/app/bsh/i18n.bsh");</bsh>
+
+<title><bsh>translate("donate.title");</bsh></title>
+<link rel="stylesheet" href="css/default.css">
+<script type="text/javascript" src="js/jquery.js"></script>
+<script type="text/javascript" src="js/executeScript.js"></script>
+</head>
+<body>
+<bsh>source(server.props.get("serviceContext").pawHome + "/html/app/auth.bsh");</bsh>
+<h3><bsh>translate("donate.title");</bsh></h3>
+<p>
+<bsh>translate("donate.info");</bsh>
+	<!-- Paypal button start -->
+	<form action="https://www.paypal.com/cgi-bin/webscr" target="_blank" method="post">
+	<input type="hidden" name="cmd" value="_donations">
+	<input type="hidden" name="business" value="paypal@fun2code.de">
+	<input type="hidden" name="lc" value="US">
+	<input type="hidden" name="item_name" value="PAW Server">
+	<input type="hidden" name="no_note" value="0">
+	<input type="hidden" name="currency_code" value="EUR">
+	<input type="hidden" name="bn" value="PP-DonationsBF:btn_donateCC_LG.gif:NonHostedGuest">
+	<input type="image" src="https://www.paypal.com/en_US/i/btn/btn_donateCC_LG.gif" border="0" name="submit" alt="PayPal - The safer, easier way to pay online!">
+	<img alt="" border="0" src="https://www.paypal.com/en_US/i/scr/pixel.gif" width="1" height="1">
+	</form>
+	<!-- Paypal button end -->
+
+</p>
+
+</body>
+</html>

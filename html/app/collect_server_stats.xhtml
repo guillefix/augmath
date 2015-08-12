@@ -1,0 +1,49 @@
+<bsh>source(server.props.get("serviceContext").pawHome + "/html/app/auth.bsh");</bsh>
+<bsh>
+/* Provides Server statistics */
+
+import org.json.*;
+
+json = new JSONObject();
+
+
+/* Pool is no longer used !
+
+// Get the BeanSHell Handler
+for(int i=0; i < server.handler.handlers.length; i++) {
+    if(server.handler.handlers[i] instanceof org.paw.handler.BeanShellFileHandler) {
+        beanShellHandler = server.handler.handlers[i];
+        break;
+    }
+}
+
+// Get the Interpreter Pool
+pool = beanShellHandler.getPool();
+
+json.put("poolInit", pool.getInit());
+json.put("poolMax", pool.getMax());
+json.put("poolTotal", pool.getTotal());
+json.put("poolAvailable", pool.getAvailable());
+json.put("poolCheckedOut", pool.getCheckedOut());
+*/
+
+json.put("serverAcceptCount", server.acceptCount);
+json.put("serverErrorCount", server.errorCount);
+
+
+/* System Load and CPU values */
+source(server.props.get("serviceContext").pawHome + "/html/app/bsh/systemLoad.bsh");
+json.put("cpus", getCpus());
+
+systemLoad = getSystemLoad();
+json.put("load", systemLoad.get("load"));
+json.put("user", systemLoad.get("user"));
+json.put("nice", systemLoad.get("nice"));
+json.put("system", systemLoad.get("system"));
+json.put("idle", systemLoad.get("idle"));
+
+
+request.sendResponse(json.toString().getBytes(), "text/plain");
+request.out.flush();
+request.out.close();
+</bsh>

@@ -1,0 +1,131 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+<title>Changelog 0.49</title>
+<link rel="stylesheet" href="../css/default.css">
+<script type="text/javascript" src="../js/jquery.js"></script>
+<script type="text/javascript" src="../js/executeScript.js"></script>
+<script type="text/javascript" src="../js/jquery.rotate.js"></script>
+</head>
+<body>
+<bsh>source(server.props.get("serviceContext").pawHome + "/html/app/auth.bsh");</bsh>
+<h1>Changelog - Version 0.49</h1>
+
+<h2>Server</h2>
+<h3>Autostart</h3>
+The Server now supports Autostart of scripts if enabled in the server settings.<br>
+Scripts are executed in alphabetic order. They reside inside the <tt>/sdcard/paw/autostart</tt> directory and have the file extension <tt>bsh</tt>.
+<br><br>
+A test script is available <a href="/app/download/001_uptime.txt" class="link" target="_blank">here</a>. After renaming the script to have a <tt>bsh</tt> extension and placing it inside the autostart folder and enabling the server setting the script will be automatically started at next server startup.<br>
+The script starts a background thread that displays the serve uptime in the notification bar of the device.
+<p></p>
+Example script:<br>
+<textarea cols="80" rows="25">
+<bsh>cat(server.props.get("serviceContext").pawHome + "/html/app/download/001_uptime.txt");</bsh>
+</textarea>
+<p></p>
+<h2>Web App</h2>
+<ul>
+<li>An Autostart option has been added to the Server Settings.</li>
+<li>The APK Backup now has the option to install the APK directly on another Android device by pressing the <img src="/app/images/install.png" width="26" height="26"> image.</li>
+</ul>
+
+<h2>Android Functions</h2>
+<h3>Send SMS Message</h3>
+The following command sends a SMS message (SMS is NOT stored in outbox):<br>
+<tt>sendSMS(String number, String message)</tt>
+<p></p>
+<h3>SMS Actions</h3>
+<p>
+SMS Actions are scripts that are executed when a SMS message with the correct <b>Name</b> and <b>PIN</b> combination arrives.<br>
+Actions can be registered with <tt>SmsListener</tt> available in the <tt>de.fun2code.android.pawserver.listener</tt> package.<br><br>
+
+The SMS has to have the following format to be processed by an action:<br>
+<tt>ActionName</tt><b>:</b><tt>PIN</tt><b>:</b><tt>[Additional Arguments]</tt>
+<p></p>
+The scripts have access to the following additional variables:
+<p>
+<ul>
+<li><tt>smsArgs</tt>: Additional arguments that can be added after the last colon.</li>
+<li><tt>smsNumber</tt>: The phone number of the SMS sender.</li>
+</ul>
+</p>
+</p>
+
+<p></p>
+The <tt>SmsListener</tt> provides the following Action methods:
+<p>
+<ul>
+<li><tt>boolean registerAction(String name, String pin, String code)</tt>: Registers a new Action. Returns <tt>true</tt> on success, otherwise <tt>false</tt>.</li>
+<li><tt>boolean updateAction(String name, String pin, String code)</tt>: Updates an existing Action. Returns <tt>true</tt> on success, otherwise <tt>false</tt>.</li>
+<li><tt>boolean removeAction(String name)</tt>: Updates an existing Action. Returns <tt>true</tt> on success, otherwise <tt>false</tt>.</li>
+<li><tt>TreeMap getActions()</tt>: Returns all Actions as TreeMap.</li>
+<li><tt>clearActions()</tt>: Clears all Actions.</li>
+<li><tt>testMessage(String phoneNumber, String smsBody)</tt>: Tests an Action.</li>
+</ul>
+</p>
+</p>
+
+<p>
+The example registers a SMS Action which displays the additional arguments of a SMS message as Toast message if the message has the following format:<br>
+<tt>reply:123:Test arguments...</tt><br><br>
+The last command tests the message.
+</p>
+<textarea cols="80" rows="6" id="smsActionScript">
+import de.fun2code.android.pawserver.listener.*;
+
+SmsListener.registerAction("test", "123", "makeToast(\"Number: \" + smsNumber + \" Args: \" + smsArgs, \"short\");");
+SmsListener.testMessage("5463", "test:123:Test arguments...");
+</textarea>
+<p></p>
+<button onClick="executeScript('smsActionScript', 'smsActionScriptLoader');">Execute Script</button>&nbsp;<img id="clipboardScriptLoader" src="../images/loader.gif" style="display: none;" width="16">&nbsp;<img id="smsActionScriptLoader" src="../images/loader.gif" style="display: none;" width="16">
+<p></p>
+
+
+<h3>SMS Scripts</h3>
+<p>
+SMS Scripts are scripts that are executed in alphabetic order each time a SMS message arrives.<br>
+Scripts can be registered with <tt>SmsListener</tt> available in the <tt>de.fun2code.android.pawserver.listener</tt> package.<br><br>
+
+<p></p>
+The scripts have access to the following additional variables:
+<p>
+<ul>
+<li><tt>smsMessage</tt>: SMS body.</li>
+<li><tt>smsNumber</tt>: The phone number of the SMS sender.</li>
+</ul>
+</p>
+</p>
+
+<p></p>
+The <tt>SmsListener</tt> provides the following Script methods:
+<p>
+<ul>
+<li><tt>boolean registerScript(String name, String code)</tt>: Registers a new Script. Returns <tt>true</tt> on success, otherwise <tt>false</tt>.</li>
+<li><tt>boolean updateScript(String name, String code)</tt>: Updates an existing Script. Returns <tt>true</tt> on success, otherwise <tt>false</tt>.</li>
+<li><tt>boolean removeScript(String name)</tt>: Updates an existing Script. Returns <tt>true</tt> on success, otherwise <tt>false</tt>.</li>
+<li><tt>TreeMap getScripts()</tt>: Returns all Scripts as TreeMap.</li>
+<li><tt>clearScripts()</tt>: Clears all Scripts.</li>
+<li><tt>testMessage(String phoneNumber, String smsBody)</tt>: Tests the Scripts.</li>
+</ul>
+</p>
+</p>
+
+<p>
+The example registers a SMS Scripts which displays the number and message as Toast message on the display of the device.<br>
+The last line is used to test the Script.
+</p>
+<textarea cols="80" rows="6" id="smsScriptsScript">
+import de.fun2code.android.pawserver.listener.*;
+
+SmsListener.registerScript("test", "makeToast(\"Number: \" + smsNumber + \" Message: \" + smsMessage, \"short\");");
+SmsListener.testMessage("5463", "SMS message...");
+</textarea>
+<p></p>
+<button onClick="executeScript('smsScriptsScript', 'smsScriptsScriptLoader');">Execute Script</button>&nbsp;<img id="clipboardScriptLoader" src="../images/loader.gif" style="display: none;" width="16">&nbsp;<img id="smsScriptsScript" src="../images/loader.gif" style="display: none;" width="16">
+<p></p>
+
+
+
+</body>
+</html>

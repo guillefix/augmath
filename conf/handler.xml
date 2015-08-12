@@ -1,0 +1,822 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<handlers>
+  <handler status="inactive">
+    <name>Junkbuster Blocklist</name>
+    <description>Filters unwanted websites.
+If such a site is found only a transparent GIF is returned,
+leaving the page empty.
+Blocked sites can be configured in the file  blockfile.
+@URL "html/handlers/junkbuster_blocklist.html"</description>
+    <removable>true</removable>
+    <id>junk</id>
+    <files>
+      <file>blockfile</file>
+    </files>
+    <params>
+      <param name="junk.class" value="org.paw.handler.JunkBusterHandler" />
+      <param name="junk.image" value="[PAW_HOME]/images/ad_transp.gif" />
+      <param name="junk.hosts" value="@[PAW_HOME]/conf/blockfile" />
+      <param name="mime.gif" value="image/gif" />
+    </params>
+  </handler>
+  <handler status="inactive">
+    <name>Request Headers</name>
+    <description>Allows the manipulation of request headers
+@URL "html/handlers/request_headers.html"</description>
+    <removable>true</removable>
+    <id>header</id>
+    <files>
+      <file>headers-request</file>
+    </files>
+    <params>
+      <param name="header.class" value="org.paw.handler.HeaderHandler" />
+      <param name="header.headers" value="[PAW_HOME]/conf/headers-request" />
+    </params>
+  </handler>
+  <handler status="inactive">
+    <name>Redirector</name>
+    <description>Redirects URLs
+@URL "html/handlers/redirector.html"</description>
+    <removable>true</removable>
+    <id>redirect</id>
+    <files>
+      <file>redirects</file>
+    </files>
+    <params>
+      <param name="redirect.class" value="org.paw.handler.RedirectHandler" />
+      <param name="redirect.rules" value="[PAW_HOME]/conf/redirects" />
+    </params>
+  </handler>
+  <handler status="active">
+    <name>Cookie Session</name>
+    <description />
+    <removable>true</removable>
+    <id>cookieSessionHandler</id>
+    <files />
+    <params>
+      <param name="cookieSessionHandler.class" value="sunlabs.brazil.handler.CookieSessionHandler" />
+    </params>
+  </handler>
+  <handler status="active">
+    <name>Basic Auth Handler</name>
+    <description>Basic Auth Handler. Configuration resides in [PAW_HOME]/webconf/auth</description>
+    <removable>true</removable>
+    <id>auth</id>
+    <files>
+      <file>headers-request</file>
+    </files>
+    <params>
+      <param name="auth.class" value="org.paw.handler.BasicAuthHandler" />
+      <param name="auth.confdir" value="[PAW_HOME]/webconf/auth" />
+    </params>
+  </handler>
+  <handler status="active">
+    <name>Native Mapper</name>
+    <description>Maps URLs to native DEX classes</description>
+    <removable>true</removable>
+    <id>nativemapper</id>
+    <files />
+    <params>
+      <param name="nativemapper.class" value="org.paw.handler.AndroidNativeMapperHandler" />
+      <param name="nativemapper.mapdir" value="[PAW_HOME]/webconf/mapping" />
+    </params>
+  </handler>
+  <handler status="inactive">
+    <name>BeanShell</name>
+    <description>BeanShell Template Handler
+This is the old BeanShell handler, which is no longer used.
+    </description>
+    <removable>true</removable>
+    <id>beanshell</id>
+    <files />
+    <params>
+      <param name="beanshell.class" value="sunlabs.brazil.template.TemplateHandler" />
+      <param name="beanshell.root" value="[PAW_HOME]/html" />
+      <param name="beanshell.templates" value="beanshellTemplate" />
+      <param name="beanshellTemplate.class" value="sunlabs.brazil.beanshell.BeanShellServerTemplate" />
+      <param name="beanshellTemplate.debug" value="false" />
+    </params>
+  </handler>
+  <handler status="active">
+    <name>BeanShell Handler</name>
+    <description>BeanShell Handler</description>
+    <removable>true</removable>
+    <id>bsh</id>
+    <files />
+    <params>
+      <param name="bsh.class" value="org.paw.handler.BeanShellFileHandler" />
+      <param name="bsh.root" value="[PAW_HOME]/html" />
+      <param name="bsh.default" value="index.xhtml" />
+      <param name="bsh.minInterpreters" value="5" />
+      <param name="bsh.maxInterpreters" value="10" />
+    </params>
+  </handler>
+  <handler status="active">
+    <name>File Handler</name>
+    <description>Standard handler for fetching static files. This handler does URL to file conversion, file suffix to mime type
+lookup, delivery of index files where providing directory references, and redirection for missing slashes (/)
+at the end of directory requests.
+The following configuration parameters are used:
+
+[root]
+property for document root (.) Since the document root is common to many handlers, if no root
+property is found with the supplied prefix, then the root property with the empty prefix ("") is used
+instead. This allows many handlers to share the common property.
+
+[default]
+The document to deliver if the URL ends in "/". (defaults to index.html.)
+
+[prefix]
+Only url&#x2019;s that start with this are allowed. defaults to "". The prefix is removed from the url before
+looking it up in the file system. So, if prefix is /foo then the the file [root]/foo/bar.html will
+be delivered in response to the url /bar.html.
+
+[mime]
+property for mime type For each file suffix .XX, the property mime.XX is used to determine the mime
+type. If no property exists (or its value is "unknown", the document will not be delivered.
+mimePatterns
+List of glob patterns that match file name suffixes for matching mime types. For example:
+
+	mimePatterns=.x* .a?
+	mime.x*=text/xml
+	mime.a?=application/octet-stream
+
+The types corrosponding to mime patterns are searched for in mimePattern order, first looking for
+prefix.mime.pattern then mime.pattern. If neither property exists, then the type is invalid.
+getOnly
+If defined, only "GET" requests will be processed. By default, all request types are handled. (Note: this
+is the inverse of the previous policy, defined by the undocumented "allow" parameter).
+
+Release 2.3 - 341 - 04/16/07
+Brazil project Developer Documentation SML-2006-0530 Class FileHandler
+The FileHandler sets the following entries in the request properties as a side-effect:
+
+[fileName]
+The absolute path of the file that couldn&#x2019;t be found.
+
+[DirectoryName]
+If the URL specified is a directory name, its absolute path is placed here.
+
+[lastModified]
+The Time stamp of the last modified time
+This handler supports a subset of the http range header of the form range bytes=[start]-[end],
+where start and end are byte positions in the file, starting at zero. A large or missing end value is treated as
+the end of the file. If a valid rangeheader is found, the appropriate content-range header is returned,
+along with the partial contents of the file.</description>
+    <removable>true</removable>
+    <id>filehandler</id>
+    <files />
+    <params>
+      <param name="filehandler.class" value="sunlabs.brazil.server.FileHandler" />
+      <param name="filehandler.root" value="[PAW_HOME]/html" />
+      <param name="filehandler.defaults" value="index.html" />
+    </params>
+  </handler>
+  <handler status="active">
+    <name>Directory Handler</name>
+    <description />
+    <removable>true</removable>
+    <id>dirhandler</id>
+    <files />
+    <params>
+      <param name="dirhandler.class" value="sunlabs.brazil.handler.DirectoryHandler" />
+      <param name="dirhandler.prefix" value="/" />
+    </params>
+  </handler>
+  <handler status="active">
+    <name>Mimetypes</name>
+    <description>Definition of mimetypes</description>
+    <removable>true</removable>
+    <id />
+    <files />
+    <params>
+      <param name="mime.apk" value="application/vnd.android.package-archive" />
+      <param name="mime.ez" value="application/andrew-inset" />
+      <param name="mime.3gp" value="video/3gpp" />
+      <param name="mime.3g2" value="video/3gpp2" />
+      <param name="mime.atom" value="application/atom+xml" />
+      <param name="mime.atomcat" value="application/atomcat+xml" />
+      <param name="mime.atomsvc" value="application/atomsvc+xml" />
+      <param name="mime.ccxml" value="application/ccxml+xml" />
+      <param name="mime.davmount" value="application/davmount+xml" />
+      <param name="mime.ecma" value="application/ecmascript" />
+      <param name="mime.pfr" value="application/font-tdpfr" />
+      <param name="mime.stk" value="application/hyperstudio" />
+      <param name="mime.js" value="application/javascript" />
+      <param name="mime.json" value="application/json" />
+      <param name="mime.hqx" value="application/mac-binhex40" />
+      <param name="mime.cpt" value="application/mac-compactpro" />
+      <param name="mime.mrc" value="application/marc" />
+      <param name="mime.ma" value="application/mathematica" />
+      <param name="mime.nb" value="application/mathematica" />
+      <param name="mime.mb" value="application/mathematica" />
+      <param name="mime.mathml" value="application/mathml+xml" />
+      <param name="mime.mbox" value="application/mbox" />
+      <param name="mime.mscml" value="application/mediaservercontrol+xml" />
+      <param name="mime.mp4s" value="application/mp4" />
+      <param name="mime.doc" value="application/msword" />
+      <param name="mime.dot" value="application/msword" />
+      <param name="mime.mxf" value="application/mxf" />
+      <param name="mime.oda" value="application/oda" />
+      <param name="mime.ogg" value="application/ogg" />
+      <param name="mime.pdf" value="application/pdf" />
+      <param name="mime.pgp" value="application/pgp-encrypted" />
+      <param name="mime.asc" value="application/pgp-signature" />
+      <param name="mime.sig" value="application/pgp-signature" />
+      <param name="mime.prf" value="application/pics-rules" />
+      <param name="mime.p10" value="application/pkcs10" />
+      <param name="mime.p7m" value="application/pkcs7-mime" />
+      <param name="mime.p7c" value="application/pkcs7-mime" />
+      <param name="mime.p7s" value="application/pkcs7-signature" />
+      <param name="mime.cer" value="application/pkix-cert" />
+      <param name="mime.crl" value="application/pkix-crl" />
+      <param name="mime.pkipath" value="application/pkix-pkipath" />
+      <param name="mime.pki" value="application/pkixcmp" />
+      <param name="mime.pls" value="application/pls+xml" />
+      <param name="mime.ai" value="application/postscript" />
+      <param name="mime.eps" value="application/postscript" />
+      <param name="mime.ps" value="application/postscript" />
+      <param name="mime.cww" value="application/prs.cww" />
+      <param name="mime.rdf" value="application/rdf+xml" />
+      <param name="mime.rif" value="application/reginfo+xml" />
+      <param name="mime.rnc" value="application/relax-ng-compact-syntax" />
+      <param name="mime.rl" value="application/resource-lists+xml" />
+      <param name="mime.rs" value="application/rls-services+xml" />
+      <param name="mime.rsd" value="application/rsd+xml" />
+      <param name="mime.rss" value="application/rss+xml" />
+      <param name="mime.rtf" value="application/rtf" />
+      <param name="mime.sbml" value="application/sbml+xml" />
+      <param name="mime.sdp" value="application/sdp" />
+      <param name="mime.setpay" value="application/set-payment-initiation" />
+      <param name="mime.setreg" value="application/set-registration-initiation" />
+      <param name="mime.shf" value="application/shf+xml" />
+      <param name="mime.smi" value="application/smil+xml" />
+      <param name="mime.smil" value="application/smil+xml" />
+      <param name="mime.gram" value="application/srgs" />
+      <param name="mime.grxml" value="application/srgs+xml" />
+      <param name="mime.ssml" value="application/ssml+xml" />
+      <param name="mime.plb" value="application/vnd.3gpp.pic-bw-large" />
+      <param name="mime.psb" value="application/vnd.3gpp.pic-bw-small" />
+      <param name="mime.pvb" value="application/vnd.3gpp.pic-bw-var" />
+      <param name="mime.pwn" value="application/vnd.3m.post-it-notes" />
+      <param name="mime.aso" value="application/vnd.accpac.simply.aso" />
+      <param name="mime.imp" value="application/vnd.accpac.simply.imp" />
+      <param name="mime.acu" value="application/vnd.acucobol" />
+      <param name="mime.atc" value="application/vnd.acucorp" />
+      <param name="mime.acutc" value="application/vnd.acucorp" />
+      <param name="mime.xdp" value="application/vnd.adobe.xdp+xml" />
+      <param name="mime.xfdf" value="application/vnd.adobe.xfdf" />
+      <param name="mime.ami" value="application/vnd.amiga.ami" />
+      <param name="mime.cii" value="application/vnd.anser-web-certificate-issue-initiation" />
+      <param name="mime.fti" value="application/vnd.anser-web-funds-transfer-initiation" />
+      <param name="mime.atx" value="application/vnd.antix.game-component" />
+      <param name="mime.mpkg" value="application/vnd.apple.installer+xml" />
+      <param name="mime.aep" value="application/vnd.audiograph" />
+      <param name="mime.mpm" value="application/vnd.blueice.multipass" />
+      <param name="mime.bmi" value="application/vnd.bmi" />
+      <param name="mime.rep" value="application/vnd.businessobjects" />
+      <param name="mime.cdxml" value="application/vnd.chemdraw+xml" />
+      <param name="mime.mmd" value="application/vnd.chipnuts.karaoke-mmd" />
+      <param name="mime.cdy" value="application/vnd.cinderella" />
+      <param name="mime.cla" value="application/vnd.claymore" />
+      <param name="mime.c4g" value="application/vnd.clonk.c4group" />
+      <param name="mime.c4d" value="application/vnd.clonk.c4group" />
+      <param name="mime.c4f" value="application/vnd.clonk.c4group" />
+      <param name="mime.c4p" value="application/vnd.clonk.c4group" />
+      <param name="mime.c4u" value="application/vnd.clonk.c4group" />
+      <param name="mime.csp" value="application/vnd.commonspace" />
+      <param name="mime.cst" value="application/vnd.commonspace" />
+      <param name="mime.cdbcmsg" value="application/vnd.contact.cmsg" />
+      <param name="mime.cmc" value="application/vnd.cosmocaller" />
+      <param name="mime.clkx" value="application/vnd.crick.clicker" />
+      <param name="mime.clkk" value="application/vnd.crick.clicker.keyboard" />
+      <param name="mime.clkp" value="application/vnd.crick.clicker.palette" />
+      <param name="mime.clkt" value="application/vnd.crick.clicker.template" />
+      <param name="mime.clkw" value="application/vnd.crick.clicker.wordbank" />
+      <param name="mime.wbs" value="application/vnd.criticaltools.wbs+xml" />
+      <param name="mime.pml" value="application/vnd.ctc-posml" />
+      <param name="mime.ppd" value="application/vnd.cups-ppd" />
+      <param name="mime.curl" value="application/vnd.curl" />
+      <param name="mime.rdz" value="application/vnd.data-vision.rdz" />
+      <param name="mime.fe_launch" value="application/vnd.denovo.fcselayout-link" />
+      <param name="mime.dna" value="application/vnd.dna" />
+      <param name="mime.mlp" value="application/vnd.dolby.mlp" />
+      <param name="mime.dpg" value="application/vnd.dpgraph" />
+      <param name="mime.dfac" value="application/vnd.dreamfactory" />
+      <param name="mime.mag" value="application/vnd.ecowin.chart" />
+      <param name="mime.nml" value="application/vnd.enliven" />
+      <param name="mime.esf" value="application/vnd.epson.esf" />
+      <param name="mime.msf" value="application/vnd.epson.msf" />
+      <param name="mime.qam" value="application/vnd.epson.quickanime" />
+      <param name="mime.slt" value="application/vnd.epson.salt" />
+      <param name="mime.ssf" value="application/vnd.epson.ssf" />
+      <param name="mime.es3" value="application/vnd.eszigno3+xml" />
+      <param name="mime.et3" value="application/vnd.eszigno3+xml" />
+      <param name="mime.ez2" value="application/vnd.ezpix-album" />
+      <param name="mime.ez3" value="application/vnd.ezpix-package" />
+      <param name="mime.fdf" value="application/vnd.fdf" />
+      <param name="mime.gph" value="application/vnd.flographit" />
+      <param name="mime.ftc" value="application/vnd.fluxtime.clip" />
+      <param name="mime.fm" value="application/vnd.framemaker" />
+      <param name="mime.frame" value="application/vnd.framemaker" />
+      <param name="mime.maker" value="application/vnd.framemaker" />
+      <param name="mime.fnc" value="application/vnd.frogans.fnc" />
+      <param name="mime.ltf" value="application/vnd.frogans.ltf" />
+      <param name="mime.fsc" value="application/vnd.fsc.weblaunch" />
+      <param name="mime.oas" value="application/vnd.fujitsu.oasys" />
+      <param name="mime.oa2" value="application/vnd.fujitsu.oasys2" />
+      <param name="mime.oa3" value="application/vnd.fujitsu.oasys3" />
+      <param name="mime.fg5" value="application/vnd.fujitsu.oasysgp" />
+      <param name="mime.bh2" value="application/vnd.fujitsu.oasysprs" />
+      <param name="mime.ddd" value="application/vnd.fujixerox.ddd" />
+      <param name="mime.xdw" value="application/vnd.fujixerox.docuworks" />
+      <param name="mime.xbd" value="application/vnd.fujixerox.docuworks.binder" />
+      <param name="mime.fzs" value="application/vnd.fuzzysheet" />
+      <param name="mime.txd" value="application/vnd.genomatix.tuxedo" />
+      <param name="mime.kml" value="application/vnd.google-earth.kml+xml" />
+      <param name="mime.kmz" value="application/vnd.google-earth.kmz" />
+      <param name="mime.gqf" value="application/vnd.grafeq" />
+      <param name="mime.gqs" value="application/vnd.grafeq" />
+      <param name="mime.gac" value="application/vnd.groove-account" />
+      <param name="mime.ghf" value="application/vnd.groove-help" />
+      <param name="mime.gim" value="application/vnd.groove-identity-message" />
+      <param name="mime.grv" value="application/vnd.groove-injector" />
+      <param name="mime.gtm" value="application/vnd.groove-tool-message" />
+      <param name="mime.tpl" value="application/vnd.groove-tool-template" />
+      <param name="mime.vcg" value="application/vnd.groove-vcard" />
+      <param name="mime.zmm" value="application/vnd.handheld-entertainment+xml" />
+      <param name="mime.hbci" value="application/vnd.hbci" />
+      <param name="mime.les" value="application/vnd.hhe.lesson-player" />
+      <param name="mime.hpgl" value="application/vnd.hp-hpgl" />
+      <param name="mime.hpid" value="application/vnd.hp-hpid" />
+      <param name="mime.hps" value="application/vnd.hp-hps" />
+      <param name="mime.jlt" value="application/vnd.hp-jlyt" />
+      <param name="mime.pcl" value="application/vnd.hp-pcl" />
+      <param name="mime.pclxl" value="application/vnd.hp-pclxl" />
+      <param name="mime.x3d" value="application/vnd.hzn-3d-crossword" />
+      <param name="mime.mpy" value="application/vnd.ibm.minipay" />
+      <param name="mime.afp" value="application/vnd.ibm.modcap" />
+      <param name="mime.listafp" value="application/vnd.ibm.modcap" />
+      <param name="mime.list3820" value="application/vnd.ibm.modcap" />
+      <param name="mime.irm" value="application/vnd.ibm.rights-management" />
+      <param name="mime.sc" value="application/vnd.ibm.secure-container" />
+      <param name="mime.igl" value="application/vnd.igloader" />
+      <param name="mime.ivp" value="application/vnd.immervision-ivp" />
+      <param name="mime.ivu" value="application/vnd.immervision-ivu" />
+      <param name="mime.xpw" value="application/vnd.intercon.formnet" />
+      <param name="mime.xpx" value="application/vnd.intercon.formnet" />
+      <param name="mime.qbo" value="application/vnd.intu.qbo" />
+      <param name="mime.qfx" value="application/vnd.intu.qfx" />
+      <param name="mime.rcprofile" value="application/vnd.ipunplugged.rcprofile" />
+      <param name="mime.irp" value="application/vnd.irepository.package+xml" />
+      <param name="mime.xpr" value="application/vnd.is-xpr" />
+      <param name="mime.jam" value="application/vnd.jam" />
+      <param name="mime.rms" value="application/vnd.jcp.javame.midlet-rms" />
+      <param name="mime.jisp" value="application/vnd.jisp" />
+      <param name="mime.ktz" value="application/vnd.kahootz" />
+      <param name="mime.ktr" value="application/vnd.kahootz" />
+      <param name="mime.karbon" value="application/vnd.kde.karbon" />
+      <param name="mime.chrt" value="application/vnd.kde.kchart" />
+      <param name="mime.kfo" value="application/vnd.kde.kformula" />
+      <param name="mime.flw" value="application/vnd.kde.kivio" />
+      <param name="mime.kon" value="application/vnd.kde.kontour" />
+      <param name="mime.kpr" value="application/vnd.kde.kpresenter" />
+      <param name="mime.kpt" value="application/vnd.kde.kpresenter" />
+      <param name="mime.ksp" value="application/vnd.kde.kspread" />
+      <param name="mime.kwd" value="application/vnd.kde.kword" />
+      <param name="mime.kwt" value="application/vnd.kde.kword" />
+      <param name="mime.htke" value="application/vnd.kenameaapp" />
+      <param name="mime.kia" value="application/vnd.kidspiration" />
+      <param name="mime.kne" value="application/vnd.kinar" />
+      <param name="mime.knp" value="application/vnd.kinar" />
+      <param name="mime.skp" value="application/vnd.koan" />
+      <param name="mime.skd" value="application/vnd.koan" />
+      <param name="mime.skt" value="application/vnd.koan" />
+      <param name="mime.skm" value="application/vnd.koan" />
+      <param name="mime.lbd" value="application/vnd.llamagraphics.life-balance.desktop" />
+      <param name="mime.lbe" value="application/vnd.llamagraphics.life-balance.exchange+xml" />
+      <param name="mime.123" value="application/vnd.lotus-1-2-3" />
+      <param name="mime.apr" value="application/vnd.lotus-approach" />
+      <param name="mime.pre" value="application/vnd.lotus-freelance" />
+      <param name="mime.nsf" value="application/vnd.lotus-notes" />
+      <param name="mime.org" value="application/vnd.lotus-organizer" />
+      <param name="mime.scm" value="application/vnd.lotus-screencam" />
+      <param name="mime.lwp" value="application/vnd.lotus-wordpro" />
+      <param name="mime.portpkg" value="application/vnd.macports.portpkg" />
+      <param name="mime.mcd" value="application/vnd.mcd" />
+      <param name="mime.mc1" value="application/vnd.medcalcdata" />
+      <param name="mime.cdkey" value="application/vnd.mediastation.cdkey" />
+      <param name="mime.mwf" value="application/vnd.mfer" />
+      <param name="mime.mfm" value="application/vnd.mfmp" />
+      <param name="mime.flo" value="application/vnd.micrografx.flo" />
+      <param name="mime.igx" value="application/vnd.micrografx.igx" />
+      <param name="mime.mif" value="application/vnd.mif" />
+      <param name="mime.daf" value="application/vnd.mobius.daf" />
+      <param name="mime.dis" value="application/vnd.mobius.dis" />
+      <param name="mime.mbk" value="application/vnd.mobius.mbk" />
+      <param name="mime.mqy" value="application/vnd.mobius.mqy" />
+      <param name="mime.msl" value="application/vnd.mobius.msl" />
+      <param name="mime.plc" value="application/vnd.mobius.plc" />
+      <param name="mime.txf" value="application/vnd.mobius.txf" />
+      <param name="mime.mpn" value="application/vnd.mophun.application" />
+      <param name="mime.mpc" value="application/vnd.mophun.certificate" />
+      <param name="mime.xul" value="application/vnd.mozilla.xul+xml" />
+      <param name="mime.cil" value="application/vnd.ms-artgalry" />
+      <param name="mime.asf" value="application/vnd.ms-asf" />
+      <param name="mime.cab" value="application/vnd.ms-cab-compressed" />
+      <param name="mime.xls" value="application/vnd.ms-excel" />
+      <param name="mime.xlm" value="application/vnd.ms-excel" />
+      <param name="mime.xla" value="application/vnd.ms-excel" />
+      <param name="mime.xlc" value="application/vnd.ms-excel" />
+      <param name="mime.xlt" value="application/vnd.ms-excel" />
+      <param name="mime.xlw" value="application/vnd.ms-excel" />
+      <param name="mime.eot" value="application/vnd.ms-fontobject" />
+      <param name="mime.chm" value="application/vnd.ms-htmlhelp" />
+      <param name="mime.ims" value="application/vnd.ms-ims" />
+      <param name="mime.lrm" value="application/vnd.ms-lrm" />
+      <param name="mime.ppt" value="application/vnd.ms-powerpoint" />
+      <param name="mime.pps" value="application/vnd.ms-powerpoint" />
+      <param name="mime.pot" value="application/vnd.ms-powerpoint" />
+      <param name="mime.mpp" value="application/vnd.ms-project" />
+      <param name="mime.mpt" value="application/vnd.ms-project" />
+      <param name="mime.wps" value="application/vnd.ms-works" />
+      <param name="mime.wks" value="application/vnd.ms-works" />
+      <param name="mime.wcm" value="application/vnd.ms-works" />
+      <param name="mime.wdb" value="application/vnd.ms-works" />
+      <param name="mime.wpl" value="application/vnd.ms-wpl" />
+      <param name="mime.xps" value="application/vnd.ms-xpsdocument" />
+      <param name="mime.mseq" value="application/vnd.mseq" />
+      <param name="mime.mus" value="application/vnd.musician" />
+      <param name="mime.nlu" value="application/vnd.neurolanguage.nlu" />
+      <param name="mime.nnd" value="application/vnd.noblenet-directory" />
+      <param name="mime.nns" value="application/vnd.noblenet-sealer" />
+      <param name="mime.nnw" value="application/vnd.noblenet-web" />
+      <param name="mime.ngdat" value="application/vnd.nokia.n-gage.data" />
+      <param name="mime.n-gage" value="application/vnd.nokia.n-gage.symbian.install" />
+      <param name="mime.rpst" value="application/vnd.nokia.radio-preset" />
+      <param name="mime.rpss" value="application/vnd.nokia.radio-presets" />
+      <param name="mime.edm" value="application/vnd.novadigm.edm" />
+      <param name="mime.edx" value="application/vnd.novadigm.edx" />
+      <param name="mime.ext" value="application/vnd.novadigm.ext" />
+      <param name="mime.odc" value="application/vnd.oasis.opendocument.chart" />
+      <param name="mime.otc" value="application/vnd.oasis.opendocument.chart-template" />
+      <param name="mime.odf" value="application/vnd.oasis.opendocument.formula" />
+      <param name="mime.otf" value="application/vnd.oasis.opendocument.formula-template" />
+      <param name="mime.odg" value="application/vnd.oasis.opendocument.graphics" />
+      <param name="mime.otg" value="application/vnd.oasis.opendocument.graphics-template" />
+      <param name="mime.odi" value="application/vnd.oasis.opendocument.image" />
+      <param name="mime.oti" value="application/vnd.oasis.opendocument.image-template" />
+      <param name="mime.odp" value="application/vnd.oasis.opendocument.presentation" />
+      <param name="mime.ods" value="application/vnd.oasis.opendocument.spreadsheet" />
+      <param name="mime.ots" value="application/vnd.oasis.opendocument.spreadsheet-template" />
+      <param name="mime.odt" value="application/vnd.oasis.opendocument.text" />
+      <param name="mime.otm" value="application/vnd.oasis.opendocument.text-master" />
+      <param name="mime.ott" value="application/vnd.oasis.opendocument.text-template" />
+      <param name="mime.oth" value="application/vnd.oasis.opendocument.text-web" />
+      <param name="mime.xo" value="application/vnd.olpc-sugar" />
+      <param name="mime.dd2" value="application/vnd.oma.dd2+xml" />
+      <param name="mime.oxt" value="application/vnd.openofficeorg.extension" />
+      <param name="mime.dp" value="application/vnd.osgi.dp" />
+      <param name="mime.prc" value="application/vnd.palm" />
+      <param name="mime.pdb" value="application/vnd.palm" />
+      <param name="mime.pqa" value="application/vnd.palm" />
+      <param name="mime.oprc" value="application/vnd.palm" />
+      <param name="mime.str" value="application/vnd.pg.format" />
+      <param name="mime.ei6" value="application/vnd.pg.osasli" />
+      <param name="mime.efif" value="application/vnd.picsel" />
+      <param name="mime.plf" value="application/vnd.pocketlearn" />
+      <param name="mime.pbd" value="application/vnd.powerbuilder6" />
+      <param name="mime.box" value="application/vnd.previewsystems.box" />
+      <param name="mime.mgz" value="application/vnd.proteus.magazine" />
+      <param name="mime.qps" value="application/vnd.publishare-delta-tree" />
+      <param name="mime.ptid" value="application/vnd.pvi.ptid1" />
+      <param name="mime.qxd" value="application/vnd.quark.quarkxpress" />
+      <param name="mime.qxt" value="application/vnd.quark.quarkxpress" />
+      <param name="mime.qwd" value="application/vnd.quark.quarkxpress" />
+      <param name="mime.qwt" value="application/vnd.quark.quarkxpress" />
+      <param name="mime.qxl" value="application/vnd.quark.quarkxpress" />
+      <param name="mime.qxb" value="application/vnd.quark.quarkxpress" />
+      <param name="mime.mxl" value="application/vnd.recordare.musicxml" />
+      <param name="mime.rm" value="application/vnd.rn-realmedia" />
+      <param name="mime.see" value="application/vnd.seemail" />
+      <param name="mime.sema" value="application/vnd.sema" />
+      <param name="mime.semd" value="application/vnd.semd" />
+      <param name="mime.semf" value="application/vnd.semf" />
+      <param name="mime.ifm" value="application/vnd.shana.informed.formdata" />
+      <param name="mime.itp" value="application/vnd.shana.informed.formtemplate" />
+      <param name="mime.iif" value="application/vnd.shana.informed.interchange" />
+      <param name="mime.ipk" value="application/vnd.shana.informed.package" />
+      <param name="mime.twd" value="application/vnd.simtech-mindmapper" />
+      <param name="mime.twds" value="application/vnd.simtech-mindmapper" />
+      <param name="mime.mmf" value="application/vnd.smaf" />
+      <param name="mime.sdkm" value="application/vnd.solent.sdkm+xml" />
+      <param name="mime.sdkd" value="application/vnd.solent.sdkm+xml" />
+      <param name="mime.dxp" value="application/vnd.spotfire.dxp" />
+      <param name="mime.sfs" value="application/vnd.spotfire.sfs" />
+      <param name="mime.sus" value="application/vnd.sus-calendar" />
+      <param name="mime.susp" value="application/vnd.sus-calendar" />
+      <param name="mime.svd" value="application/vnd.svd" />
+      <param name="mime.xsm" value="application/vnd.syncml+xml" />
+      <param name="mime.bdm" value="application/vnd.syncml.dm+wbxml" />
+      <param name="mime.xdm" value="application/vnd.syncml.dm+xml" />
+      <param name="mime.tao" value="application/vnd.tao.intent-module-archive" />
+      <param name="mime.tmo" value="application/vnd.tmobile-livetv" />
+      <param name="mime.tpt" value="application/vnd.trid.tpt" />
+      <param name="mime.mxs" value="application/vnd.triscape.mxs" />
+      <param name="mime.tra" value="application/vnd.trueapp" />
+      <param name="mime.ufd" value="application/vnd.ufdl" />
+      <param name="mime.ufdl" value="application/vnd.ufdl" />
+      <param name="mime.utz" value="application/vnd.uiq.theme" />
+      <param name="mime.umj" value="application/vnd.umajin" />
+      <param name="mime.unityweb" value="application/vnd.unity" />
+      <param name="mime.uoml" value="application/vnd.uoml+xml" />
+      <param name="mime.vcx" value="application/vnd.vcx" />
+      <param name="mime.vsd" value="application/vnd.visio" />
+      <param name="mime.vst" value="application/vnd.visio" />
+      <param name="mime.vss" value="application/vnd.visio" />
+      <param name="mime.vsw" value="application/vnd.visio" />
+      <param name="mime.vis" value="application/vnd.visionary" />
+      <param name="mime.vsf" value="application/vnd.vsf" />
+      <param name="mime.wbxml" value="application/vnd.wap.wbxml" />
+      <param name="mime.wmlc" value="application/vnd.wap.wmlc" />
+      <param name="mime.wmlsc" value="application/vnd.wap.wmlscriptc" />
+      <param name="mime.wtb" value="application/vnd.webturbo" />
+      <param name="mime.wpd" value="application/vnd.wordperfect" />
+      <param name="mime.wqd" value="application/vnd.wqd" />
+      <param name="mime.stf" value="application/vnd.wt.stf" />
+      <param name="mime.xar" value="application/vnd.xara" />
+      <param name="mime.xfdl" value="application/vnd.xfdl" />
+      <param name="mime.hvd" value="application/vnd.yamaha.hv-dic" />
+      <param name="mime.hvs" value="application/vnd.yamaha.hv-script" />
+      <param name="mime.hvp" value="application/vnd.yamaha.hv-voice" />
+      <param name="mime.saf" value="application/vnd.yamaha.smaf-audio" />
+      <param name="mime.spf" value="application/vnd.yamaha.smaf-phrase" />
+      <param name="mime.cmp" value="application/vnd.yellowriver-custom-menu" />
+      <param name="mime.zaz" value="application/vnd.zzazz.deck+xml" />
+      <param name="mime.vxml" value="application/voicexml+xml" />
+      <param name="mime.hlp" value="application/winhlp" />
+      <param name="mime.wsdl" value="application/wsdl+xml" />
+      <param name="mime.wspolicy" value="application/wspolicy+xml" />
+      <param name="mime.ace" value="application/x-ace-compressed" />
+      <param name="mime.bcpio" value="application/x-bcpio" />
+      <param name="mime.torrent" value="application/x-bittorrent" />
+      <param name="mime.bz" value="application/x-bzip" />
+      <param name="mime.bz2" value="application/x-bzip2" />
+      <param name="mime.boz" value="application/x-bzip2" />
+      <param name="mime.vcd" value="application/x-cdlink" />
+      <param name="mime.chat" value="application/x-chat" />
+      <param name="mime.pgn" value="application/x-chess-pgn" />
+      <param name="mime.cpio" value="application/x-cpio" />
+      <param name="mime.csh" value="application/x-csh" />
+      <param name="mime.dcr" value="application/x-director" />
+      <param name="mime.dir" value="application/x-director" />
+      <param name="mime.dxr" value="application/x-director" />
+      <param name="mime.fgd" value="application/x-director" />
+      <param name="mime.dvi" value="application/x-dvi" />
+      <param name="mime.spl" value="application/x-futuresplash" />
+      <param name="mime.gtar" value="application/x-gtar" />
+      <param name="mime.hdf" value="application/x-hdf" />
+      <param name="mime.latex" value="application/x-latex" />
+      <param name="mime.wmd" value="application/x-ms-wmd" />
+      <param name="mime.wmz" value="application/x-ms-wmz" />
+      <param name="mime.mdb" value="application/x-msaccess" />
+      <param name="mime.obd" value="application/x-msbinder" />
+      <param name="mime.crd" value="application/x-mscardfile" />
+      <param name="mime.clp" value="application/x-msclip" />
+      <param name="mime.exe" value="application/x-msdownload" />
+      <param name="mime.dll" value="application/x-msdownload" />
+      <param name="mime.com" value="application/x-msdownload" />
+      <param name="mime.bat" value="application/x-msdownload" />
+      <param name="mime.msi" value="application/x-msdownload" />
+      <param name="mime.mvb" value="application/x-msmediaview" />
+      <param name="mime.m13" value="application/x-msmediaview" />
+      <param name="mime.m14" value="application/x-msmediaview" />
+      <param name="mime.wmf" value="application/x-msmetafile" />
+      <param name="mime.mny" value="application/x-msmoney" />
+      <param name="mime.pub" value="application/x-mspublisher" />
+      <param name="mime.scd" value="application/x-msschedule" />
+      <param name="mime.trm" value="application/x-msterminal" />
+      <param name="mime.wri" value="application/x-mswrite" />
+      <param name="mime.nc" value="application/x-netcdf" />
+      <param name="mime.cdf" value="application/x-netcdf" />
+      <param name="mime.p12" value="application/x-pkcs12" />
+      <param name="mime.pfx" value="application/x-pkcs12" />
+      <param name="mime.p7b" value="application/x-pkcs7-certificates" />
+      <param name="mime.spc" value="application/x-pkcs7-certificates" />
+      <param name="mime.p7r" value="application/x-pkcs7-certreqresp" />
+      <param name="mime.rar" value="application/x-rar-compressed" />
+      <param name="mime.sh" value="application/x-sh" />
+      <param name="mime.shar" value="application/x-shar" />
+      <param name="mime.swf" value="application/x-shockwave-flash" />
+      <param name="mime.sit" value="application/x-stuffit" />
+      <param name="mime.sitx" value="application/x-stuffitx" />
+      <param name="mime.sv4cpio" value="application/x-sv4cpio" />
+      <param name="mime.sv4crc" value="application/x-sv4crc" />
+      <param name="mime.tar" value="application/x-tar" />
+      <param name="mime.tcl" value="application/x-tcl" />
+      <param name="mime.tex" value="application/x-tex" />
+      <param name="mime.texinfo" value="application/x-texinfo" />
+      <param name="mime.texi" value="application/x-texinfo" />
+      <param name="mime.ustar" value="application/x-ustar" />
+      <param name="mime.src" value="application/x-wais-source" />
+      <param name="mime.der" value="application/x-x509-ca-cert" />
+      <param name="mime.crt" value="application/x-x509-ca-cert" />
+      <param name="mime.xenc" value="application/xenc+xml" />
+      <param name="mime.xhtml" value="application/xhtml+xml" />
+      <param name="mime.xht" value="application/xhtml+xml" />
+      <param name="mime.xml" value="application/xml" />
+      <param name="mime.xsl" value="application/xml" />
+      <param name="mime.dtd" value="application/xml-dtd" />
+      <param name="mime.xop" value="application/xop+xml" />
+      <param name="mime.xslt" value="application/xslt+xml" />
+      <param name="mime.xspf" value="application/xspf+xml" />
+      <param name="mime.mxml" value="application/xv+xml" />
+      <param name="mime.xhvml" value="application/xv+xml" />
+      <param name="mime.xvml" value="application/xv+xml" />
+      <param name="mime.xvm" value="application/xv+xml" />
+      <param name="mime.zip" value="application/zip" />
+      <param name="mime.au" value="audio/basic" />
+      <param name="mime.snd" value="audio/basic" />
+      <param name="mime.mid" value="audio/midi" />
+      <param name="mime.midi" value="audio/midi" />
+      <param name="mime.kar" value="audio/midi" />
+      <param name="mime.rmi" value="audio/midi" />
+      <param name="mime.mp4a" value="audio/mp4" />
+      <param name="mime.mpga" value="audio/mpeg" />
+      <param name="mime.mp2" value="audio/mpeg" />
+      <param name="mime.mp2a" value="audio/mpeg" />
+      <param name="mime.mp3" value="audio/mpeg" />
+      <param name="mime.m2a" value="audio/mpeg" />
+      <param name="mime.m3a" value="audio/mpeg" />
+      <param name="mime.eol" value="audio/vnd.digital-winds" />
+      <param name="mime.lvp" value="audio/vnd.lucent.voice" />
+      <param name="mime.ecelp4800" value="audio/vnd.nuera.ecelp4800" />
+      <param name="mime.ecelp7470" value="audio/vnd.nuera.ecelp7470" />
+      <param name="mime.ecelp9600" value="audio/vnd.nuera.ecelp9600" />
+      <param name="mime.wav" value="audio/wav" />
+      <param name="mime.aif" value="audio/x-aiff" />
+      <param name="mime.aiff" value="audio/x-aiff" />
+      <param name="mime.aifc" value="audio/x-aiff" />
+      <param name="mime.m3u" value="audio/x-mpegurl" />
+      <param name="mime.wax" value="audio/x-ms-wax" />
+      <param name="mime.wma" value="audio/x-ms-wma" />
+      <param name="mime.ram" value="audio/x-pn-realaudio" />
+      <param name="mime.ra" value="audio/x-pn-realaudio" />
+      <param name="mime.rmp" value="audio/x-pn-realaudio-plugin" />
+      <param name="mime.wav" value="audio/x-wav" />
+      <param name="mime.cdx" value="chemical/x-cdx" />
+      <param name="mime.cif" value="chemical/x-cif" />
+      <param name="mime.cmdf" value="chemical/x-cmdf" />
+      <param name="mime.cml" value="chemical/x-cml" />
+      <param name="mime.csml" value="chemical/x-csml" />
+      <param name="mime.pdb" value="chemical/x-pdb" />
+      <param name="mime.xyz" value="chemical/x-xyz" />
+      <param name="mime.bmp" value="image/bmp" />
+      <param name="mime.cgm" value="image/cgm" />
+      <param name="mime.g3" value="image/g3fax" />
+      <param name="mime.gif" value="image/gif" />
+      <param name="mime.ief" value="image/ief" />
+      <param name="mime.jpeg" value="image/jpeg" />
+      <param name="mime.jpg" value="image/jpeg" />
+      <param name="mime.jpe" value="image/jpeg" />
+      <param name="mime.png" value="image/png" />
+      <param name="mime.btif" value="image/prs.btif" />
+      <param name="mime.svg" value="image/svg+xml" />
+      <param name="mime.svgz" value="image/svg+xml" />
+      <param name="mime.tiff" value="image/tiff" />
+      <param name="mime.tif" value="image/tiff" />
+      <param name="mime.psd" value="image/vnd.adobe.photoshop" />
+      <param name="mime.djvu" value="image/vnd.djvu" />
+      <param name="mime.djv" value="image/vnd.djvu" />
+      <param name="mime.dwg" value="image/vnd.dwg" />
+      <param name="mime.dxf" value="image/vnd.dxf" />
+      <param name="mime.fbs" value="image/vnd.fastbidsheet" />
+      <param name="mime.fpx" value="image/vnd.fpx" />
+      <param name="mime.fst" value="image/vnd.fst" />
+      <param name="mime.mmr" value="image/vnd.fujixerox.edmics-mmr" />
+      <param name="mime.rlc" value="image/vnd.fujixerox.edmics-rlc" />
+      <param name="mime.ico" value="image/vnd.microsoft.icon" />
+      <param name="mime.mdi" value="image/vnd.ms-modi" />
+      <param name="mime.npx" value="image/vnd.net-fpx" />
+      <param name="mime.wbmp" value="image/vnd.wap.wbmp" />
+      <param name="mime.xif" value="image/vnd.xiff" />
+      <param name="mime.ras" value="image/x-cmu-raster" />
+      <param name="mime.cmx" value="image/x-cmx" />
+      <param name="mime.pcx" value="image/x-pcx" />
+      <param name="mime.pic" value="image/x-pict" />
+      <param name="mime.pct" value="image/x-pict" />
+      <param name="mime.pnm" value="image/x-portable-anymap" />
+      <param name="mime.pbm" value="image/x-portable-bitmap" />
+      <param name="mime.pgm" value="image/x-portable-graymap" />
+      <param name="mime.ppm" value="image/x-portable-pixmap" />
+      <param name="mime.rgb" value="image/x-rgb" />
+      <param name="mime.xbm" value="image/x-xbitmap" />
+      <param name="mime.xpm" value="image/x-xpixmap" />
+      <param name="mime.xwd" value="image/x-xwindowdump" />
+      <param name="mime.eml" value="message/rfc822" />
+      <param name="mime.mime" value="message/rfc822" />
+      <param name="mime.igs" value="model/iges" />
+      <param name="mime.iges" value="model/iges" />
+      <param name="mime.msh" value="model/mesh" />
+      <param name="mime.mesh" value="model/mesh" />
+      <param name="mime.silo" value="model/mesh" />
+      <param name="mime.dwf" value="model/vnd.dwf" />
+      <param name="mime.gdl" value="model/vnd.gdl" />
+      <param name="mime.gtw" value="model/vnd.gtw" />
+      <param name="mime.mts" value="model/vnd.mts" />
+      <param name="mime.vtu" value="model/vnd.vtu" />
+      <param name="mime.wrl" value="model/vrml" />
+      <param name="mime.vrml" value="model/vrml" />
+      <param name="mime.ics" value="text/calendar" />
+      <param name="mime.ifb" value="text/calendar" />
+      <param name="mime.css" value="text/css" />
+      <param name="mime.csv" value="text/csv" />
+      <param name="mime.html" value="text/html" />
+      <param name="mime.htm" value="text/html" />
+      <param name="mime.txt" value="text/plain" />
+      <param name="mime.text" value="text/plain" />
+      <param name="mime.conf" value="text/plain" />
+      <param name="mime.def" value="text/plain" />
+      <param name="mime.list" value="text/plain" />
+      <param name="mime.log" value="text/plain" />
+      <param name="mime.in" value="text/plain" />
+      <param name="mime.dsc" value="text/prs.lines.tag" />
+      <param name="mime.rtx" value="text/richtext" />
+      <param name="mime.sgml" value="text/sgml" />
+      <param name="mime.sgm" value="text/sgml" />
+      <param name="mime.tsv" value="text/tab-separated-values" />
+      <param name="mime.t" value="text/troff" />
+      <param name="mime.tr" value="text/troff" />
+      <param name="mime.roff" value="text/troff" />
+      <param name="mime.man" value="text/troff" />
+      <param name="mime.me" value="text/troff" />
+      <param name="mime.ms" value="text/troff" />
+      <param name="mime.uri" value="text/uri-list" />
+      <param name="mime.uris" value="text/uri-list" />
+      <param name="mime.urls" value="text/uri-list" />
+      <param name="mime.fly" value="text/vnd.fly" />
+      <param name="mime.flx" value="text/vnd.fmi.flexstor" />
+      <param name="mime.3dml" value="text/vnd.in3d.3dml" />
+      <param name="mime.spot" value="text/vnd.in3d.spot" />
+      <param name="mime.jad" value="text/vnd.sun.j2me.app-descriptor" />
+      <param name="mime.wml" value="text/vnd.wap.wml" />
+      <param name="mime.wmls" value="text/vnd.wap.wmlscript" />
+      <param name="mime.s" value="text/x-asm" />
+      <param name="mime.asm" value="text/x-asm" />
+      <param name="mime.c" value="text/x-c" />
+      <param name="mime.cc" value="text/x-c" />
+      <param name="mime.cxx" value="text/x-c" />
+      <param name="mime.cpp" value="text/x-c" />
+      <param name="mime.h" value="text/x-c" />
+      <param name="mime.hh" value="text/x-c" />
+      <param name="mime.dic" value="text/x-c" />
+      <param name="mime.f" value="text/x-fortran" />
+      <param name="mime.for" value="text/x-fortran" />
+      <param name="mime.f77" value="text/x-fortran" />
+      <param name="mime.f90" value="text/x-fortran" />
+      <param name="mime.p" value="text/x-pascal" />
+      <param name="mime.pas" value="text/x-pascal" />
+      <param name="mime.java" value="text/x-java-source" />
+      <param name="mime.etx" value="text/x-setext" />
+      <param name="mime.uu" value="text/x-uuencode" />
+      <param name="mime.vcs" value="text/x-vcalendar" />
+      <param name="mime.vcf" value="text/x-vcard" />
+      <param name="mime.3gp" value="video/3gpp" />
+      <param name="mime.3g2" value="video/3gpp2" />
+      <param name="mime.h261" value="video/h261" />
+      <param name="mime.h263" value="video/h263" />
+      <param name="mime.h264" value="video/h264" />
+      <param name="mime.jpgv" value="video/jpeg" />
+      <param name="mime.jpm" value="video/jpm" />
+      <param name="mime.jpgm" value="video/jpm" />
+      <param name="mime.mj2" value="video/mj2" />
+      <param name="mime.mjp2" value="video/mj2" />
+      <param name="mime.mp4" value="video/mp4" />
+      <param name="mime.mp4v" value="video/mp4" />
+      <param name="mime.mpg4" value="video/mp4" />
+      <param name="mime.mpeg" value="video/mpeg" />
+      <param name="mime.mpg" value="video/mpeg" />
+      <param name="mime.mpe" value="video/mpeg" />
+      <param name="mime.m1v" value="video/mpeg" />
+      <param name="mime.m2v" value="video/mpeg" />
+      <param name="mime.qt" value="video/quicktime" />
+      <param name="mime.mov" value="video/quicktime" />
+      <param name="mime.fvt" value="video/vnd.fvt" />
+      <param name="mime.mxu" value="video/vnd.mpegurl" />
+      <param name="mime.m4u" value="video/vnd.mpegurl" />
+      <param name="mime.viv" value="video/vnd.vivo" />
+      <param name="mime.fli" value="video/x-fli" />
+      <param name="mime.asf" value="video/x-ms-asf" />
+      <param name="mime.asx" value="video/x-ms-asf" />
+      <param name="mime.wm" value="video/x-ms-wm" />
+      <param name="mime.wmv" value="video/x-ms-wmv" />
+      <param name="mime.wmx" value="video/x-ms-wmx" />
+      <param name="mime.wvx" value="video/x-ms-wvx" />
+      <param name="mime.avi" value="video/x-msvideo" />
+      <param name="mime.movie" value="video/x-sgi-movie" />
+      <param name="mime.ice" value="x-conference/x-cooltalk" />
+    </params>
+  </handler>
+</handlers>
+
+

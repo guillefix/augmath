@@ -1,0 +1,208 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+<title>Notifications</title>
+<link rel="stylesheet" href="../css/default.css">
+<link type="text/css" href="../css/overcast/jquery-ui.css" rel="Stylesheet" />
+
+<script type="text/javascript" src="../js/jquery.js"></script>
+<script type="text/javascript" src="../js/jquery-ui.js"></script>
+<script type="text/javascript" src="../js/executeScript.js"></script>
+
+<style type="text/css">
+	#red, #green, #blue {
+		float: left;
+		clear: left;
+		width: 300px;
+		margin: 15px;
+	}
+	#swatch {
+		width: 120px;
+		height: 100px;
+		margin-top: 18px;
+		margin-left: 350px;
+		background-image: none;
+	}
+	#red .ui-slider-range { background: #ef2929; }
+	#red .ui-slider-handle { border-color: #ef2929; }
+	#green .ui-slider-range { background: #8ae234; }
+	#green .ui-slider-handle { border-color: #8ae234; }
+	#blue .ui-slider-range { background: #729fcf; }
+	#blue .ui-slider-handle { border-color: #729fcf; }
+	#demo-frame > div.demo { padding: 10px !important; };
+</style>
+
+
+
+<script type="text/javascript">
+	$(document).ready(function() {
+		$('#icon').change(function() {
+  			setPreview();
+		});
+
+		$("#red, #green, #blue").slider({
+			orientation: 'horizontal',
+			range: "min",
+			max: 255,
+			value: 127,
+			slide: refreshSwatch,
+			change: refreshSwatch
+		});
+		$("#red").slider("value", 0);
+		$("#green").slider("value", 0);
+		$("#blue").slider("value", 255);
+
+
+		
+		setPreview();
+ 	});
+
+	function hexFromRGB (r, g, b) {
+		var hex = [
+			r.toString(16),
+			g.toString(16),
+			b.toString(16)
+		];
+		$.each(hex, function (nr, val) {
+			if (val.length == 1) {
+				hex[nr] = '0' + val;
+			}
+		});
+		return hex.join('').toUpperCase();
+	}
+	function refreshSwatch() {
+		var red = $("#red").slider("value")
+			,green = $("#green").slider("value")
+			,blue = $("#blue").slider("value")
+			,hex = hexFromRGB(red, green, blue);
+		$("#swatch").css("background-color", "#" + hex);
+		$("#color").val("#" + hex);
+	}
+
+
+	function setPreview() {
+		$('#preview').attr('src', '../graphics/drawable_resource_image.xhtml?res=' + $('#icon').val());
+	}
+
+
+
+	function showNotification() {
+
+		scriptOrg = $("#notify").val();
+		script = scriptOrg;
+
+		script = script.replace(/%icon%/, $("#icon").val());
+		script = script.replace(/%ticker%/, $("#ticker").val());
+		script = script.replace(/%header%/, $("#header").val());
+		script = script.replace(/%text%/, $("#text").val());
+		script = script.replace(/%id%/, $("#defaultId").is(':checked') ? "null": $("#id").val());
+		script = script.replace(/%light%/, $("#light").is(':checked') ? "true": "false");
+		script = script.replace(/%color%/, $("#color").val());
+		script = script.replace(/%vibrate%/, $("#vibrate").is(':checked') ? "true": "false");
+		script = script.replace(/%sound%/, $("#sound").is(':checked') ? "true": "false");
+
+		$("#code").val(script); // Show generated code
+		$("#notify").val(script);
+		executeScript('notify', 'loader');
+		$("#notify").val(scriptOrg);
+	}
+</script>
+
+
+</head>
+<body>
+<bsh>source(server.props.get("serviceContext").pawHome + "/html/app/auth.bsh");</bsh>
+<h1>Notifications</h1>
+<p>
+This notification builder helps you to build <tt>showNotification()</tt> commands.<br>
+A description of the command can be found in the <i>PAW Functions</i> documentation.<br>
+On some devices LED light might not work at all or only (like with the Nexus One) if the screen is switched off.<br>
+Images (except for the default image) are taken from <tt>com.android.internal.R.drawable</tt>.
+</p>
+<table>
+<tr>
+<td>
+	Icon:
+</td>
+<td>
+	<select id="icon">
+	<option value="de.fun2code.android.pawserver.R.drawable.notification" selected>Default</option>
+	<bsh>
+	fields = com.android.internal.R.drawable.class.getFields();
+	for(field : fields) {
+		print("<option value='com.android.internal.R.drawable." + field.getName() + "'>" + field.getName() + "</option>");
+	}
+	</bsh>
+	</select>
+</td>
+</tr>
+
+<tr>
+<td></td>
+<td><img id="preview"></td>
+</tr>
+</table>
+
+<table>
+<tr>
+<td>Generate Random ID:</td>
+<td><input id="defaultId" type="checkbox"></td>
+</tr>
+<tr>
+<td>Specify ID:</td>
+<td><input id="id" type="text" value="3333"></td>
+</tr>
+<tr>
+<td>Ticker Text:</td>
+<td><input id="ticker" type="text" value="Notification Ticker Text"></td>
+</tr>
+<tr>
+<td>Header:</td>
+<td><input id="header" type="text" value="Notification Title"></td>
+</tr>
+<tr>
+<td>Text:</td>
+<td><input id="text" type="text" value="Notification Text"></td>
+</tr>
+<tr>
+<td>LED Light:</td>
+<td><input id="light" type="checkbox" checked></td>
+</tr>
+<tr>
+<td>LED RGB Color:</td>
+<td><input id="color" type="text" readonly><br>
+<div id="red"></div>
+<div id="green"></div>
+<div id="blue"></div>
+
+<div id="swatch" class="ui-widget-content ui-corner-all"></div>
+
+
+</td>
+</tr>
+<tr>
+<td>Vibrate:</td>
+<td><input id="vibrate" type="checkbox" checked></td>
+</tr>
+<tr>
+<td>Sound:</td>
+<td><input id="sound" type="checkbox" checked></td>
+</tr>
+<tr>
+<td>Generated Code:</td>
+<td><input id="code" type="text" size="80" readonly >
+</tr>
+</table>
+<p>
+<button onClick="showNotification();">Show Notification</button>&nbsp;<img id="loader" src="../images/loader.gif" style="display: none;" width="16">
+</p>
+<p>&nbsp;</p>
+
+<!-- Script -->
+<textarea id="notify" style="display: none;">
+showNotification(%icon%, "%ticker%", "%header%", "%text%", %id%, %light%, "%color%", %sound%, %vibrate%);
+</textarea>
+
+</body>
+</html>
+

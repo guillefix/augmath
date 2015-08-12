@@ -1,0 +1,279 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+<bsh>source(server.props.get("serviceContext").pawHome + "/html/app/bsh/i18n.bsh");</bsh>
+
+<!-- <link type="text/css" href="css/ui-darkness/jquery-ui.css" rel="Stylesheet" /> -->
+<link type="text/css" href="css/overcast/jquery-ui.css" rel="Stylesheet" />
+<link rel="stylesheet" href="css/default.css">
+<bsh>source(server.props.get("serviceContext").pawHome + "/html/app/auth.bsh");</bsh>
+
+<bsh>
+// Set PAW Version
+import android.content.SharedPreferences;
+import android.content.SharedPreferences.Editor;
+import android.app.Service;
+
+service = (Service) server.props.get("serviceContext");
+preferences = service.getSharedPreferences("PawServer", 0);
+pawVersion = preferences.getString("Version", "na");
+
+// Put version into server scope
+serverPut("pawVersion", pawVersion);
+
+print("<script type='text/javascript'> function setPawVersion() { $('#pawVersion').html('" + pawVersion + "'); }</script>");
+</bsh>
+
+
+<bsh>
+// Plugins
+pluginsFolder = server.props.get("serviceContext").pawHome + "/html/app/plugins";
+dirs = new File(pluginsFolder).listFiles();
+pluginDirs = new ArrayList();
+for(dir : dirs) {
+  if(dir.isDirectory()) {
+    dirName = dir.getAbsolutePath();
+    conf = new File(dirName + "/" + "plugin.conf");
+    if(conf.exists()) {
+      pluginDirs.add(dir.getName());
+    }
+  }
+}
+
+Collections.sort(pluginDirs);
+</bsh>
+
+<script type="text/javascript" src="js/jquery.js"></script>
+<script type="text/javascript" src="js/jquery-ui.js"></script>
+
+<script type="text/javascript">
+	var menuHidden = false;
+	$(document).ready(function() {
+		resizeIframe();
+		setPawVersion();
+		$("#accordion").accordion();
+		updateStatusbar();
+	});
+
+	$(window).bind('resize', function() {
+		resizeIframe();	
+	});
+
+	function resizeIframe() {
+		$("#contentDiv").css("height", ($(window).height() * 0.9) + "px");
+	}
+
+	function ShowHideMenu(){
+		//$("#navbar").animate({"width": "toggle"}, { duration: 10 });
+		$("#navbar").animate({"width": "toggle"}, { duration: 0 });
+		menuHidden = menuHidden ? false : true;
+
+
+		if(menuHidden) {
+   			$("#contentDiv").css("width", "95%");
+		}
+		else{
+   			$("#contentDiv").css("width", "75%");
+		}
+
+		// Reload the iframe, if the filemanager is resized
+		if($('#content').contents().get(0).location.href.match("/filemanager") != null) {
+			$('#content').each(function() {
+ 				this.contentWindow.location.reload(true);
+			});
+		}
+
+	}
+
+</script>
+
+
+
+<title>PAW Server</title>
+</head>
+
+
+<body id="indexBody" style="overflow: auto;">
+<div style="position: absolute; left: 10%; top: -10px; z-index: 100; width: 80%;">
+<bsh>cat(server.props.get("serviceContext").pawHome + "/html/app/statusbar.inc");</bsh>
+</div>
+
+<div id="submenu" style="position: absolute; left: -60px; top: +0px; z-index: 100;">
+
+<a href="#" onClick="ShowHideMenu(); return false" title="<bsh>translate("tooltip.toggle_menu");</bsh>"><img src="images/menu_toggle.png" style="width: 22px;"></a>
+</div>
+
+<div id="navbar">
+
+<div id="accordion" style="height: auto; width: 100%; font-size: 12px; overflow: hidden;">
+	<h3><a href="#" style="height: 100%;"><bsh>translate("menu.title.phone");</bsh></a></h3>
+	<div style="height:"100%;">
+		<p>
+		<li><img src="images/dot_white.png" style="width: 8px; height: 8px;">&nbsp;<a href="dial.xhtml" target="content"><bsh>translate("menu.entry.dial_number");</bsh></a></li>
+		<li><img src="images/dot_white.png" style="width: 8px; height: 8px;">&nbsp;<a href="call_log.xhtml" target="content"><bsh>translate("menu.entry.call_log");</bsh></a></li>
+		<li><img src="images/dot_white.png" style="width: 8px; height: 8px;">&nbsp;<a href="find_mobile.xhtml" target="content"><bsh>translate("menu.entry.find_mobile");</bsh></a></li>
+		<p>
+	</div>
+	<h3><a href="#"><bsh>translate("menu.title.sms");</bsh></a></h3>
+	<div>
+		<p>
+<!--
+		<li><img src="images/dot_white.png" style="width: 8px; height: 8px;">&nbsp;<a href="sms_inbox_sent.xhtml" target="content">Inbox</a></li>
+		<li><img src="images/dot_white.png" style="width: 8px; height: 8px;">&nbsp;<a href="sms_inbox_sent.xhtml?type=sent" target="content">Outbox</a></li>
+-->
+		<li><img src="images/dot_white.png" style="width: 8px; height: 8px;">&nbsp;<a href="sms/sms_threads.xhtml" target="content"><bsh>translate("menu.entry.messages");</bsh></a></li>
+		<li><img src="images/dot_white.png" style="width: 8px; height: 8px;">&nbsp;<a href="sms/sms.xhtml" target="content"><bsh>translate("menu.entry.send_message");</bsh></a></li>
+		<p>
+	</div>
+	<h3><a href="#"><bsh>translate("menu.title.email");</bsh></a></h3>
+	<div>
+		<p>
+		<li><img src="images/dot_white.png" style="width: 8px; height: 8px;">&nbsp;<a href="send_email.xhtml" target="content"><bsh>translate("menu.entry.send_email");</bsh></a></li>
+		<p>
+	</div>
+	<h3><a href="#"><bsh>translate("menu.title.media");</bsh></a></h3>
+	<div>
+		<p>
+		<li><img src="images/dot_white.png" style="width: 8px; height: 8px;">&nbsp;<a href="filemanager/" target="content"><bsh>translate("menu.entry.file_manager");</bsh></a></li>
+		<li><img src="images/dot_white.png" style="width: 8px; height: 8px;">&nbsp;<a href="mp3player/mp3player.xhtml" target="content"><bsh>translate("menu.entry.mp3_player");</bsh></a></li>
+		<li><img src="images/dot_white.png" style="width: 8px; height: 8px;">&nbsp;<a href="camera_images.xhtml" target="content"><bsh>translate("menu.entry.camera_images");</bsh></a></li>
+		<li><img src="images/dot_white.png" style="width: 8px; height: 8px;">&nbsp;<a href="slideshow/index.xhtml" target="content"><bsh>translate("menu.entry.image_slideshow");</bsh></a>&nbsp;<a href="slideshow/index.xhtml" target="_blank" title="<bsh>translate("menu.tooltip.open_new_window");</bsh>"><img src="images/new-window.png" style="width: 16px; heigth: 16px;" align="top"></a></li>
+		<li><img src="images/dot_white.png" style="width: 8px; height: 8px;">&nbsp;<a href="changewallpaper.xhtml" target="content"><bsh>translate("menu.entry.change_wallpaper");</bsh></a></li>
+		<li><img src="images/dot_white.png" style="width: 8px; height: 8px;">&nbsp;<a href="rescan_sdcard.xhtml" target="content"><bsh>translate("menu.entry.rescan_sdcard");</bsh></a></li>
+		<li><img src="images/dot_white.png" style="width: 8px; height: 8px;">&nbsp;<a href="voice_recorder/voice_recorder.xhtml" target="content"><bsh>translate("menu.entry.voice_recorder");</bsh></a></li>
+		
+		<bsh>
+			// TTS is only supported since Android 1.6
+			if(Integer.parseInt(android.os.Build.VERSION.SDK) >= 4) {
+				print("<li><img src='images/dot_white.png' style='width: 8px; height: 8px;'>&nbsp;<a href='text_to_speech.xhtml' target='content'>" + translateRaw("menu.entry.text_to_speech") + "</a></li>");
+			}
+		</bsh>
+
+		<bsh>
+			// WebCam is only supported in Froyo and up
+			if(Integer.parseInt(android.os.Build.VERSION.SDK) >= 8) {
+				print("<li><img src='images/dot_white.png' style='width: 8px; height: 8px;'>&nbsp;<a href='webcam.xhtml' target='content'>" + translateRaw("menu.entry.webcam") + "</a></li>");
+			}
+		</bsh>
+		<br><br><br><br>
+		<p>
+	</div>
+	<h3><a href="#"><bsh>translate("menu.title.fun");</bsh></a></h3>
+	<div>
+		<p>
+		<li><img src="images/dot_white.png" style="width: 8px; height: 8px;">&nbsp;<a href="memory.xhtml" target="content"><bsh>translate("menu.entry.memory");</bsh></a>
+		<li><img src="images/dot_white.png" style="width: 8px; height: 8px;">&nbsp;<a href="sliding_puzzle/sliding_puzzle.xhtml" target="content"><bsh>translate("menu.entry.sliding_image_puzzle");</bsh></a>
+		<p>
+	</div>
+
+	<bsh>
+		// Plugins
+		if(pluginDirs.size() > 0) {
+			print("<h3><a href='#'>" + translateRaw("menu.title.plugins") + "</a></h3>");
+			print("<div><p>");
+
+			for(dir : pluginDirs) {
+				conf = new File(pluginsFolder +"/" + dir + "/" + "plugin.conf");
+				props = new Properties();
+				in = new FileInputStream(conf);
+				props.load(in);
+				in.close();
+
+				image = "plugins/" + dir + "/" + props.getProperty("icon");
+				href  = "plugins/" + dir + "/" + props.getProperty("href");
+				name  = props.getProperty("name");
+
+				print("<table>");
+				print("<tr><td><img src='" + image + "' style='width: 24px; height: 24px;'></td><td><a style='color: black;' href='" + href + "' target='content'>" + name + "</a></td></tr>");
+			}		
+	
+			print("</table>");
+			print("</p></div>");
+		}
+	</bsh>
+
+	<h3><a href="#"><bsh>translate("menu.title.addons");</bsh></a></h3>
+	<div>
+		<p>
+		<table>
+		<tr><td><img src="images/greasemonkey.png" style="width: 24px; height: 24px;"></td><td><a style="color: black;" href="add_ons/greasemonkey_market.xhtml" target="content"><bsh>translate("menu.entry.android_market");</bsh></a></td></tr>
+		<tr><td><img src="images/greasemonkey.png" style="width: 24px; height: 24px;"></td><td><a style="color: black;" href="add_ons/greasemonkey_toolbar.xhtml" target="content"><bsh>translate("menu.entry.toolbar");</bsh></a></td></tr>
+		<tr><td><img src="images/paw_runtime_icon.png" style="width: 24px; height: 24px;"></td><td><a style="color: black;" href="add_ons/paw_runtime.xhtml" target="content"><bsh>translate("menu.entry.paw_runtime");</bsh></a></td></tr>
+		<tr><td><img src="images/plugins.png" style="width: 24px; height: 24px;"></td><td><a style="color: black;" href="http://paw-android.fun2code.de/plugins/" target="content"><bsh>translate("menu.entry.plugins");</bsh></a></td></tr>
+		</table>
+		<p>
+	</div>
+	<h3><a href="#"><bsh>translate("menu.title.system");</bsh></a></h3>
+	<div>
+		<p>
+		<li><img src="images/dot_white.png" style="width: 8px; height: 8px;">&nbsp;<a href="processlist.xhtml" target="content"><bsh>translate("menu.entry.process_list");</bsh></a></li>
+		<li><img src="images/dot_white.png" style="width: 8px; height: 8px;">&nbsp;<a href="installed_apps.xhtml" target="content"><bsh>translate("menu.entry.installed_apps");</bsh></a></li>
+		<li><img src="images/dot_white.png" style="width: 8px; height: 8px;">&nbsp;<a href="apk_backup.xhtml" target="content"><bsh>translate("menu.entry.apk_backup");</bsh></a></li>
+		<li><img src="images/dot_white.png" style="width: 8px; height: 8px;">&nbsp;<a href="volumes.xhtml" target="content"><bsh>translate("menu.entry.volumes");</bsh></a></li>
+		<li><img src="images/dot_white.png" style="width: 8px; height: 8px;">&nbsp;<a href="share/share.xhtml" target="content"><bsh>translate("menu.entry.share_content");</bsh></a></li>
+		<li><img src="images/dot_white.png" style="width: 8px; height: 8px;">&nbsp;<a href="clipboard.xhtml" target="content"><bsh>translate("menu.entry.clipboard");</bsh></a></li>
+		<li><img src="images/dot_white.png" style="width: 8px; height: 8px;">&nbsp;<a href="logcat.xhtml" target="content"><bsh>translate("menu.entry.logcat");</bsh></a></li>
+		<p>
+	</div>
+	<h3><a href="#"><bsh>translate("menu.title.server");</bsh></a></h3>
+	<div>
+		<p>
+		<li><img src="images/dot_white.png" style="width: 8px; height: 8px;">&nbsp;<a href="server_settings.xhtml" target="content"><bsh>translate("menu.entry.settings");</bsh></a></li>
+        <li><img src="images/dot_white.png" style="width: 8px; height: 8px;">&nbsp;<a href="logfile.xhtml" target="content"><bsh>translate("menu.entry.logfile");</bsh></a></li>
+		<li><img src="images/dot_white.png" style="width: 8px; height: 8px;">&nbsp;<a href="toolbar_settings.xhtml" target="content"><bsh>translate("menu.entry.toolbar");</bsh></a></li>
+		<li><img src="images/dot_white.png" style="width: 8px; height: 8px;">&nbsp;<a href="directory_protection.xhtml" target="content"><bsh>translate("menu.entry.directory_protection");</bsh></a></li>
+		<li><img src="images/dot_white.png" style="width: 8px; height: 8px;">&nbsp;<a href="mimetypes.xhtml" target="content"><bsh>translate("menu.entry.mimetypes");</bsh></a></li>
+		<li><img src="images/dot_white.png" style="width: 8px; height: 8px;">&nbsp;<a href="sessions.xhtml" target="content"><bsh>translate("menu.entry.sessions");</bsh></a></li>
+		<li><img src="images/dot_white.png" style="width: 8px; height: 8px;">&nbsp;<a href="server_stats.xhtml" target="content"><bsh>translate("menu.entry.statistics");</bsh></a></li>
+		<li><img src="images/dot_white.png" style="width: 8px; height: 8px;">&nbsp;<a href="server_shutdown.xhtml" target="content"><bsh>translate("menu.entry.shutdown");</bsh></a></li>
+		<p>
+	</div>
+	<h3><a href="#"><bsh>translate("menu.title.development");</bsh></a></h3>
+	<div>
+		<p>
+		<li><img src="images/dot_white.png" style="width: 8px; height: 8px;">&nbsp;<a href="console.xhtml" target="content"><bsh>translate("menu.entry.beanshell_console");</bsh></a></li>
+		<li><img src="images/dot_white.png" style="width: 8px; height: 8px;">&nbsp;<a href="dev/bshcommands.xhtml" target="content"><bsh>translate("menu.entry.beanshell_commands");</bsh></a></li>
+		<li><img src="images/dot_white.png" style="width: 8px; height: 8px;">&nbsp;<a href="dev/paw_functions.xhtml" target="content"><bsh>translate("menu.entry.paw_functions");</bsh></a></li>
+		<li><img src="images/dot_white.png" style="width: 8px; height: 8px;">&nbsp;<a href="code_snippets.xhtml" target="content"><bsh>translate("menu.entry.snippets_demos");</bsh></a></li>
+		<p>
+	</div>
+	<h3><a href="#"><bsh>translate("menu.title.information");</bsh></a></h3>
+	<div>
+		<p>
+		<li><img src="images/dot_white.png" style="width: 8px; height: 8px;">&nbsp;<a href="changelogs.xhtml" target="content"><bsh>translate("menu.entry.changelogs");</bsh></a></li>
+		<li><img src="images/dot_white.png" style="width: 8px; height: 8px;">&nbsp;<a href="feedback.xhtml" target="content"><bsh>translate("menu.entry.feedback");</bsh></a></li>
+		<li><img src="images/dot_white.png" style="width: 8px; height: 8px;">&nbsp;<a href="donate.xhtml" target="content"><bsh>translate("menu.entry.donate");</bsh></a></li>
+		<p>
+	</div>
+	<h3><a href="#"><bsh>translate("menu.title.session");</bsh></a></h3>
+	<div>
+		<p>
+		<a href="logout.xhtml"><img src="images/logout.png" style="width: 32px;"> <bsh>translate("menu.entry.logout");</bsh></a>
+		<p>
+	</div>
+</div>
+
+</div>
+
+
+
+<!-- To make iframe height: 100% work in Firefox and IE -->
+<!--
+<style type="text/css"> 
+   html, body, div, iframe { margin:0; padding:0; height:100%; } 
+   iframe { display:block; width:100%; border:none; } 
+  </style> 
+-->
+
+<div id="contentDiv">
+
+<table id="contentDivTable"><tr><td style="width: 100%; height:100%;">
+<iframe name="content" id="content" src="start.xhtml" frameborder="0" style="width: 100%; height: 100%; overflow: auto; margin: 0; border: 0; display: block;"></iframe>
+</td></tr></table>
+
+</div>
+
+<div id="footer"><a href="http://www.fun2code.de/" target="_blank">&copy; Fun2Code.de</a></div>
+</body>
+</html>

@@ -1,0 +1,76 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+<title>Changelog 0.46</title>
+<link rel="stylesheet" href="../css/default.css">
+<script type="text/javascript" src="../js/jquery.js"></script>
+<script type="text/javascript" src="../js/executeScript.js"></script>
+<script type="text/javascript" src="../js/jquery.rotate.js"></script>
+</head>
+<body>
+<bsh>source(server.props.get("serviceContext").pawHome + "/html/app/auth.bsh");</bsh>
+<h1>Changelog - Version 0.46</h1>
+
+<h2>Server</h2>
+<ul>
+<li>Server notification has been moved to the "Ongoing" section.</li>
+</ul>
+<p></p>
+
+<h2>Android Functions</h2>
+<h3>Notifications</h3>
+Notifications are supported by three methods.
+<p>
+A <a href="../code_snippets/Notifications.xhtml" target="content" class="link">Notification Builder</a> is available in the <i>Code Snippets</i> section.
+</p>
+<table>
+<tr><td valign="top"><tt>showNotification(ticker, header, text)</tt></td><td>This is a simple function and generates a simple text message. It's equivalent to calling <tt>showNotification(null, ticker, header, text, null, true, null, true, true)</tt>. It returns the notification id.<br><br></td></tr>
+<tr><td valign="top"><tt>showNotification(icon, ticker, header, text, id, light, color, sound, vibrate)</tt></td><td>Generates a notification with the following parameters:<br>
+<ul>
+	<li><tt>icon:</tt> Icon resource id. If <tt>null</tt> <tt>de.fun2code.android.pawserver.R.drawable.notification</tt> is used.</li>
+	<li><tt>ticker:</tt>Ticker text. If <tt>null</tt> no notification will be displayed in the status bar.</li>
+	<li><tt>header:</tt>Header text. If <tt>null</tt> no notification will be displayed in the status bar.</li>
+	<li><tt>text:</tt>Text displayed beneath the header. If <tt>null</tt> no notification will be displayed in the status bar.</li>
+	<li><tt>id:</tt>Notification id. If <tt>null</tt> a random id will be generated.</li>
+	<li><tt>light:</tt><tt>true</tt> if LED light should be used, otherwise <tt>false</tt>.</li>
+	<li><tt>color:</tt>LED RGB color (#rrggbb). If <tt>null</tt> standard color will be used.</li>
+	<li><tt>sound:</tt><tt>true</tt> if sound should be used, otherwise <tt>false</tt>.</li>
+	<li><tt>vibrate:</tt><tt>true</tt> if vibration should be used, otherwise <tt>false</tt>.</li>
+</ul> 
+<p>
+It returns the notification id.
+<p>
+</td></tr>
+<tr><td valign="top"><tt>cancelNotification(id)</tt></td><td>Cancels the notification with the given id.<br><br></td></tr>
+</table>
+<p>
+The below script will display two notifications, one with the simple and one with the extended method.<br>
+After 15 seconds the notifications will be cleared.
+</p>
+<textarea cols="80" rows="16" id="notifyScript">
+id1 = showNotification("Test Notification 1", "Notification Header", "Notification Text");
+
+id2 = showNotification(de.fun2code.android.pawserver.R.drawable.notification, "Test Notification 2", "Notification Header", "Notification Text", null, true, "#0000FF", true, true);
+
+Thread.sleep(15000);
+
+cancelNotification(id1);
+cancelNotification(id2);
+</textarea>
+<p></p>
+<button onClick="executeScript('notifyScript', 'notifyScriptLoader');">Execute Script</button>&nbsp;<img id="notifyScriptLoader" src="../images/loader.gif" style="display: none;" width="16">
+<p></p>
+<h3>Vibration</h3>
+<p>
+Vibration is supported by the simple method <tt>vibrate(millis)</tt> which causes the device to vibrate for the given number of milliseconds.<br>
+The script below vibrates for 3 seconds.
+</p>
+<textarea cols="80" rows="4" id="vibrateScript">
+vibrate(3000);
+</textarea>
+<p></p>
+<button onClick="executeScript('vibrateScript', 'vibrateScriptLoader');">Execute Script</button>&nbsp;<img id="vibrateScriptLoader" src="../images/loader.gif" style="display: none;" width="16">
+
+<p></p>
+</body>
+</html>

@@ -1,0 +1,97 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+<title>Changelog 0.53</title>
+<link rel="stylesheet" href="../css/default.css">
+<script type="text/javascript" src="../js/jquery.js"></script>
+<script type="text/javascript" src="../js/executeScript.js"></script>
+<script type="text/javascript" src="../js/jquery.rotate.js"></script>
+</head>
+<body>
+<bsh>source(server.props.get("serviceContext").pawHome + "/html/app/auth.bsh");</bsh>
+<h1>Changelog - Version 0.53</h1>
+<p>
+ <img src="../images/share.png" style="width: 48px;" align="middle">
+This release mainly features Content Sharing.
+</p>
+
+<h2>Server</h2>
+<ul>
+  <li>Content sharing capabilities have been added to the server.</li>
+  <li>The <tt>/sdcard/paw/tmp</tt> directory is cleared on boot.</li>
+  <li>Classes to support <tt>BroadcatListener</tt>s have been provided.</li>
+</ul>
+<p></p>
+
+<h2>Web App</h2>
+<ul>
+<li>Sharing settings have been added to the Server and Toobar settings.</li>
+<li>Sharing functionality is now available (<b><i>System -> Share Content</i></b>).<br>More info (including a video) can be found at the Fun2Code Blog: <a href="http://fun2code-blog.blogspot.com/2010/12/sharing-android-way.html" class="link" target="_blank">Sharing ... the Android Way</a></li>
+</ul>
+<p></p>
+
+<h2>Android Functions</h2>
+<h3>Sharing</h3>
+The shared <tt>Intents</tt> are stored in a <tt>HashMap&lt;Long, Intent&gt;</tt> in the server scope.<br>
+The key of the map is a timestamp which can be used to display the date when the content has been shared.<br>
+To receive the map use the following code:
+<pre>
+server.props.get("de.fun2code.andoid.pawserver.key.share")
+</pre>
+<p></p>
+<h3>Broadcast Listeners</h3>
+<p>
+The following methods are available in the <tt>de.fun2code.android.pawserver.util.IntentUtil</tt> class to handle broadcast events:
+<ul>
+	<li><tt>static Intent getIntentResultFromBroadcast(context, intentAction)</tt> - Waits for a single <tt>Intent</tt> to accure and provides this as return value.</li>
+		<li><tt>static List<Intent> getIntentResultsFromBroadcast(context, intentAction, millis)</tt> - Collects <tt>Intent</tt> tfor the specified amount of milli seconds and returns them as <tt>List</tt>.</li>
+</ul>
+</p>
+<p>
+
+To create <tt>BroadcastListiner</tt> which executes a BeanShell script in the <tt>onReceive()</tt> method when an <tt>Intent</tt> is received the method <tt>buildReceiver</tt> from the <tt>de.fun2code.android.pawserver.util.BroadcastReceiverUtil</tt> class can be used. The <tt>intent</tt> and <tt>context</tt> objects are available from within the script.
+<ul>
+	<li><tt>static BroadcatLister buildReceiver(script);</tt></li>
+		
+</ul>
+
+</p>
+<p>
+The example shows how to uses the <tt>IntentUtil.getIntentResultFromBroadcast()</tt> to receive the battery status in a single <tt>Intent</tt> an prints the result. It also registers two BroadCastListeners by using <tt>BroadcastReceiverUtil.buildReceiver()</tt> for five seconds that will display and remove notifictions if power is plugged or unplugged.
+</p>
+<textarea cols="80" rows="10" id="broadcastListenersScript1">
+import de.fun2code.android.pawserver.util.*;
+import android.content.Intent;
+import android.content.IntentFilter;
+
+service = server.props.get("serviceContext");
+
+// Get single Intent
+intent = IntentUtil.getIntentResultFromBroadcast(service, Intent.ACTION_BATTERY_CHANGED);
+level = intent.getIntExtra("level", 0);
+print("Battery Level: " + level + "%");
+
+// Register BroadcastListener with IntentFilter, register it and remove
+// it after 5 seconds.
+receiver1 = BroadcastReceiverUtil.buildReceiver("showNotification(null, \"Power connected!\", \"Device has been connected to power.\", \"Charging...\", 815, true, null, true, true);");
+receiver2 = BroadcastReceiverUtil.buildReceiver("cancelNotification(815);");
+filter1 = new IntentFilter(Intent.ACTION_BATTERY_CHANGED);
+filter2 = new IntentFilter(Intent.ACTION_POWER_DISCONNECTED);
+
+service.registerReceiver(receiver1, filter1);
+service.registerReceiver(receiver2, filter2);
+
+Thread.sleep(5000);
+service.unregisterReceiver(receiver1);
+service.unregisterReceiver(receiver2);
+
+
+</textarea><br>
+Result:<br><textarea type="text" id="broadcastListenersScriptResult1" cols="40" rows="6"></textarea><p></p>
+<p></p>
+<button onClick="executeScript('broadcastListenersScript1', 'broadcastListenersScriptLoader1', 'broadcastListenersScriptResult1');">Execute Script</button>&nbsp;<img id="broadcastListenersScriptLoader1" src="../images/loader.gif" style="display: none;" width="16">
+<p></p>
+
+
+</body>
+</html>

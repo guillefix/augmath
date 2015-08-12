@@ -1,0 +1,204 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+<bsh>source(server.props.get("serviceContext").pawHome + "/html/app/bsh/i18n.bsh");</bsh>
+<title><bsh>translate("messages.title");</bsh></title>
+<link rel="stylesheet" href="../css/default.css">
+ <script type="text/javascript">
+        function changeColour(colour, id){
+                 document.getElementById(id).style.backgroundColor = colour;
+                 }
+</script>
+</head>
+<body>
+<bsh>source(server.props.get("serviceContext").pawHome + "/html/app/auth.bsh");</bsh>
+<h3><bsh>translate("messages.title");</bsh></h3>
+
+<bsh>
+import android.net.Uri;
+import android.provider.Contacts.People;
+import android.provider.Contacts.Phones;
+import java.text.DateFormat;
+
+service = server.props.get("serviceContext");
+delete = parameters.get("delete");
+
+SMS_CONTENT_URI = Uri.parse("content://sms");
+</bsh>
+
+<bsh>
+// Delete
+if(delete != null) {
+	service.getContentResolver().delete(SMS_CONTENT_URI, "thread_id=" + delete, null);
+}
+</bsh>
+
+<bsh>
+// Clear statusbar notification
+SMS_INBOX_CONTENT_URI = Uri.withAppendedPath(SMS_CONTENT_URI, "inbox");
+SORT_ORDER = "date DESC";
+
+cursor = service.getContentResolver().query(SMS_INBOX_CONTENT_URI,
+	new String[] { "_id", "thread_id", "address", "person", "date", "body" }, null, null, SORT_ORDER);
+
+smsCount = 0;
+
+if (cursor != null) {
+	try {
+		smsCount = cursor.getCount();
+	}
+	finally {
+		cursor.close();
+	}
+}
+
+// Set session variable _smsCount to count, so the statusbar indicator will go away
+sessionPut("_smsCount", smsCount);
+</bsh>
+
+
+<bsh>
+// ArrayList for thread information
+listThreads = new ArrayList();
+
+
+URI = Uri.parse("content://sms");
+
+// --- Thread IDs
+cur = service.getContentResolver().query(URI, new String[] {"DISTINCT thread_id"}, null, null, "date DESC");
+threadIDs = new ArrayList();
+if(cur.moveToFirst()) {
+  do {
+    threadIDs.add(cur.getInt(0));
+  } while(cur.moveToNext());
+}
+cur.close();
+
+
+//--- Get infos
+for(id : threadIDs) {
+   
+   // ArrayList for this thread information
+   listThreadInfo = new ArrayList();
+
+   /* List content
+      0: Thread ID (int)
+      1: Address (String)
+      2: Name (might be null) (String)
+      3: Contact ID (might be 0) (int)
+      4: Date (Date)
+      5: Messages in Thread (int)
+      6: Body (String)
+      7: Unread messages (int)
+   */
+
+  // -- Messages in thread
+  cur = service.getContentResolver().query(URI, new String[] { "COUNT(thread_id)" }, "thread_id=?", new String[] { "" + id }, null);
+  cur.moveToFirst();
+  count = cur.getInt(0);
+  cur.close();
+
+  // -- Unread messages
+  cur = service.getContentResolver().query(URI, new String[] { "COUNT(read)" }, "thread_id=? AND read == 0", new String[] { "" + id }, null);
+  cur.moveToFirst();
+  unread = cur.getInt(0);
+  cur.close();
+
+  cur = service.getContentResolver().query(URI, null, "thread_id=?", new String[] { "" + id }, "date DESC LIMIT 1");
+  if(cur.moveToFirst()) {
+    do {
+      contactId = cur.getInt(cur.getColumnIndex("person"));
+      address = cur.getString(cur.getColumnIndex("address"));
+      date = new Date(cur.getLong(cur.getColumnIndex("date")));
+      body = cur.getString(cur.getColumnIndex("body"));
+
+      // Only if address != null. Otherwise it's a DRAFT
+      if(address != null) { 
+      
+	      name = null;
+	      
+	      // Try to get contactId if not present (Switch between new and old Contacts API)
+	      if(contactId == 0 && Integer.parseInt(android.os.Build.VERSION.SDK) >= 5) {
+			// New API
+			phones = service.getContentResolver().query(
+		    android.provider.ContactsContract.CommonDataKinds.Phone.CONTENT_URI, new String[] { android.provider.ContactsContract.CommonDataKinds.Phone.RAW_CONTACT_ID }, android.provider.ContactsContract.CommonDataKinds.Phone.NUMBER + "=?", new String[] { address }, null);
+	       
+		if(phones.moveToFirst()) {
+		    contactId = phones.getInt(0);
+		}
+	       
+		phones.close();
+	      }
+		  else if(contactId == 0) {
+			phones = service.getContentResolver().query(
+		    Phones.CONTENT_URI, new String[] { "person" }, "Phones.NUMBER=?", new String[] { address }, null);
+	       
+		if(phones.moveToFirst()) {
+		    contactId = phones.getInt(0);
+		  }
+	       
+		phones.close();
+		  }
+		  
+		
+		 if(contactId != 0 && Integer.parseInt(android.os.Build.VERSION.SDK) >= 5) {
+			// New API
+			contact = service.getContentResolver().query(
+		    android.provider.ContactsContract.Data.CONTENT_URI, new String[] {       android.provider.ContactsContract.CommonDataKinds.StructuredName.DISPLAY_NAME }, android.provider.ContactsContract.Data.RAW_CONTACT_ID + "=? AND " + android.provider.ContactsContract.CommonDataKinds.StructuredName.MIMETYPE + "=?", new String[] { "" + contactId, android.provider.ContactsContract.CommonDataKinds.StructuredName.CONTENT_ITEM_TYPE }, null);
+
+			if(contact.moveToFirst()) {
+				name = contact.getString(0);
+		}
+
+		  contact.close();
+	      }
+	      else if(contactId != 0) {
+		  contact = service.getContentResolver().query(
+		    People.CONTENT_URI, new String[] { People.NAME }, "People._ID=?", new String[] { "" + contactId }, null);
+
+		  if(contact.moveToFirst()) {
+		    name = contact.getString(0);
+		  }
+
+		  contact.close();
+		}
+	      
+	      listThreadInfo.add(0, id);
+	      listThreadInfo.add(1, address);
+	      listThreadInfo.add(2, name);
+	      listThreadInfo.add(3, contactId);
+	      listThreadInfo.add(4, date);
+	      listThreadInfo.add(5, count);
+	      listThreadInfo.add(6, body);
+	      listThreadInfo.add(7, unread);
+
+	      listThreads.add(listThreadInfo);
+	}
+    } while(cur.moveToNext());
+  }
+  cur.close();
+}
+</bsh>
+<table style="width: 80%; background: #fbfbfb; border: 1px solid black; margin-left: 4em;" cellspacing="0" cellpadding="0">
+<bsh>
+line = 0;
+for(thread : listThreads) {
+   line++;
+   colour = line%2 == 0 ? "white": "#eaeaea";
+   highlightColour = "#cbcbcb";
+
+   href = "show_thread.xhtml?title=" + Uri.encode((thread.get(2) != null ? thread.get(2) : thread.get(1)), null) + "&threadId=" + thread.get(0) + "&contactId=" + thread.get(3) + "&address=" + Uri.encode(thread.get(1), null);
+
+   print("<tr id='row" + line + "'style='cursor: pointer; background: " + colour + ";' onMouseOver=\"changeColour('" + highlightColour + "',this.id);\" onMouseOut=\"changeColour('" +  colour + "',this.id);\" onClick=\"document.location.href='" + href + "'\">");
+   print("<td align='center'><img src='../graphics/contact_photo.xhtml?contactId=" + thread.get(3) + "' style='width: 48px;';></td>");
+   print("<td style='width: 30%;'>" + (thread.get(2) != null ? thread.get(2) : thread.get(1)) +  " (" + thread.get(5) + ")<br><small>" + thread.get(6) + "</small></td>");
+   print("<td align='center'>" + DateFormat.getDateTimeInstance(DateFormat.LONG, DateFormat.SHORT).format(thread.get(4)) + "</td>");
+   print("<td>" + (thread.get(7) > 0 ? "<img src='../images/mail.png' style='width: 24px;' title='" + translateRaw("messages.tooltip.unread_messages") + "'>" : "") + "</td>");
+   print("<td><a href='sms_threads.xhtml?delete=" + thread.get(0) + "'><img src='../images/stop.png' title='" + translateRaw("messages.tooltip.delete_thread") + "'></a></td>");
+   print("</tr>");
+}
+</bsh>
+</table>
+
+</body>
+</html>

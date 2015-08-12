@@ -1,0 +1,129 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+<bsh>source(server.props.get("serviceContext").pawHome + "/html/app/bsh/i18n.bsh");</bsh>
+
+<script type="text/javascript" src="js/jquery.js"></script>
+<script type="text/javascript">
+	function startPackage(packageName) {
+		$.post("start_app.xhtml", {packageName: packageName}, function(data) {});
+		return false;
+	}
+</script>
+<title><bsh>translate("apk_backup.title");</bsh></title>
+<link rel="stylesheet" href="css/default.css">
+
+<script type="text/javascript">
+	function startPackage(packageName) {
+		$.post("start_app.xhtml", {packageName: packageName}, function(data) {});
+		return false;
+	}
+</script>
+
+
+</head>
+<body>
+<bsh>source(server.props.get("serviceContext").pawHome + "/html/app/auth.bsh");</bsh>
+<h3><bsh>translate("apk_backup.title");</bsh></h3>
+<bsh>
+import android.app.Service;
+import android.content.pm.PackageManager;
+import android.app.ActivityManager;
+import android.content.Context;
+import android.app.ActivityManager.RunningAppProcessInfo;
+import android.content.pm.ApplicationInfo;
+import android.os.Process;
+
+service = (Service) server.props.get("serviceContext");
+
+actmgr=(ActivityManager) service.getSystemService
+(Context.ACTIVITY_SERVICE);
+pkgManager = service.getPackageManager();
+
+
+kill = parameters.get("kill");
+if(kill != null) {
+	actmgr.restartPackage(kill);
+}
+
+apps = pkgManager.getInstalledApplications(PackageManager.GET_META_DATA);
+
+appList = actmgr.getRunningAppProcesses();
+</bsh>
+<p>
+<bsh>translate("apk_backup.info");</bsh>
+</p>
+<form metod="post">
+<input type="submit" value="<bsh>translate("apk_backup.button.refresh_list");</bsh>">
+<br><br>
+<center>
+<table width="90%">
+<tr><th style="background: white">&nbsp;</th>
+<th style="border: 2px black solid;"><bsh>translate("apk_backup.table.app_name");</bsh></th>
+<th style="border: 2px black solid;"><bsh>translate("apk_backup.table.app_version");</bsh></th>
+<th style="border: 2px black solid;"><bsh>translate("apk_backup.table.date");</bsh></th>
+<th style="border: 2px black solid;"><bsh>translate("apk_backup.table.size");</bsh></th></tr>
+<bsh>
+import android.content.pm.PackageManager;
+import android.content.pm.PackageInfo;
+import java.text.DateFormat;
+
+// Comparator to sort table
+public int compare(pi1, pi2){
+	f1 = new File(pi1.applicationInfo.sourceDir);
+	f2 = new File(pi2.applicationInfo.sourceDir);
+
+	if(f1.exists() && f2.exists()) {
+		return (f1.lastModified() < f2.lastModified() ? 1 : -1);
+	}
+	else {
+		return(0);
+	}
+}
+
+
+service = server.props.get("serviceContext");
+pkgManager = service.getPackageManager();
+
+apps = pkgManager.getInstalledPackages(0);
+Collections.sort(apps, this);
+
+appCount = 0;
+
+for (int i=0;i<apps.size();i++) {
+	pi = apps.get(i);
+	apkLocation = pi.applicationInfo.sourceDir;
+	apkName = pkgManager.getApplicationLabel(pi.applicationInfo);
+	apkVersion = pi.versionName;
+    // If ApkVersion is null, set it to an empty string.
+    apkVersion = apkVersion == null ? "": apkVersion;
+	apkFile = new File(apkLocation);
+
+	// Only show apps that can be backed up
+	if(apkLocation.startsWith("/system") || apkLocation.startsWith("/data/app-private") || !apkFile.exists()) { continue; }
+
+	installDate = DateFormat.getDateInstance(DateFormat.LONG).format(new Date(apkFile.lastModified()));
+	sizeStr = apkFile.length() >= 1024 * 1024 ? String.format("%.2f%s", new Object[] { (apkFile.length() / 1024.0 / 1024), "<br>MB" }) : String.format("%.2f%s", new Object[] { (apkFile.length() / 1024.0), "<br>KB" });
+	appCount++;
+	
+	print("<tr align='center'>");
+	print("<td><a href='#' onclick='startPackage(\"" + pi.packageName + "\"); return false'><img width='35' height='35' src='get_app_icon.xhtml?processname=" + pi.packageName + "' title='" + apkName + " (" + translateRaw("apk_backup.tooltip.click_to_start") + ")'></a></td>");
+	print("<td style='border: 1px black dotted;'>" + apkName + "</td>");
+	print("<td style='border: 1px black dotted;'>" + apkVersion + "</td>");
+	print("<td style='border: 1px black dotted;'>" + installDate + "</td>");
+	print("<td style='border: 1px black dotted;'>" + sizeStr + "</td>");
+	print("<td>");
+        print("<a href='get_file.xhtml?file=" + apkLocation + "&name=" + apkName.replaceAll("\\s+", "_") + "-" + apkVersion.replaceAll("\\s+", "_") + ".apk&mime=application/octet-stream'><img src='images/download2.png' title='" + translateRaw("apk_backup.tooltip.backup") + "' width='22' height='22'></a>");
+	print("<a href='get_file.xhtml?file=" + apkLocation + "&name=" + apkName.replaceAll("\\s+", "_") + "-" + apkVersion.replaceAll("\\s+", "_") + ".apk&mime=application/vnd.android.package-archive'><img src='images/install.png' title='" + translateRaw("apk_backup.tooltip.install") + "' width='26' height='26'></a>");
+	print("</td>");
+	print("</tr>");	
+
+}
+</bsh>
+<tr><td></td><td colspan="4" style="border: 2px white solid; text-align: center;"><b><bsh>translate("apk_backup.label.total");</bsh>: <bsh>$$.print(appCount);</bsh> </b></td></tr>
+</table>
+</center>
+</form>
+<p><br></p>
+</body>
+</html>

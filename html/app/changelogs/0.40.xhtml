@@ -1,0 +1,68 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+<title>Changelog 0.40</title>
+<link rel="stylesheet" href="../css/default.css">
+<script type="text/javascript" src="../js/jquery.js"></script>
+<script type="text/javascript" src="../js/executeScript.js"></script>
+</head>
+<body>
+<bsh>source(server.props.get("serviceContext").pawHome + "/html/app/auth.bsh");</bsh>
+<h1>Changelog - Version 0.40</h1>
+
+<h2>Server</h2>
+<ul>
+  <li>Permissions added: GPS and WiFi</li>
+</ul>
+<p></p>
+
+<h2>Web App</h2>
+<ul>
+  <li>Rescan SD Card has been added to the Media menu.</li>
+  <li>XML-RCP code snippet added.</li>
+</ul>
+<p></p>
+
+<h2>Android Functions</h2>
+<h3>XML-RCP support</h3>
+The server now supports XML-RCP from <a href="http://code.google.com/p/android-xmlrpc" target="_blank" class="link">http://code.google.com/p/android-xmlrpc</a>.<br>
+For an example have a look at the <a href="../code_snippets/XML-RCP.xhtml" target="content" class="link">XML-RCP code snippet</a>.
+<p></p>
+<h3>GPS</h3>
+Functions for activating GPS have been added. The GPS has to be enabled manually by the user on the device before this can work.
+When the function <tt>acivateGPS(true)</tt> is used the GPS icon should appear in the statusbar.<br>
+The function <tt>acivateGPS(false)</tt> will stop the device from receiving GPS signals. The GPS icon should disappear in the statusbar.<br>
+To get the last GPS position the command <tt>getGpsLocation()</tt> which returns an Android <tt>Location</tt> object can be used.
+<p></p>
+Below code will start the GPS and stop it again after 5 seconds.
+<p></p>
+
+<textarea cols="80" rows="4" id="gpsScript">
+activateGps(true);
+Thread.sleep(5000);
+activateGps(false);
+</textarea>
+<p></p>
+<button onClick="executeScript('gpsScript', 'gpsScriptLoader');">Execute Script</button>&nbsp;<img id="gpsScriptLoader" src="../images/loader.gif" style="display: none;" width="16">
+<p></p>
+
+<h3>WiFi</h3>
+To switch WiFi on and off use the command <tt>enableWifi(boolean)</tt> can be used.<br>
+This of course only makes sense if the PAW server is not running on WiFi.
+<p></p>
+Below code will stop WiFi and restart it after 2 seconds.
+<p></p>
+
+<textarea cols="80" rows="4" id="wifiScript">
+enableWifi(false);
+Thread.sleep(2000);
+enableWifi(true);
+</textarea>
+<p></p>
+<button onClick="executeScript('wifiScript', 'wifiScriptLoader');">Execute Script</button>&nbsp;<img id="wifiScriptLoader" src="../images/loader.gif" style="display: none;" width="16">
+<p></p>
+
+
+
+</body>
+</html>

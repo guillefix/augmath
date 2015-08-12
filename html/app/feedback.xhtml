@@ -1,0 +1,51 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+<bsh>source(server.props.get("serviceContext").pawHome + "/html/app/bsh/i18n.bsh");</bsh>
+
+<script type="text/javascript" src="js/jquery.js"></script>
+<script type="text/javascript">
+	function send(scriptId, imageId, resultId) {
+		$("#loader").show();
+		$("#info").html("<br>Please press the <b>Send</b> button on your phone to send the message.");
+		$.post("send_mail.xhtml", {recipient: "android@fun2code.de", subject: $("#subject").val(), body: $("#body").val()}, function(data) { 
+			$("#loader").hide();
+			$("#info").html("");
+		});	
+	}
+</script>
+<title><bsh>translate("feedback.title");</bsh></title>
+<link rel="stylesheet" href="css/default.css">
+</head>
+<body>
+<bsh>source(server.props.get("serviceContext").pawHome + "/html/app/auth.bsh");</bsh>
+<bsh>
+// Set PAW Version
+import android.content.SharedPreferences;
+import android.content.SharedPreferences.Editor;
+import android.app.Service;
+
+service = (Service) server.props.get("serviceContext");
+preferences = service.getSharedPreferences("PawServer", 0);
+pawVersion = preferences.getString("Version", "na");
+
+subject = "Feedback: PAW Server for Android - Version " + pawVersion + ", " + android.os.Build.BRAND + " " + android.os.Build.MODEL + ", Android " + android.os.Build.VERSION.RELEASE;
+</bsh>
+
+<h3><bsh>translate("feedback.title");</bsh></h3>
+<bsh>translate("feedback.info", new Object[] {subject});</bsh>
+<p></p>
+<div>
+<b><bsh>translate("feedback.label.subject");</bsh>:</b><br>
+<input type="text" id="subject" value="<bsh>$$.print(subject);</bsh>" id="subject" style="width: 80%;">
+<p></p>
+<b><bsh>translate("feedback.label.message");</bsh>:</b><br>
+<textarea id="body" style="width: 80%;" rows="25">
+</textarea>
+<p></p>
+<button onClick="send();"><bsh>translate("feedback.button.send_message");</bsh></button>&nbsp;<img id="loader" src="images/loader.gif" style="display: none;" width="16">
+<br>
+<span id="info"></span>
+</div>
+</body>
+</html>

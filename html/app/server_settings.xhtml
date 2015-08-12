@@ -1,0 +1,318 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+<bsh>source(server.props.get("serviceContext").pawHome + "/html/app/bsh/i18n.bsh");</bsh>
+<bsh>service = server.props.get("serviceContext");</bsh>
+
+<title><bsh>translate("server_settings.title");</bsh></title>
+<link rel="stylesheet" href="css/default.css">
+<link type="text/css" href="css/overcast/jquery-ui.css" rel="Stylesheet" />
+<script type="text/javascript" src="js/jquery.js"></script>
+<script type="text/javascript" src="js/jquery-ui.js"></script>
+
+<script type="text/javascript">
+	$(document).ready(function() {
+		$("#port_dialog").dialog({
+			bgiframe: true,
+			resizable: false,
+			height:240,
+			width: 480,
+			modal: true,
+			autoOpen: false,
+			open: function() {
+				// Set default button
+         			//$(this).parents('.ui-dialog-buttonpane button:eq(1)').focus();
+  			 },
+			overlay: {
+				backgroundColor: '#000',
+				opacity: 0.5
+			},
+			buttons: {
+				'<bsh>translate("server_settings.button.change_port");</bsh>': function() {
+					$(this).dialog('close');
+					changeServerSettings(true);
+				},
+				'<bsh>translate("server_settings.button.cancel");</bsh>': function() {
+					$(this).dialog('close');
+				}
+			}
+		});
+
+		// Set focus on first text field
+		$("input:text:visible:first").focus();
+
+		// Server settings form
+		$("form[name=changeServerSettings]").submit(function() {
+			return changeServerSettings(false);
+		});
+
+
+		// Web App settings form
+		$("form[name=changeUserPwd]").submit(function() {
+			$("#errorConsoleUsrPwd").html("<img src='images/loader.gif' style='width: 16px;'>");
+			$.post("change_app_user.xhtml", {app_username: $("[name=app_username]").val(), app_password_repeat: $("[name=app_password_repeat]").val(), app_password: $("[name=app_password]").val()},
+		function(data) {
+			if(data.success) {
+				$("#errorConsoleUsrPwd").html("");
+			}
+			else {
+				$("#errorConsoleUsrPwd").html(data.message).fadeIn();
+			}
+
+		}, "json");
+		return false;
+		});
+
+        $("#loglevelSlider").slider({
+			range: "max",
+			min: 1,
+			max: 5,
+			value: <bsh>$$.print(service.getPawServer().log)</bsh>,
+            slide: function( event, ui ) {
+                $("[name=logLevel]").val(ui.value);
+            }
+		});
+
+	});
+
+	function changeServerSettings(force) {
+					$("#errorConsoleServerSettings").html("<img src='images/loader.gif' style='width: 16px;'>");
+			if(isNaN($("[name=serverPort]").val())) {
+				$("#errorConsoleServerSettings").html("<bsh>translate("server_settings.error.port_nan");</bsh>");
+				return false;
+			}
+
+			if($("[name=serverPort]").val() < 1024 && !force) {
+				confirmPortSettings();
+				$("#errorConsoleServerSettings").html("");
+				return false;
+			}
+
+			if(isNaN($("[name=maxPost]").val())) {
+				$("#errorConsoleServerSettings").html("<bsh>translate("server_settings.error.upload_size_nan");</bsh>");
+				return false;
+			}
+
+			var httpProxy  = $("[name=httpProxy]:checked").val() != undefined ? "on" : "off";
+			var httpsProxy = $("[name=httpsProxy]:checked").val() != undefined ? "on" : "off";
+			var hideNotificationIcon = $("[name=hideNotificationIcon]:checked").val() != undefined ? "on" : "off";
+			var execAutostartScripts = $("[name=execAutostartScripts]:checked").val() != undefined ? "on" : "off";
+			var allowSharing = $("[name=allowSharing]:checked").val() != undefined ? "on" : "off";
+			var useWakeLock = $("[name=useWakeLock]:checked").val() != undefined ? "on" : "off";
+			var showUrlInNotification = $("[name=showUrlInNotification]:checked").val() != undefined ? "on" : "off";
+			var freezeContent = $("[name=freezeContent]:checked").val() != undefined ? "on" : "off";
+
+			$.post("save_server_settings.xhtml", {server_port: $("[name=serverPort]").val(), http_proxy: httpProxy, https_proxy: httpsProxy, maxPost: $("[name=maxPost]").val(), connectionType: $("[name=connectionType]").val(), hideNotificationIcon: hideNotificationIcon, execAutostartScripts: execAutostartScripts, allowSharing: allowSharing, useWakeLock: useWakeLock, showUrlInNotification: showUrlInNotification, freezeContent: freezeContent, logLevel: $("[name=logLevel]").val()},
+			function(data) {
+				if(data.success) {
+					$("#errorConsoleServerSettings").html("");
+				}
+				else {
+					$("#errorConsoleServerSettings").html(data.message).fadeIn();
+				}
+
+			}, "json");
+
+			return false;
+	}
+
+	function confirmPortSettings() {
+		$('#okButton').focus();
+		$("#port_dialog").dialog('open');
+
+
+	}
+
+</script>
+</head>
+<body>
+<bsh>source(server.props.get("serviceContext").pawHome + "/html/app/auth.bsh");</bsh>
+<h3><bsh>translate("server_settings.title");</bsh></h3>
+<div style="color: gray;">
+<bsh>translate("server_settings.info");</bsh>
+</div>
+<p></p>
+<bsh>
+import android.app.Service;
+import android.content.SharedPreferences;
+
+preferences = service.getSharedPreferences("PawServer", 0);
+
+</bsh>
+<form name="changeServerSettings">
+	<fieldset style="width: 80%;">
+	<legend><bsh>translate("server_settings.label.connection_settings");</bsh></legend>
+		<div style="color: gray;">
+		<bsh>translate("server_settings.label.connection_settings_info");</bsh>
+		</div>
+		<br>
+		<table border="0">
+		<tr><td><bsh>translate("server_settings.label.connection_type");</bsh></td><td>
+		<td>
+		<select name="connectionType">
+		   <option value="http" <bsh>$$.print((service.getPawServer().connectionType.equals("http") ? "selected" : ""));</bsh>>HTTP</option>
+		   <option value="https" <bsh>$$.print((service.getPawServer().connectionType.equals("https") ? "selected" : ""));</bsh>>HTTPS</option>
+		</select>
+		</td></tr>
+		</table>
+	</fieldset>
+	<p></p>
+	<fieldset style="width: 80%;">
+	<legend><bsh>translate("server_settings.label.port_settings");</bsh></legend>
+		<table border="0">
+		<tr><td><bsh>translate("server_settings.label.server_port");</bsh></td><td>
+		<bsh>print("<input type='text' value='" + service.getPawServer().port + "' name='serverPort'>");</bsh>
+		</td></tr>
+		</table>
+	</fieldset>
+	<p></p>
+    <fieldset style="width: 80%;">
+	<legend><bsh>translate("server_settings.label.loglevel");</bsh></legend>
+        <div style="color: gray;">
+		<bsh>translate("server_settings.label.loglevel_info");</bsh>
+		</div>
+		<table border="0">
+		<tr><td align="center">
+        <div id="loglevelSlider" style="width: 200px;"></div>
+        <bsh>print("<input type='text' size='2' value='" + service.getPawServer().log + "' name='logLevel' style='border: 0;' readonly>");</bsh>
+		</td></tr>
+		</table>
+	</fieldset>
+	<p></p>
+	<fieldset style="width: 80%;">
+	<legend><bsh>translate("server_settings.label.proxy_settings");</bsh></legend>
+		<div style="color: gray;">
+		<bsh>translate("server_settings.label.proxy_settings_info");</bsh>
+		</div>
+		<table border="0">
+		<tr><td><bsh>translate("server_settings.label.enable_http_proxy");</bsh></td><td>
+		<bsh>print("<input type='checkbox' name='httpProxy'" + ((service.getPawServer().http ? "checked" : "")) + ">");</bsh>
+		</td></tr>
+		<tr><td><bsh>translate("server_settings.label.enable_https_proxy");</bsh></td><td>
+		<bsh>print("<input type='checkbox' name='httpsProxy'" + ((service.getPawServer().https ? "checked" : "")) + ">");</bsh>
+		</td></tr>
+		</table>
+	</fieldset>
+	<p></p>
+	<a name="upload_size"></a>
+	<fieldset style="width: 80%;">
+	<legend><bsh>translate("server_settings.label.upload_size");</bsh></legend>
+		<div style="color: gray;">
+		<bsh>translate("server_settings.label.upload_size_info");</bsh>
+		</div>
+		<table border="0">
+		<tr><td><bsh>translate("server_settings.label.size_bytes");</bsh></td><td>
+		<bsh>print("<input type='text' value='" + server.maxPost + "' name='maxPost'>");</bsh>
+		</td></tr>
+		</table>
+	</fieldset>
+	<p></p>
+	<fieldset style="width: 80%;">
+	<legend><bsh>translate("server_settings.label.autostart_scripts");</bsh></legend>
+		<div style="color: gray;">
+		<bsh>translate("server_settings.label.autostart_scripts_info");</bsh>
+		</div>
+		<table border="0">
+		<tr><td><bsh>translate("server_settings.label.execute_startup_scripts");</bsh></td><td>
+		<bsh>print("<input type='checkbox' name='execAutostartScripts'" + ((preferences.getBoolean("ExecAutostartScripts", false) ? "checked" : "")) + ">");</bsh>
+		</td></tr>
+		</table>
+	</fieldset>
+	<p></p>
+	<fieldset style="width: 80%;">
+	<legend><bsh>translate("server_settings.label.screen");</bsh></legend>
+		<div style="color: gray;">
+		<bsh>translate("server_settings.label.screen_info");</bsh>
+		</div>
+		<table border="0">
+		<tr><td><bsh>translate("server_settings.label.keep_screen_on");</bsh></td><td>
+		<bsh>print("<input type='checkbox' name='useWakeLock'" + ((preferences.getBoolean("UseWakeLock", true) ? "checked" : "")) + ">");</bsh>
+		</td></tr>
+		</table>
+	</fieldset>
+	<p></p>
+	<fieldset style="width: 80%;">
+	<legend><bsh>translate("server_settings.label.content");</bsh></legend>
+		<div style="color: gray;">
+		<bsh>translate("server_settings.label.content_info");</bsh>
+		</div>
+		<table border="0">
+		<tr><td><bsh>translate("server_settings.label.freeze_content");</bsh></td><td>
+		<bsh>print("<input type='checkbox' name='freezeContent'" + ((preferences.getBoolean("FreezeContent", false) ? "checked" : "")) + ">");</bsh>
+		</td></tr>
+		</table>
+	</fieldset>
+	<p></p>
+	<fieldset style="width: 80%;">
+	<legend><bsh>translate("server_settings.label.sharing");</bsh></legend>
+		<div style="color: gray;">
+		<bsh>translate("server_settings.label.sharing_info");</bsh>
+		</div>
+		<table border="0">
+		<tr><td><bsh>translate("server_settings.label.allow_sharing");</bsh></td><td>
+		<bsh>print("<input type='checkbox' name='allowSharing'" + ((preferences.getBoolean("AllowSharing", true) ? "checked" : "")) + ">");</bsh>
+		</td></tr>
+		</table>
+	</fieldset>
+	<p></p>
+	<fieldset style="width: 80%;">
+	<legend><bsh>translate("server_settings.label.notification");</bsh></legend>
+		<div style="color: gray;">
+		<bsh>translate("server_settings.label.notification_info");</bsh>
+		</div>
+		<table border="0">
+		<tr><td><bsh>translate("server_settings.label.hide_notification_icon");</bsh></td><td>
+		<bsh>print("<input type='checkbox' name='hideNotificationIcon'" + ((preferences.getBoolean("HideNotificationIcon", false) ? "checked" : "")) + ">");</bsh>
+		</td></tr>
+		</table>
+		<p></p>
+		<div style="color: gray;">
+		<bsh>translate("server_settings.label.show_url_info");</bsh>
+		</div>
+		<table border="0">
+		<tr><td><bsh>translate("server_settings.label.show_url");</bsh></td><td>
+		<bsh>print("<input type='checkbox' name='showUrlInNotification'" + ((preferences.getBoolean("ShowUrlInNotification", false) ? "checked" : "")) + ">");</bsh>
+		</td></tr>
+		</table>
+	</fieldset>
+	<p></p>
+	<input type="submit" value="<bsh>translate("server_settings.button.save");</bsh>">
+	<span id="errorConsoleServerSettings" style="color: red;"></span>
+</form>
+
+<div style="height: 20px;"</div>
+
+<h3><bsh>translate("server_settings.title.webapp_settings");</bsh></h3>
+
+<form name="changeUserPwd">
+	<fieldset style="width: 80%">
+	<legend><bsh>translate("server_settings.label.change_user_password");</bsh></legend>
+		<table border="0">
+		<tr><td><bsh>translate("server_settings.label.username");</bsh></td><td>
+		<bsh>print("<input type='text' value='" + preferences.getString("webAppUsername", "admin") + "' name='app_username'>");</bsh>
+		</td>
+		<tr><td><bsh>translate("server_settings.label.password");</bsh></td><td>
+		<bsh>print("<input type='password' value='" + preferences.getString("webAppPassword", "paw") + "' name='app_password' >");</bsh>
+		</td></tr>
+		<tr><td><bsh>translate("server_settings.label.repeat_password");</bsh></td><td>
+		<input type="password" name="app_password_repeat">
+		</td></tr>
+		</table>
+	</fieldset>
+	<p></p>
+	<input type="submit" value="<bsh>translate("server_settings.button.save");</bsh>">
+	<span id="errorConsoleUsrPwd" style="color: red;"></span>	
+
+</form>
+
+<div id="port_dialog" title="<bsh>translate("server_settings.dialog.port.title");</bsh>">
+	<p><span class="ui-icon ui-icon-alert" style="float:left; margin:0 7px 20px 0;"></span>
+		<bsh>translate("server_settings.dialog.port");</bsh>
+	</p>
+</div>
+
+
+
+
+</body>
+</html>

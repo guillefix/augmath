@@ -1,0 +1,110 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+<bsh>source(server.props.get("serviceContext").pawHome + "/html/app/bsh/i18n.bsh");</bsh>
+
+<title><bsh>translate("volumes.title");</bsh></title>
+<link rel="stylesheet" href="css/default.css">
+<link type="text/css" href="css/overcast/jquery-ui.css" rel="Stylesheet" />
+
+<script type="text/javascript" src="js/jquery.js"></script>
+<script type="text/javascript" src="js/jquery-ui.js"></script>
+<script type="text/javascript" src="js/executeScript.js"></script>
+
+<bsh>
+// Get max valume
+import android.media.AudioManager;
+import android.content.Context;
+
+service = server.props.get("serviceContext");
+audioMgr = service.getSystemService(Context.AUDIO_SERVICE);
+
+volTable = new Hashtable();
+volTable.put("STREAM_MUSIC", translateRaw("volumes.label.media") + ":" + translateRaw("volumes.label.media_info"));
+volTable.put("STREAM_ALARM", translateRaw("volumes.label.alarm") + ":" + translateRaw("volumes.label.alarm_info"));
+volTable.put("STREAM_NOTIFICATION", translateRaw("volumes.label.notification") + ":" + translateRaw("volumes.label.notification_info"));
+volTable.put("STREAM_RING", translateRaw("volumes.label.ring") + ":" + translateRaw("volumes.label.ring_info"));
+volTable.put("STREAM_SYSTEM", translateRaw("volumes.label.system") + ":" + translateRaw("volumes.label.system_info"));
+volTable.put("STREAM_VOICE_CALL", translateRaw("volumes.label.call") + ":" + translateRaw("volumes.label.call_info"));
+
+</bsh>
+
+<script type="text/javascript">
+	$(document).ready(function() {
+		<bsh>
+		keys = volTable.keys();
+		while(keys.hasMoreElements()) {
+			key = keys.nextElement();
+			maxVolume = audioMgr.getStreamMaxVolume(eval("AudioManager." + key));
+			volume = audioMgr.getStreamVolume(eval("AudioManager." + key));			
+
+  			print("$('#slider_" + key + "').slider({ range: 'max', min: 0, max: " + maxVolume + ", value: " + volume + ",  change: function(event, ui) { setVolume(\"" + key + "\"); } });");
+		}
+
+		</bsh>
+
+	});
+
+	function setVolume(stream) {
+		volume = $("#slider_" + stream).slider("value");
+
+		scriptOrg = $("#volumeScript").val();
+		script = scriptOrg;
+		script = script.replace(/%volume%/, volume);
+		script = script.replace(/%stream%/, stream);
+		$("#volumeScript").val(script);
+
+		executeScript('volumeScript', "loaderVol_"  + stream);
+		$("#volumeScript").val(scriptOrg);
+
+		$("#currentVolume").val(volume);
+	}
+
+</script>
+</head>
+
+<body>
+<bsh>source(server.props.get("serviceContext").pawHome + "/html/app/auth.bsh");</bsh>
+<h3><bsh>translate("volumes.title");</bsh></h3>
+<p>
+<bsh>translate("volumes.info");</bsh>
+</p>
+<form><input type="submit" value="<bsh>translate("volumes.button.refresh");</bsh>"></form>
+<p>
+<table>
+<bsh>
+keys = volTable.keys();
+while(keys.hasMoreElements()) {
+	key = keys.nextElement();
+	vals = volTable.get(key).split(":");
+	print("<tr><td>");
+	print("<img src='images/speaker.png' width='32' height='32' align='middle'>" + "&nbsp;&nbsp;<b>" + vals[0] + "</b>");
+	print("</td><td>");
+	print("<div id='slider_" + key +"' style='width: 200px;'></div>");
+	print("</td><td>");
+	print("&nbsp;&nbsp;" + vals[1]);
+	print("</td><td>");
+	print("<img id='loaderVol_" + key + "' src='images/loader.gif' style='display: none;' width='16'>");
+	print("</td></tr>");
+	print("<tr><td colspan='4'>&nbsp;</td></tr>");
+}
+</bsh>
+</table>
+</p>
+
+<p>&nbsp;</p>
+
+<!-- The script -->
+
+<textarea id="volumeScript" cols="80" rows="4" id="rescanScript" style="visibility:hidden; display: none;">
+import android.media.AudioManager;
+import android.content.Context;
+
+service = server.props.get("serviceContext");
+audioMgr = service.getSystemService(Context.AUDIO_SERVICE);
+audioMgr.setStreamVolume(eval("AudioManager.%stream%"), %volume%, 0);
+
+</textarea>
+
+</body>
+</html>

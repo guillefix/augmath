@@ -1,0 +1,28 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+<title>Changelog 0.57</title>
+<link rel="stylesheet" href="../css/default.css">
+<script type="text/javascript" src="../js/jquery.js"></script>
+<script type="text/javascript" src="../js/executeScript.js"></script>
+<script type="text/javascript" src="../js/jquery.rotate.js"></script>
+</head>
+<body>
+<bsh>source(server.props.get("serviceContext").pawHome + "/html/app/auth.bsh");</bsh>
+<h1>Changelog - Version 0.57</h1>
+
+<h2>Server</h2>
+<ul>
+<li>Widget icon changed.</li>
+<li>Server startup scripts are located in the <tt>/sdcard/paw/etc/init</tt> directory. There are two runlevels 0 and 1. Runlevel 0 is for pre startup/shotdown scripts and 1 for post startup/shutdown sripts. Scripts with the prefix <tt>S_</tt> will be processed on startup. Scripts prefixed by <tt>K_</tt> will be processed on shutdown.<br><br><b>Note:</b> The <tt>server</tt> variable is not available for pre-startup scripts.</li>
+</ul>
+<p></p>
+<h2>Web App</h2>
+<ul>
+<li>The webapp supports plug-ins. Plugins are located in the <tt>/sdcard/paw/html/app/plugins</tt> directory. Each plug-in contains a <tt>plugin.conf</tt> file. The structure of the file is the same as for webapps.<br>
+If plug-ins are detected they are available in a separate <b>Plug-ins</b> menu entry.
+<br><br>A sample plug-in can be downloaded <a href="../download/test_plugin.zip" class="link">here</a>.</li>
+</ul>
+<p></p>
+</body>
+</html>

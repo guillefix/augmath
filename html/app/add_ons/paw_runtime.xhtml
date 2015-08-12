@@ -1,0 +1,40 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+<bsh>source(server.props.get("serviceContext").pawHome + "/html/app/bsh/i18n.bsh");</bsh>
+
+<title><bsh>translate("add_ons.paw_runtime.title");</bsh></title>
+<link rel="stylesheet" href="../css/default.css">
+<script type="text/javascript" src="../js/jquery.js"></script>
+<script type="text/javascript" src="../js/executeScript.js"></script>
+</head>
+<body>
+<bsh>source(server.props.get("serviceContext").pawHome + "/html/app/auth.bsh");</bsh>
+<h1><img src="../images/paw_runtime_icon.png" style="width: 32px; height: 32px;"> <bsh>translate("add_ons.paw_runtime.title");</bsh></h1>
+<p>
+<bsh>translate("add_ons.paw_runtime.text1");</bsh>
+<p>
+<blockquote>
+<img src="images/paw_runtime/overview.png">
+</blockquote>
+</p>
+
+<p>
+<bsh>translate("add_ons.paw_runtime.text2");</bsh>
+</p>
+<!-- Additional Functions -->
+<hr>
+<h3><bsh>translate("add_ons.paw_runtime.label.additional_functions");</bsh></h3>
+<ul>
+<bsh>translate("add_ons.paw_runtime.text.additional_functions");</bsh>
+</ul>
+<!-- Version History -->
+<hr>
+<h3><bsh>translate("add_ons.paw_runtime.label.version_history");</bsh></h3>
+<ul>
+<li>0.17 beta: Updated to PAW 0.60 beta. Tablet support.</li>
+<li>0.16 alpha: Added <tt>fullscreen(boolean)</tt> command</li>
+<li>0.15 alpha: First usable version</li>
+</ul>
+</body>
+</html>

@@ -1,0 +1,43 @@
+<html>
+<body>
+<bsh>source(server.props.get("serviceContext").pawHome + "/html/app/auth.bsh");</bsh>
+<bsh>
+import android.app.Service;
+import android.media.AudioManager;
+import android.media.RingtoneManager;
+import android.content.Context;
+
+service = (Service) server.props.get("serviceContext");
+audiomanager = service.getSystemService(Context.AUDIO_SERVICE);
+ringmanager = new RingtoneManager(service);
+
+if(sessionGet("ringtone_playing") == null && parameters.get("play") != null) {
+	ringtone = ringmanager.getRingtone(service, ringmanager.getDefaultUri(RingtoneManager.TYPE_RINGTONE));
+	sessionPut("ringtone_playing", ringtone);
+	ringerVol = audiomanager.getStreamVolume(AudioManager.STREAM_RING);
+	sessionPut("ringerVol", ringerVol);
+
+	// Set volume to max
+	audiomanager.setStreamVolume(AudioManager.STREAM_RING, audiomanager.getStreamMaxVolume(AudioManager.STREAM_RING), 0);
+
+	ringtone.play();
+	while(ringtone.isPlaying()) {}
+
+	//Set volume to old value
+	audiomanager.setStreamVolume(AudioManager.STREAM_RING, ringerVol, 0);
+	sessionPut("ringtone_playing", null);
+}
+else if(sessionGet("ringtone_playing") != null &&  parameters.get("stop") != null) {
+	ringtone = sessionGet("ringtone_playing");
+	// Wait for ringtone to stop
+	while(ringtone.isPlaying()) { ringtone.stop(); }
+	
+	ringerVol = sessionGet("ringerVol");
+	if(ringerVol != null) {
+		audiomanager.setStreamVolume(AudioManager.STREAM_RING, ringerVol, 0);
+	}
+	sessionPut("ringtone_playing", null);
+}
+</bsh>
+</body>
+</html>

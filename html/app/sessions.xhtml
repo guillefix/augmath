@@ -1,0 +1,62 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+<bsh>source(server.props.get("serviceContext").pawHome + "/html/app/bsh/i18n.bsh");</bsh>
+
+<title><bsh>translate("sessions.title");</bsh></title>
+<link rel="stylesheet" href="css/default.css">
+</head>
+<body>
+
+<bsh>
+import java.text.DateFormat;
+
+service = server.props.get("serviceContext");
+source(service.pawHome + "/html/app/auth.bsh");
+source(service.pawHome + "/html/app/bsh/authDb.bsh");
+
+if(parameters.get("remove_id") != null) {
+	deleteAuthSession(parameters.get("remove_id"));
+
+	// To logout immediately if current session was killed
+	source(service.pawHome + "/html/app/auth.bsh");
+}
+
+if(parameters.get("clear") != null) {
+	deleteAllOtherSessions();
+}
+</bsh>
+<h3><img src="images/users.png" align="middle"/>&nbsp;<bsh>translate("sessions.title");</bsh></h3>
+<bsh>translate("sessions.info", new Object[] {sessionId, AUTH_VALID_HOURS});</bsh>
+<p>
+<form metod="post">
+<input type="submit" value="<bsh>translate("sessions.button.refresh_list");</bsh>" />
+<input type="submit" name="clear" value="<bsh>translate("sessions.button.remove_all");</bsh>" />
+</p>
+<table width="90%">
+<tr><th style="background: white">&nbsp;</th>
+<th style="border: 2px black solid;"><bsh>translate("sessions.table.session_id");</bsh></th>
+<th style="border: 2px black solid;"><bsh>translate("sessions.table.ip");</bsh></th>
+<th style="border: 2px black solid;"><bsh>translate("sessions.table.created");</bsh></th>
+<th style="border: 2px black solid;"><bsh>translate("sessions.table.browser");</bsh></th></tr>
+<bsh>
+
+sessions = getValidAuthSessionList();
+
+for(session : sessions) {
+	print("<tr align='center'>");
+	print("<td>" + (session[0].equals(sessionId) ? "<tt><b>X</b></tt>" : "") + "</td>");
+	print("<td style='border: 1px black dotted;'><tt>" + session[0] + "</tt></td>");
+	print("<td style='border: 1px black dotted;'>" + session[2] + "</td>");
+	print("<td style='border: 1px black dotted;'>" + DateFormat.getDateTimeInstance(DateFormat.MEDIUM, DateFormat.MEDIUM).format(new Date(Long.parseLong(session[1]))) + "</td>");
+	print("<td style='border: 1px black dotted;'>" + session[3].replaceAll("^(.*?)\\s.*$", "$1") + "</td>");
+	print("<td><a href='sessions.xhtml?remove_id=" + session[0] + "'><img src='images/stop.png' title='" + translateRaw("sessions.tooltip.remove_session") + "' /></a></td>");
+	print("</tr>");	
+}
+</bsh>
+<tr><td></td><td colspan="4" style="border: 2px white solid; text-align: center;"><b><bsh>translate("sessions.label.total");</bsh>: <bsh>$$.print(sessions.size());</bsh> </b></td></tr>
+</table>
+</form>
+<p><br></p>
+</body>
+</html>

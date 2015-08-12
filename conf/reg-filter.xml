@@ -1,0 +1,160 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<reg-filters>
+  <reg-filter type="replace" status="active">
+    <name>onLoad Filter</name>
+    <description>Filters onLoad JavasScript instructions in HTML pages to stop
+them from executing scripts on startup.
+@URL "html/filters/on_load_filter.html"</description>
+    <regexp>
+      <match>onload[ ]*=[ ]*[\"'][^\"]*[\"']</match>
+      <subst />
+    </regexp>
+  </reg-filter>
+  <reg-filter type="replace" status="active">
+    <name>onUnLoad Filter</name>
+    <description>Filters onUnLoad JavasScript instructions in HTML pages to stop
+them from executing scripts when leaving the page.
+@URL "html/filters/on_unload_filter.html"</description>
+    <regexp>
+      <match>onunload[ ]*=[ ]*[\"'][^\"]*[\"']</match>
+      <subst />
+    </regexp>
+  </reg-filter>
+  <reg-filter type="replace" status="inactive">
+    <name>MS Smart Tag Filter</name>
+    <description>Inserts a meta tag in HTML pages to disallow MS Smart Tags.
+@URL "html/filters/ms_smart_tag_filter.html"</description>
+    <regexp>
+      <match>&lt;[ ]*head[ ]*&gt;</match>
+      <subst>&lt;head&gt;&lt;meta name="MSSmartTagsPreventParsing" content="TRUE"&gt;</subst>
+    </regexp>
+  </reg-filter>
+  <reg-filter type="replace" status="inactive">
+    <name>Applet Filter</name>
+    <description>Removes applets from Web Pages.
+@URL "html/filters/applet_filter.html"</description>
+    <regexp>
+      <match>&lt;applet[^&gt;]*&gt;</match>
+      <subst>&lt;IGNORE-APPLET&gt;</subst>
+    </regexp>
+    <regexp>
+      <match>&lt;/applet[^&gt;]*&gt;</match>
+      <subst>&lt;/IGNORE-APPLET&gt;</subst>
+    </regexp>
+  </reg-filter>
+  <reg-filter type="replace" status="inactive">
+    <name>ActiveX Filter</name>
+    <description>Removes ActiveX Controls (Object tags) from Web Pages.
+@URL "html/filters/activex_filter.html"</description>
+    <regexp>
+      <match>&lt;object[^&lt;]*&gt;</match>
+      <subst>&lt;IGNORE-OBJECT&gt;</subst>
+    </regexp>
+    <regexp>
+      <match>&lt;/object[^&gt;]*&gt;</match>
+      <subst>&lt;/IGNORE-OBJECT&gt;</subst>
+    </regexp>
+  </reg-filter>
+  <reg-filter type="replace" status="inactive">
+    <name>Image Filter</name>
+    <description>Deletes all images
+@URL "html/filters/image_filter.html"</description>
+    <regexp>
+      <match>&lt;img[^&gt;]*&gt;</match>
+      <subst />
+    </regexp>
+  </reg-filter>
+  <reg-filter type="replace" status="active">
+    <name>Pop-Up Filter</name>
+    <description>Removes popups from Web Pages.
+But it is still possible to open windows after the Web page has
+been loaded.
+This filter should be used together with the onLoad Filter to make
+sure that popups are not opened by using the onLoad instruction.
+@URL "html/filters/popup_filter.html"</description>
+    <regexp>
+      <match>@START</match>
+      <subst>&lt;script&gt;
+            OriginalOpen=window.open;
+            function NewOpen(url,nam,atr){return 1;} 
+            window.open=NewOpen;
+         &lt;/script&gt;</subst>
+    </regexp>
+    <regexp>
+      <match>@END</match>
+      <subst>&lt;script&gt; window.open=OriginalOpen; &lt;/script&gt;</subst>
+    </regexp>
+  </reg-filter>
+  <reg-filter type="replace" status="active">
+    <name>Enable Right-Click Menu Filter</name>
+    <description>This filter enables right-mouse click on web pages where
+right-mouse click is disabled. 
+It will also enable selection of text if disabled.
+@URL "html/filters/enable_right_click_filter.html"</description>
+    <regexp>
+      <match>document\.onMouseDown</match>
+      <subst>//document\.onMouseDown</subst>
+    </regexp>
+    <regexp>
+      <match>document\.captureEvent</match>
+      <subst>//document\.captureEvent</subst>
+    </regexp>
+    <regexp>
+      <match>@END</match>
+      <subst>&lt;script&gt;
+            document.oncontextmenu="return 1";
+       &lt;/script&gt;</subst>
+    </regexp>
+    <regexp>
+      <match>@START</match>
+      <subst>&lt;script&gt;
+                originalOnMouseDown=document.onmousedown;
+          &lt;/script&gt;</subst>
+    </regexp>
+    <regexp>
+      <match>@END</match>
+      <subst>&lt;script&gt;
+            document.onmousedown=originalOnMouseDown;
+       &lt;/script&gt;</subst>
+    </regexp>
+  </reg-filter>
+  <reg-filter type="size" status="inactive">
+    <name>Banner Size Filter</name>
+    <description>This filter removes images with specific sizes from web pages.
+The sizes are specified in the file bannersizes.
+
+Note: If there are a lot of sizes specified this filter may
+      slowdown the server. In this case it is recommended to disable
+      this filter and to rely on the GIF Size Filter which also
+      uses the file bannersizes.
+@URL "html/filters/banner_size_filter.html"</description>
+    <file>conf/bannersizes</file>
+    <regexp>
+      <match>&lt;img[^&gt;]*width[ ]*=[ ]*[\"']*@WIDTH[\"']*[ ]*height[ ]*=[ ]*[\"']*@HEIGHT[\"']*[^&gt;]*&gt;</match>
+      <subst />
+    </regexp>
+    <regexp>
+      <match>&lt;img[^&gt;]*height[ ]*=[ ]*[\"']*@HEIGHT[\"']*[ ]*width[ ]*=[ ]*[\"']*@WIDTH[\"']*[^&gt;]*&gt;</match>
+      <subst />
+    </regexp>
+  </reg-filter>
+  <reg-filter type="size" status="active">
+    <name>WebBug Filter</name>
+    <description>Filters images with specified sizes.
+This filter is used to filter fake images with very small
+sizes (mostly 1x1 pixels) which may trigger unwanted scripts
+on a remote server.
+@URL "html/filters/web_bug_filter.html"</description>
+    <file>conf/webbugsizes</file>
+    <regexp>
+      <match>&lt;img[^&gt;]*width[ ]*=[ ]*[\"']@WIDTH[\"'][ ]*height[ ]*=[ ]*[\"']@HEIGHT[\"'][^&gt;]*&gt;</match>
+      <subst />
+    </regexp>
+    <regexp>
+      <match>&lt;img[^&gt;]*height[ ]*=[ ]*[\"']@HEIGHT[\"'][ ]*width[ ]*=[ ]*[\"']@WIDTH[\"'][^&gt;]*&gt;</match>
+      <subst />
+    </regexp>
+  </reg-filter>
+</reg-filters>
+
+

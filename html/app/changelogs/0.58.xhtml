@@ -1,0 +1,33 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+<title>Changelog 0.58</title>
+<link rel="stylesheet" href="../css/default.css">
+<script type="text/javascript" src="../js/jquery.js"></script>
+<script type="text/javascript" src="../js/executeScript.js"></script>
+<script type="text/javascript" src="../js/jquery.rotate.js"></script>
+</head>
+<body>
+<bsh>source(server.props.get("serviceContext").pawHome + "/html/app/auth.bsh");</bsh>
+<h1>Changelog - Version 0.58</h1>
+
+<h2>Server</h2>
+<ul>
+<li>On user request, the html/index.xhtml file is no longer overwritten.</li>
+<li>Added permissions: READ_HISTORY_BOOKMARKS and WRITE_HISTORY_BOOKMARKS</li>
+<li>App does not crash during orientation change on content extraction.</li>
+<li>IPv6 display bug fixed (Motorola Xoom).</li>
+<li>AndroidCgiHandler has been added, which enables CGI support. PHP will be available as plug-in.</li> 
+</ul>
+<p></p>
+<h2>Web App</h2>
+<ul>
+<li>SMS thread view does not break on drafts.</li>
+<li>Plug-ins are now sorted.</li>
+<li>The login page does not work with IE9. To (hopefully fix this) the following meta tag has been added to the login page:<br>
+      &lt;meta http-equiv="X-UA-Compatible" content="IE=EmulateIE8" /&gt;</li>
+<li>New Plug-ins section in "Add-Ons" menu.
+</ul> 
+<p></p>
+</body>
+</html>

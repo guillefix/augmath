@@ -1,0 +1,42 @@
+<bsh>source(server.props.get("serviceContext").pawHome + "/html/app/auth.bsh");</bsh>
+
+<bsh>
+import android.net.Uri;
+import android.provider.MediaStore.Audio.Media;
+ 
+uri = android.provider.MediaStore.Audio.Media.EXTERNAL_CONTENT_URI;
+ 
+String[] tags = new String[] {
+Media.TITLE,
+Media.ARTIST,
+Media.ALBUM,
+Media.DATA,
+Media.TRACK
+};
+ 
+service = server.props.get("serviceContext");
+
+albumId = parameters.get("albumId");
+ 
+if(albumId != null) {
+	cursor = service.getContentResolver().query(uri, tags, Media.ALBUM_ID + "=" + albumId, null, Media.TRACK);
+	 
+
+	if(cursor.moveToFirst()) {
+		do{
+		  artist = cursor.getString(cursor.getColumnIndex(Media.ARTIST)).replaceAll("\"", "");
+		  album = cursor.getString(cursor.getColumnIndex(Media.ALBUM)).replaceAll("\"", "");
+		  title = cursor.getString(cursor.getColumnIndex(Media.TITLE)).replaceAll("\"", "");
+		  file = cursor.getString(cursor.getColumnIndex(Media.DATA));
+		  url = "../get_file.xhtml?file=" + Uri.encode(file);
+		 
+		  if(file.toLowerCase().endsWith(".mp3")) {
+			label = String.format("%s (%s / %s)", new Object[] {title, artist, album});
+			print(url + "|" + label);
+		  }
+		} while(cursor.moveToNext());
+	}
+	cursor.close();
+}
+</bsh>
+

@@ -1,0 +1,196 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+<bsh>source(server.props.get("serviceContext").pawHome + "/html/app/bsh/i18n.bsh");</bsh>
+
+<script type="text/javascript" src="../js/jquery.js"></script>
+<script type="text/javascript" src="../js/jquery.jqupload.min.js"></script>
+<title><bsh>translate("share_content.title");</bsh></title>
+<link rel="stylesheet" href="../css/default.css">
+
+<script type="text/javascript">
+function uploadCallback(return_message){
+	$('#upload_loader').hide();
+/*
+   eval("data="+return_message);
+   $("#demo_message").html(data.message);
+   */
+   
+}
+
+$(document).ready(function() {
+   $("#upload_form").jqupload({"callback":"uploadCallback"});
+   $("#upload_form").jqupload_form();
+});
+</script>
+
+
+</head>
+<body>
+<div style="float: right;"><img src="../images/help.png" style="width: 36px; height: 36px;  cursor: pointer;" title="<bsh>translate("share_content.tooltip.help");</bsh>" onClick="$('#help').toggle();">
+</div>
+
+<bsh>source(server.props.get("serviceContext").pawHome + "/html/app/auth.bsh");</bsh>
+<h3><img src="../images/share.png" align="middle" style="width: 64px; height: 64px;"><bsh>translate("share_content.title");</bsh></h3>
+<bsh>translate("share_content.info");</bsh>
+<br><br>
+
+<!-- Help start -->
+<div id="help" style=" display: none;">
+<center>
+<div style="background: #909090; width: 50%; padding: 10px; border: 1px solid black; color: white;">
+<big><b>?</b></big>
+<bsh>translate("share_content.label.help");</bsh>
+<big><b>?</b></big>
+</div>
+</center>
+</div>
+<!-- Help end -->
+<p>
+<fieldset style="width: 80%;"><legend><img src="images/from_android.png" align="middle"></legend>
+<h4><bsh>translate("share_content.label.received_from_android");</bsh></h4>
+<form metod="post"><input type="submit" value="<bsh>translate("share_content.button.refresh_list");</bsh>"></form>
+<bsh>
+// Delete
+props = server.props.get("de.fun2code.andoid.pawserver.key.share");
+
+del = action = parameters.get("del");
+if(del != null && props != null) {
+	key = Long.parseLong(del);
+	props.remove(key);
+}
+</bsh>
+<center>
+<table style="width: 90%;">
+<tr><th style="border: 2px black solid;"><bsh>translate("share_content.table.icon");</bsh></th><th style="border: 2px black solid;"><bsh>translate("share_content.table.mimetype");</bsh></th><th style="border: 2px black solid;"><bsh>translate("share_content.table.date");</bsh></th></tr>
+<bsh>
+import java.text.DateFormat;
+import android.content.Intent;
+import android.os.Parcelable;
+
+props = server.props.get("de.fun2code.andoid.pawserver.key.share");
+
+if(props != null) {
+	keysDisplayed = new HashMap();
+
+	for(Long key : props.keySet()) {
+		orgIntent = props.get(key);
+		action = orgIntent.getAction();
+	
+		// Build a list of individual intents
+		intentList = new ArrayList();
+	    	if(!action.equals(Intent.ACTION_SEND_MULTIPLE)) {
+	      		intentList.add(orgIntent);
+	    	}
+	    	else {
+	      		parcelableExtras = orgIntent.getParcelableArrayListExtra(Intent.EXTRA_STREAM);
+			stringExtras = orgIntent.getStringArrayListExtra(Intent.EXTRA_TEXT);
+
+	      		if(parcelableExtras != null) {
+				pos = 0;
+	      			for(parcelable : parcelableExtras) {
+					newIntent  = new Intent(action);
+					newIntent.setType(orgIntent.getType());
+					newIntent.putExtra(Intent.EXTRA_STREAM, new Parcelable[] { parcelable });
+					newIntent.putExtra("type", "stream");
+					newIntent.putExtra("pos", pos);
+					intentList.add(newIntent);
+					pos++;
+	      			}
+	      		}
+
+			if(stringExtras != null) {
+				pos = 0;
+	      			for(stringExtra : stringExtras) {
+					newIntent  = new Intent(action);
+					newIntent.setType(orgIntent.getType());
+					newIntent.putExtra(Intent.EXTRA_TEXT, stringExtra);
+					newIntent.putExtra("type", "text");
+					newIntent.putExtra("pos", pos);
+					intentList.add(newIntent);
+					pos++;
+	      			}
+			}
+	    	}
+		
+		for(intent : intentList) {
+		
+			// Search the image (images are used from the filmanager)
+			mimetype = intent.getType();
+			ext = "unknown";
+
+			if(!mimetype.contains("*")) {
+				for(mimeExt: server.props.keys()) {
+					if(server.props.get(mimeExt).equals(mimetype)) {
+						ext = mimeExt.replaceAll("mime.", "").toLowerCase();
+						break;
+					}	
+				}
+			}
+			// Try to get correct mimetype by file extension
+			else {
+				uri = intent.getExtras().getParcelable(Intent.EXTRA_STREAM);
+				if(uri != null && uri.toString().startsWith("file://")) {
+					ext = uri.toString().substring(uri.toString().lastIndexOf(".") + 1).toLowerCase();
+					if(server.props.get("mime." + ext) != null) {
+						mimetype = server.props.get("mime." + ext);
+					}
+				}
+			}
+			mimeIconsFullPath = server.props.get("serviceContext").pawHome + "/html/app/filemanager/images/fileicons";
+			mimeIconsRelPath = "../filemanager/images/fileicons";
+			mimeImage = mimeIconsRelPath + "/unknown.png";
+			if(new File(mimeIconsFullPath + "/" + ext + ".png").exists()) {
+				mimeImage = mimeIconsRelPath  + "/" + ext + ".png";
+			}
+
+			// Check if shared content is a URL
+			url = null;
+			if(mimetype.equals("text/plain") && intent.getExtras().getString(Intent.EXTRA_TEXT).matches("^http[s]{0,1}://.*$")) {
+				url = intent.getExtras().getString(Intent.EXTRA_TEXT);
+				mimeImage = mimeIconsRelPath  + "/htm.png";
+			}
+
+			otherParams = "";
+			deleteTitle = translateRaw("share_content.tooltip.delete");
+			if(intent.getAction().equals(Intent.ACTION_SEND_MULTIPLE)) {
+				otherParams = "&type=" + intent.getStringExtra("type") + "&pos=" + intent.getIntExtra("pos", -1);
+				deleteTitle = translateRaw("share_content.tooltip.delete_set");
+			}
+		
+			print("<tr><td align='center' style='border: 1px black dotted;'><img src='" + mimeImage + "' style='width: 64px;'></td><td align='center' style='border: 1px black dotted;'>" + mimetype + "</td><td align='center' style='border: 1px black dotted;'>" + DateFormat.getDateTimeInstance(
+		    DateFormat.MEDIUM, DateFormat.MEDIUM).format(new Date(key)) + "</td><td><a href='get_shared.xhtml?key=" + key + otherParams + "' target='_blank'><img src='../images/install.png' title='" + translateRaw("share_content.tooltip.open") + "' style='width: 32px; height: 32px;'></a>");
+
+			if(keysDisplayed.get(key) == null) {
+				print("<a href='share.xhtml?del=" + key + "'><img src='../images/stop.png' title='" + deleteTitle + "' style='width: 24px; height: 24px;'></a>");
+			}
+
+			if(url != null) { print("<br><a href='" + url + "' target='_blank'><img src='../images/new-window.png' style='width: 24px; height: 24px; ' title='" + translateRaw("share_content.tooltip.open_url_in_new_window") + "'></a>"); }
+			print("</td></tr>");
+
+			if(keysDisplayed.get(key) == null) {
+				keysDisplayed.put(key, "x");
+			}
+
+		}
+	}
+}
+</bsh>
+</table>
+</center>
+</fieldset>
+</p>
+<p>
+<fieldset  style="width: 80%;"><legend><img src="images/to_android.png" align="middle"></legend>
+<h4><bsh>translate("share_content.label.send_to_android");</bsh></h4>
+<form id="upload_form" name="upload_form" method="post" action="upload_shared.xhtml" enctype="multipart/form-data">
+<input type="file" name="file" id="file">
+<input type="submit" value="<bsh>translate("share_content.button.send_data");</bsh>" onClick="$('#upload_loader').show();">&nbsp;<img id="upload_loader" src='../images/loader.gif' style='width: 16px; display: none;'>
+</form>
+<input type="radio" name="type" onClick="$('#upload_form').attr('action', 'upload_shared.xhtml?action=send');" checked><bsh>translate("share_content.choice.use_send_action");</bsh><br>
+<input type="radio" name="type" onClick="$('#upload_form').attr('action', 'upload_shared.xhtml?action=uri');"><bsh>translate("share_content.choice.use_open_uri");</bsh><br>
+</p>
+</fieldset>
+
+</body>
+</html>

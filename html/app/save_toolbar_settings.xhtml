@@ -1,0 +1,51 @@
+<html>
+<body>
+<bsh>source(server.props.get("serviceContext").pawHome + "/html/app/auth.bsh");</bsh>
+<bsh>source(server.props.get("serviceContext").pawHome + "/html/app/bsh/constantsToolbar.bsh");</bsh>
+<bsh>
+import org.json.*;
+import android.content.SharedPreferences;
+import android.content.SharedPreferences.Editor;
+
+service = server.props.get("serviceContext");
+preferences = service.getSharedPreferences("PawServer", 0);
+
+jsonLogin = new JSONObject();
+
+try {
+		val = 0;
+
+		battery = parameters.get("battery");
+		ringer_volume = parameters.get("ringer_volume");
+		memory = parameters.get("memory");
+		wifi = parameters.get("wifi");
+		load = parameters.get("load");
+		message = parameters.get("message");
+		media_player = parameters.get("media_player");
+		sharing = parameters.get("sharing");
+
+		if(battery != null && battery.equals("off")) val |= TOOLBAR_HIDE_BATTERY;
+		if(ringer_volume != null && ringer_volume.equals("off")) val |= TOOLBAR_HIDE_RINGER_VOLUME;
+		if(memory != null && memory.equals("off")) val |= TOOLBAR_HIDE_MEMORY;
+		if(wifi != null && wifi.equals("off")) val |= TOOLBAR_HIDE_WIFI;
+		if(load != null && load.equals("off")) val |= TOOLBAR_HIDE_LOAD;
+		if(message != null && message.equals("off")) val |= TOOLBAR_HIDE_MESSAGE;
+		if(media_player != null && media_player.equals("off")) val |= TOOLBAR_HIDE_MEDIA_PLAYER;
+		if(sharing != null && sharing.equals("off")) val |= TOOLBAR_HIDE_SHARING;
+
+		editor = preferences.edit();
+		editor.putInt("toolbarHide", val);
+		editor.commit();
+		jsonLogin.put("success", true);
+}
+catch(e) {
+	jsonLogin.put("success", false);
+	jsonLogin.put("message", "Error saving settings!");
+}
+
+request.sendResponse(jsonLogin.toString().getBytes(), "text/plain");
+request.out.flush();
+request.out.close();
+</bsh>
+</body>
+</html>

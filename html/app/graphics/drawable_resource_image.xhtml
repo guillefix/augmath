@@ -1,0 +1,38 @@
+<bsh>
+/*
+Resource a drawable resource as PNG
+*/
+
+import android.graphics.*;
+import android.graphics.Bitmap.CompressFormat;
+
+source(server.props.get("serviceContext").pawHome + "/html/app/auth.bsh");
+
+res  = parameters.get("res");
+if(res != null) {
+	service = server.props.get("serviceContext");
+	resId = eval(res);
+
+	if(resId != null) {
+		options = new BitmapFactory.Options();
+		// do not scale
+		options.inScaled = false;
+  		bitmap = BitmapFactory.decodeResource(service.getResources(), resId, options);
+
+		if(bitmap == null) {
+			// Return transparent image
+			bitmap = Bitmap.createBitmap(48, 48, Bitmap.Config.ARGB_8888);	
+		}
+
+	  		
+		bos = new ByteArrayOutputStream();
+		bitmap.compress(CompressFormat.PNG, 0 /*ignored for PNG*/, bos);
+		byte[] bitmapdata = bos.toByteArray();
+
+		request.sendResponse(bitmapdata, "image/png");
+		request.out.flush();
+		request.out.close();
+	}
+	
+}
+</bsh>

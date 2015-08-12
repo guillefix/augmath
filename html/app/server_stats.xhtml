@@ -1,0 +1,130 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+<bsh>source(server.props.get("serviceContext").pawHome + "/html/app/bsh/i18n.bsh");</bsh>
+
+<script type="text/javascript" src="js/jquery.js"></script>
+<script type="text/javascript" src="js/jquery.js"></script>
+<script type="text/javascript">
+		$(document).ready(function() {		
+				updateStatistics();							
+		});
+
+		function updateStatistics() {
+
+
+			$.post("collect_server_stats.xhtml", {millis: new Date().getTime()},
+        			function(data){
+					$("#serverAccepted").html(data.serverAcceptCount);
+					$("#serverError").html(data.serverErrorCount);
+					$("#cpus").html(data.cpus);
+					$("#load").html(data.load);
+					$("#user").html(data.user);
+					$("#nice").html(data.nice);
+					$("#system").html(data.system);
+					$("#idle").html(data.idle);
+
+/* Pool no longer used
+					$("#poolInit").html(data.poolInit);
+					$("#poolMax").html(data.poolMax);
+					$("#poolTotal").html(data.poolTotal);
+					$("#poolAvailable").html(data.poolAvailable);
+					$("#poolCheckedOut").html(data.poolCheckedOut);
+*/
+					setTimeout("updateStatistics();",1000);
+          			}, "json"
+        		);
+
+		}
+</script>
+<title><bsh>translate("statistics.title");</bsh></title>
+<link rel="stylesheet" href="css/default.css">
+</head>
+<body>
+<bsh>source(server.props.get("serviceContext").pawHome + "/html/app/auth.bsh");</bsh>
+<bsh>
+/*
+ Get locatin information
+*/
+
+import android.content.Context;
+import android.location.*;
+
+service = server.props.get("serviceContext");
+lm = service.getSystemService(Context.LOCATION_SERVICE);
+
+crit = new Criteria();
+crit.setAccuracy(Criteria.ACCURACY_FINE);
+
+provider = lm.getBestProvider(crit, true);
+loc = lm.getLastKnownLocation(provider);
+gc = new Geocoder(service);
+addrList = gc.getFromLocation(loc.getLatitude(), loc.getLongitude(), 1);
+location = "";
+if(addrList.size() > 0) {
+	location = addrList.get(0).getAddressLine(0) + ", " + addrList.get(0).getLocality() + ", "	+ addrList.get(0).getCountryName();
+}
+
+</bsh>
+<h3><bsh>translate("statistics.title");</bsh></h3>
+
+<fieldset style="width: 50%;">
+<legend><b><bsh>translate("statistics.label.connections");</bsh></b></legend>
+	<bsh>translate("statistics.label.connections_info");</bsh>
+	<p></p>
+	<i><bsh>translate("statistics.label.accepted_connections");</bsh>:</i> <span id="serverAccepted"></span><br>
+	<i><bsh>translate("statistics.label.connection_errors");</bsh>:</i> <span id="serverError"></span><br>
+</fieldset>
+<p></p>
+<fieldset style="width: 50%;">
+<legend><b><bsh>translate("statistics.label.cpu");</bsh></b></legend>
+	<bsh>translate("statistics.label.cpu_info");</bsh>
+	<p></p>
+	<i><bsh>translate("statistics.label.cpus");</bsh>:</i> <span id="cpus"></span><br><br>
+	<i><bsh>translate("statistics.label.load");</bsh>:</i> <span id="load"></span>%<br>
+	<i><bsh>translate("statistics.label.user");</bsh>:</i> <span id="user"></span>%<br>
+	<i><bsh>translate("statistics.label.nice");</bsh>:</i> <span id="nice"></span>%<br>
+	<i><bsh>translate("statistics.label.system");</bsh>:</i> <span id="system"></span>%<br>
+	<i><bsh>translate("statistics.label.idle");</bsh>:</i> <span id="idle"></span>%<br>
+</fieldset>
+<p></p>
+<fieldset style="width: 50%;">
+<legend><b><bsh>translate("statistics.label.location");</bsh></b></legend>
+	<bsh>translate("statistics.label.location_info");</bsh>
+	<p></p>
+	<i><bsh>translate("statistics.label.location");</bsh>:</i> <bsh>print(location);</bsh><br>
+	<i><bsh>translate("statistics.label.latitude");</bsh>:</i> <bsh>$$.print(loc.getLatitude());</bsh><br>
+	<i><bsh>translate("statistics.label.longitude");</bsh>:</i> <bsh>$$.print(loc.getLongitude());</bsh><br>
+	<i><bsh>translate("statistics.label.provider");</bsh>:</i> <bsh>$$.print(provider);</bsh><br>
+</fieldset>
+<p></p>
+<fieldset style="width: 50%;">
+<legend><b><bsh>translate("statistics.label.dexclasses");</bsh></b></legend>
+<ul>
+<bsh>
+if(service.externalDexClassesLoaded) {
+    compList = service.getDexClassLoader().toString().replaceAll("^.*?\\[(.*)\\].*$", "$1").replaceAll(service.pawHome + "/webconf/dex/(.*?)\\.[a-z]{3}", "$1").split(":");
+    for(comp : compList) {
+        print("<li>" + comp + "</li>");
+    }
+}
+</bsh>
+</ul>
+</fieldset>
+<p></p>
+<!-- Pool no longer used
+<fieldset style="width: 50%;">
+<legend><b>BeanShell Pool</b></legend>
+	This are the statistics of the BeanShell Interpreter Pool. This pool has an initial size and can grow to a maximum size.
+	The interpreters are needed to process BeanShell code within HTML pages.
+	<p></p>
+	<i>Initial:</i> <span id="poolInit"></span><br>
+	<i>Maximum:</i> <span id="poolMax"></span><br>
+	<br>
+	<i>Current Size:</i> <span id="poolTotal"></span><br>
+	<i>Available:</i> <span id="poolAvailable"></span><br>
+	<i>Checked Out:</i> <span id="poolCheckedOut"></span><br>
+</fieldset>
+-->
+</body>
+</html>

@@ -1,0 +1,10 @@
+#------------------------------------------------
+# Allows to change PAW preferences upon boot.
+#------------------------------------------------
+#AutoStart=true
+#HideNotificationIcon=true
+#ShowUrlInNotification=true
+#ExecAutostartScripts=true
+#UseWakeLock=true
+#FreezeContent=true
+

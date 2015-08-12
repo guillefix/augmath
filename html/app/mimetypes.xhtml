@@ -1,0 +1,63 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+<bsh>source(server.props.get("serviceContext").pawHome + "/html/app/bsh/i18n.bsh");</bsh>
+
+<title><bsh>translate("mimetypes.title");</bsh></title>
+<link rel="stylesheet" href="css/default.css">
+<script type="text/javascript" src="js/jquery.js"></script>
+<script type="text/javascript" src="js/executeScript.js"></script>
+<script type="text/javascript">
+	function saveFile(input, filename, error, loader) {
+		$("#" + loader).show();
+		$.post("save_file.xhtml", {file: filename, content: $("#" + input).val()},
+			function(data) {
+				$("#" + loader).hide();
+				if(data.success) {
+					$("#" + error).html("");
+				}
+				else {
+					$("#" + error).html(data.message).fadeIn();
+				}
+
+			}, "json");
+	}
+</script>
+</head>
+<body>
+<bsh>source(server.props.get("serviceContext").pawHome + "/html/app/auth.bsh");</bsh>
+<h3><img src="images/mimetypes.png" align="middle">&nbsp;<bsh>translate("mimetypes.title");</bsh></h3>
+<p style="color: gray;">
+<bsh>translate("mimetypes.info");</bsh>
+</p>
+<fieldset style="width: 80%;">
+<legend><bsh>translate("mimetypes.label.builtin_mimetypes");</bsh></legend>
+<p style="color: gray;">
+<bsh>translate("mimetypes.label.builtin_mimetypes_info");</bsh>
+</p>
+<textarea id="dirs" rows="15" style="width: 100%;" readonly>
+<bsh>
+pawServer = server.props.get("serviceContext").getPawServer();
+props = pawServer.server.props;
+for(key : props.keys()) {
+    if(key.startsWith("mime.")) print(props.get(key) + " " + key.substring(5));
+}
+</bsh>
+</textarea>
+</fieldset>
+<br>
+<fieldset style="width: 80%;">
+<legend><bsh>translate("mimetypes.label.additional_mimetypes");</bsh></legend>
+<p style="color: gray;">
+<bsh>translate("mimetypes.label.additional_mimetypes_info");</bsh>
+</p>
+<textarea id="mimetypes" rows="15" style="width: 100%;">
+<bsh>cat(server.props.get("serviceContext").pawHome + "/etc/mime.types");</bsh>
+</textarea>
+<br>
+<button onClick="saveFile('mimetypes', '<bsh>$$.print(server.props.get("serviceContext").pawHome)</bsh>/etc/mime.types', 'mimetypesError', 'mimetypesLoader')"><bsh>translate("mimetypes.button.save");</bsh></button>&nbsp;<img id="mimetypesLoader" src="images/loader.gif" style="display: none;" width="16"><span id="mimetypesError" style="color: red;"></span>
+</fieldset>
+<br>
+<p>&nbsp;</p>
+</body>
+</html>

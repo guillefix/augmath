@@ -1,0 +1,57 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+<bsh>source(server.props.get("serviceContext").pawHome + "/html/app/bsh/i18n.bsh");</bsh>
+
+    <title><bsh>translate("camera_images.title");</bsh></title>  
+<link rel="stylesheet" href="css/default.css">
+<style type="text/css">
+A:link {text-decoration: none; color: black; border: 0;}
+A:visited {text-decoration: none; color: black; border: 0;}
+A:active {text-decoration: none; color: black; border: 0;}
+A:hover {text-decoration: none; color: black; boder: 0;}
+</style>
+ 
+	<script type="text/javascript" src="js/jquery.js"></script>
+	<script type="text/javascript">
+		function setAsWallpaper(fileName, id) {
+			$("#" + id).attr("src", "images/loader.gif");
+			// Due to problems with $.post, $.get is used instead
+			$.post("set_file_as_wallpaper.xhtml", { file: fileName}, function(data) {$("#" + id).attr("src", "images/wallpaper.png"); });
+		}
+	</script>
+</head>
+<body>
+<bsh>source(server.props.get("serviceContext").pawHome + "/html/app/auth.bsh");</bsh>
+
+<h3><bsh>translate("camera_images.title");</bsh></h3>
+<bsh>
+STOCK_DIR = "/sdcard/DCIM/Camera";
+HTC_DIR   = "/sdcard/DCIM/100MEDIA";
+
+cameraDir = STOCK_DIR;
+
+// HTC
+if(new File(HTC_DIR).exists()) {
+	cameraDir = HTC_DIR;
+}
+
+dir = new File(cameraDir);
+c=0;
+cameraFiles = dir.list();
+if (children != null) {      
+	for(f : cameraFiles) {
+		// Only show JPG images
+		if(!f.toLowerCase().endsWith(".jpg")) { continue; }
+
+		c++;
+		n = f.substring(0, f.lastIndexOf("."));
+		print("<a href='get_file.xhtml?file=" + cameraDir + "/" + f + "&mime=application/octet-stream'><img width='320' border='0' title='" + translateRaw("camera_images.tooltip.download") + "' src='get_scaled_image.xhtml?width=320&file=" + cameraDir + "/" + f + "' alt='" + n + "'></a><a href='#' onClick='setAsWallpaper(\"" + cameraDir + "/" + f + "\", \"img" + c + "\"); return false'><img src='images/wallpaper.png'  id='img" + c + "'title='" + translateRaw("camera_images.tooltip.wallpaper") + "' style='position: relative; left: -32px; border: 0;'></a>");
+        }
+}
+</bsh>
+</body>
+</html>
+

@@ -1,0 +1,40 @@
+<bsh>source(server.props.get("serviceContext").pawHome + "/html/app/auth.bsh");</bsh>
+<bsh>
+import de.fun2code.android.pawserver.*;
+import android.content.Intent;
+import android.graphics.*;
+import android.graphics.drawable.*;
+import android.graphics.Bitmap.CompressFormat;
+
+
+captureImage() {
+    intent = new Intent("android.media.action.IMAGE_CAPTURE");
+    return AndroidInterface.sendResultIntent(intent);
+}
+
+//print(captureImage().getExtras().get("data"));
+
+bitmap = captureImage().getExtras().get("data");
+
+// Scale the bimap up, because images are too small
+
+scaleFactor = parameters.get("scale") != null ? Integer.parseInt(parameters.get("scale")) : 1;
+
+width = bitmap.getWidth(); 
+height = bitmap.getHeight();
+
+if(parameters.get("autoscale") != null && width < 300) {
+	scaleFactor = 2;
+}
+
+bitmap = Bitmap.createScaledBitmap(bitmap, width * scaleFactor, height * scaleFactor, false); 
+
+bos = new ByteArrayOutputStream();
+bitmap.compress(CompressFormat.PNG, 0 /*ignored for PNG*/, bos);
+byte[] bitmapdata = bos.toByteArray();
+        
+request.sendResponse(bitmapdata, "image/png");
+request.out.flush();
+request.out.close();
+
+</bsh>

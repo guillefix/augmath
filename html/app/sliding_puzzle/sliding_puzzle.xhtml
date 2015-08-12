@@ -1,0 +1,101 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+<bsh>source(server.props.get("serviceContext").pawHome + "/html/app/bsh/i18n.bsh");</bsh>
+
+	<title><bsh>translate("sliding_image_puzzle.title");</bsh></title>
+	
+	<script type="text/javascript" src="jquery-latest.pack.js"></script>
+	<script type="text/javascript" src="jquery.puzzle.js"></script>
+	<script type="text/javascript">
+		
+		// When the document is ready, hook up the puzzle
+		// functionality to the targeted DIVs
+		$(
+			function(){
+				$( "#loadButton").show();
+				$( "#puzzleButton").hide();
+				$( "#newButton").hide();			
+			}		
+			);
+
+		
+		function puzzle() {
+			$( "div.puzzle, p" ).puzzle(60);
+			$("#puzzleButton").hide();
+			//$( "#newButton").show();
+		}
+		
+
+		function loadImage() {
+			//$("#puzzleImage" ).removeAttr("src")
+			//$("#puzzle").html('<img id="puzzleImage" />');	
+
+			$("#puzzleImage" ).attr("src", "capture_image.xhtml?autoscale=true&" + new Date().getTime());
+			$( "#loadButton").hide();	
+			$("#puzzleButton").show();
+			$("#newButton").show();
+		}
+			
+	
+	</script>
+
+	<link rel="stylesheet" href="../css/default.css">
+</head>
+
+<bsh>source(server.props.get("serviceContext").pawHome + "/html/app/auth.bsh");</bsh>
+
+<body>
+
+	<h3>
+		<bsh>translate("sliding_image_puzzle.title");</bsh>
+	</h3>
+	
+	<bsh>translate("sliding_image_puzzle.info");</bsh>
+	<p></p>
+
+	<fieldset style="color: white; width: 40%;">
+		<legend><bsh>translate("sliding_image_puzzle.label.image");</bsh></legend>
+			<center>
+				<div class="puzzle">
+						<img id="puzzleImage" src="no_image.png"/>
+				</div>
+			</center>
+	</fieldset>
+
+	<p></p>
+	<fieldset style="color: white; width: 40%;">
+		<legend><bsh>translate("sliding_image_puzzle.label.controls");</bsh></legend>
+			<center>
+				<button id="loadButton" onClick="loadImage();"><bsh>translate("sliding_image_puzzle.button.capture_image");</bsh></button>
+				<button id="puzzleButton" onClick="puzzle();"><bsh>translate("sliding_image_puzzle.button.puzzle");</bsh></button>
+				<button id="newButton" onClick="document.location.href='sliding_puzzle.xhtml';"><bsh>translate("sliding_image_puzzle.button.new_image");</bsh></button>
+			</center>
+	</fieldset>
+
+
+</body>
+</html>
+
+			
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+			
+			
+			
+				
+		
+		
+		
+		
+		

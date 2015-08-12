@@ -1,0 +1,20 @@
+import de.fun2code.android.pawserver.PawServerService;
+
+/*
+ Test autostart script that displays the server's uptime as notification
+*/
+
+r = new Runnable() { public void run() { 
+	start = System.currentTimeMillis();
+	notificationId = new Random().nextInt(1000);
+	
+	while(PawServerService.isRunning()) {
+		uptime = (System.currentTimeMillis() - start) / 1000;
+		showNotification(com.android.internal.R.drawable.ic_menu_emoticons, "PAW Server Info", "PAW Server", "PAW Server Uptime: " + uptime + " sec", notificationId, true, "#FF0000", false, false);
+		Thread.sleep(1000);
+	}
+	
+	cancelNotification(notificationId);
+}};
+t = new Thread(r);
+t.start();

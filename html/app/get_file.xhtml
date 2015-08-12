@@ -1,0 +1,32 @@
+<html>
+<body>
+<bsh>source(server.props.get("serviceContext").pawHome + "/html/app/auth.bsh");</bsh>
+<bsh>
+f = new File(parameters.get("file"));
+mime = parameters.get("mime");
+if(mime == null) {
+	mime = server.props.get("mime." + f.getName().toLowerCase().substring(f.getName().lastIndexOf(".") + 1));
+	if(mime == null) {
+		mime = "application/octet-stream";
+	}
+}
+
+fileName = f.getName();
+
+if(parameters.get("name") != null) {
+	fileName = parameters.get("name");
+}
+
+if(mime.equals("application/octet-stream")) {
+	request.responseHeaders.put("Content-disposition", "attachment; filename=\"" + fileName + "\"");
+}
+
+fis = new FileInputStream(f);
+
+request.sendResponse(fis, (int)f.length(), mime, 200);
+fis.close();
+request.out.flush();
+request.out.close();
+</bsh>
+</body>
+</hmtl>

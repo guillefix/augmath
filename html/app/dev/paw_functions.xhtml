@@ -1,0 +1,1146 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+<bsh>source(server.props.get("serviceContext").pawHome + "/html/app/bsh/i18n.bsh");</bsh>
+
+<title>PAW Functions</title>
+<link rel="stylesheet" href="../css/default.css">
+<script type="text/javascript" src="../js/jquery.js"></script>
+<script type="text/javascript" src="../js/executeScript.js"></script>
+<script type="text/javascript" src="../js/jquery.rotate.js"></script>
+	<script type="text/javascript">
+		$(document).ready(function() {
+			updateSensor();
+			updateCompass();
+		});
+
+		function updateSensor() {
+
+			$.ajax({
+			    url: '../ws/sensor_data.xhtml?' + new Date().getTime(),
+			    type: 'GET',
+			    dataType: 'json',
+			    timeout: 3000,
+			    error: function(){
+			    },
+			    success: function(data){
+				var THRESHOLD = 3;
+				var absX = Math.abs(data['x']);
+				var absY = Math.abs(data['y']);
+				if( Math.abs(absX - absY) > THRESHOLD && absX > absY) {
+					$("#phone").rotate(data['x'] < 0 ? 90: -90, 'abs');
+				}
+				else if(Math.abs(absX - absY) > THRESHOLD){
+					$("#phone").rotate(data['y'] < 0 ? 180 : 0, 'abs');
+				}
+				else {
+					$("#phone").rotate(0, 'abs');
+				}
+
+				$("#sensor_json").val("{\"x\":" + data['x'] + ",\"y\":" + data['y'] + ",\"z\":" + data['z'] + ",\"force\":" + data['force'] + "}");
+				
+			    },
+			    complete: function() {
+				setTimeout("updateSensor();", 1000);
+			    }
+			});
+
+
+		}
+
+		function updateCompass() {
+			executeScript('compassScript', 'compassScriptLoader', 'compassScriptResult');
+			$("#compass").rotate($("#compassScriptResult").val() * -1, 'abs');
+			setTimeout("updateCompass();", 2000);
+		}
+	</script>
+</head>
+<body>
+<bsh>source(server.props.get("serviceContext").pawHome + "/html/app/auth.bsh");</bsh>
+<h1>PAW Functions</h1>
+<bsh>translate("general.label.no_translation");</bsh>
+This page describes functions and object special to PAW and is meant for developers.<br>
+Most of the examples can directly be tested.
+<p></p>
+<h2>Basics</h2>
+With PAW it is possible to write dynamic web pages which can use the functionality of your phone.<br>
+
+Have a look at the folder <tt>/sdcard/paw/html/app</tt> on your SD card.<br>
+Some of the HTML files contain Beanshell code (enclosed in <tt>&lt;bsh&gt;&lt;/bsh&gt;</tt> tags). <br>
+<p></p>
+<div style="border: 2px outset black; width: 80%; padding: 10px;">
+<b>Note:</b>
+The directory <tt>/sdcard/paw/html/app</tt> will be deleted with new versions of PAW, so please put your own pages in a new
+directory below <tt>/sdcard/paw/html</tt>.
+</div>
+<p></p>
+Here is an example how to retrieve information of the phone:<br>
+<textarea cols="80" rows="10" id="basicScript1">
+String[] opts = { "BOARD", "BRAND", "DISPLAY", "MODEL", "PRODUCT",
+                  "TIME", "TYPE", "USER", "VERSION.INCREMENTAL",
+                  "VERSION.RELEASE", "VERSION.SDK"};
+
+for(o : opts) {
+	print(o + ":" + eval("android.os.Build." + o));
+}
+</textarea><br>
+Result:<br><textarea type="text" id="basicScript1Result" cols="80" rows="8"></textarea><p></p>
+<p></p>
+<button onClick="executeScript('basicScript1', 'basicScript1Loader', 'basicScript1Result');">Execute Script</button>&nbsp;<img id="basicScript1Loader" src="../images/loader.gif" style="display: none;" width="16">
+
+<p></p>
+	
+Using the above example a simple xhtml web page could look like this:<br>
+<pre>
+
+&lt;html&gt;
+ &lt;body&gt;
+  &lt;bsh&gt;
+	String[] opts = { "BOARD", "BRAND", "DISPLAY", "MODEL", "PRODUCT",
+	"TIME", "TYPE", "USER", "VERSION.INCREMENTAL",
+        "VERSION.RELEASE", "VERSION.SDK"};
+
+	for(o : opts) {
+	 print("&lt;b&gt;" + o + ":&lt;/b&gt;" + eval("android.os.Build." + o) + "&lt;br&gt;");
+	}
+  &lt;/bsh&gt;
+
+ &lt;/body&gt;
+&lt;/html&gt;
+</pre>
+
+To retrieve the PAW Android Service object you can use the following code:<br>
+<pre>service = server.props.get("serviceContext");</pre>
+
+<p>
+To get a request parameter the following code can be used:
+<pre>parameter = parameters.get("parameterName");</pre>
+Get and Post parameters are combined and multiple variables are stored into an <tt>ArrayList</tt>.
+</p>
+
+<p></p>
+<h3>Deploying Web Pages</h3>
+Web pages can be copied to the paw html folder of the SD card (<tt>/sdcard/paw/html</tt>).
+<p></p>
+<h3>Server Startup</h3>
+Server startup scripts are located in the <tt>/sdcard/paw/etc/init</tt> directory. There are two runlevels 0 and 1. Runlevel 0 is for pre startup/shotdown scripts and 1 for post startup/shutdown sripts. Scripts with the prefix <tt>S_</tt> will be processed on startup. Scripts prefixed by <tt>K_</tt> will be processed on shutdown.<br><br><b>Note:</b> The <tt>server</tt> variable is not available for pre-startup scripts.
+<p></p>
+
+<h3><a name="app_conf">Application Configuration</a></h3>
+PAW Server supports multiple web applications.<br>
+Web applications can be configures in the <tt>/sdcar/paw/webconf/apps</tt> directory inside a <tt>conf</tt> file.<br>
+As example have a look at the standard PAW configuration file.
+<p></p>
+The <tt>conf</tt> file have the follwing structure:<br>
+<pre>
+name=&lt;Application name>&gt;
+description=&lt;Application description&gt;
+icon=&lt;Path to application ion (should be 48x48px)&gt;
+href=&lt;Application path&gt;
+</pre>
+<br>
+<b>Example:</b><br>
+<pre>
+name=Test Application
+description=Test application
+icon=app/images/android.png
+href=app/
+</pre>
+<p></p>
+If more than one application is configured a menu will be displayed when <tt>http:&lt;ip-number&gt;:&lt;port&gt;</tt> is called:
+<br><br>
+<img src="images/applications.png">
+<p></p>
+
+<h3>Plug-ins</h3>
+The webapp supports plug-ins. Plugins are located in the <tt>/sdcard/paw/html/app/plugins</tt> directory. Each plug-in contains a <tt>plugin.conf</tt> file. The structure of the file is the same as for webapps.<br>
+If plug-ins are detected they are available in a separate <b>Plug-ins</b> menu entry.
+<br><br>A sample plug-in can be downloaded <a href="../download/test_plugin.zip" class="link">here</a>.
+<p></p>
+
+<h3>Autostart</h3>
+The Server supports Autostart of scripts if enabled in the server settings.<br>
+Scripts are executed in alphabetic order. They reside inside the <tt>/sdcard/paw/autostart</tt> directory and have the file extension <tt>bsh</tt>.
+<br><br>
+A test script is available <a href="/app/download/001_uptime.txt" class="link" target="_blank">here</a>. After renaming the script to have a <tt>bsh</tt> extension and placing it inside the autostart folder and enabling the server setting the script will be automatically started at next server startup.<br>
+The script starts a background thread that displays the serve uptime in the notification bar of the device.
+<p></p>
+Example script:<br>
+<textarea cols="80" rows="25">
+<bsh>cat(server.props.get("serviceContext").pawHome + "/html/app/download/001_uptime.txt");</bsh>
+</textarea>
+<p></p>
+
+<h3>Bootup Preference Injection</h3>
+To make it easier to change app preferences without starting the app a mechnism was implemented to inject preference on bootup of the device.
+<p>
+<b>Note:</b> This is only done at bootup of the device an not on each start of the app.
+</p>
+Preferences that should be set can be specified inside the file <tt>PAW_HOME/etc/preferences</tt>.<br/>
+The file follows the Java properties file definition. The types <tt>String</tt>, <tt>Integer</tt>, <tt>Float</tt> and <tt>Boolean</tt> are auto detected.<br/>
+<br/>
+This mechanism can also be used within own web apps. The preferences are located inside the shared preferences within the PAW application.<br/>
+The preference is named <tt>PawServer</tt>.<br/>
+<br/>
+Here is a sample <tt>preferences</tt> file with the available PAW preferences:
+<pre>
+#------------------------------------------------
+# Allows to change PAW preferences upon boot.
+#------------------------------------------------
+#AutoStart=true
+#HideNotificationIcon=true
+#ShowUrlInNotification=true
+#ExecAutostartScripts=true
+#UseWakeLock=true
+#FreezeContent=true
+</pre>
+<p></p>
+
+<h2>Dynamic DEX Class Loading</h2>
+<b>Note: </b> Due to a <a href="http://code.google.com/p/android/issues/detail?id=15893" target="_blank" class="link">bug</a> in Honeycomb, dynamic class loading might not work.
+<h3>Class Loading on Startup</h3>
+Classes in DEX format included in JAR and APK files can be dynamically loaded on startup.<br />
+All JAR and APK files present in the folder <tt>paw/webconf/dex</tt> will be added to a new classloader called <tt>dexClassLoader</tt>.<br />
+The <tt>dexClassLoader</tt> can be retrieved by calling <tt>server.props.get("serviceContext").getDexClassLoader()</tt>.<br />
+To use the classe loaded by this classloader simply use the BeanShell command <tt>useDexClasses()</tt>.
+<h3>Dynamic Handler</h3>
+There is a new Brazil Handler class called <tt>org.paw.handler.AndroidDynamicHandler</tt> that allows the wrapping of Handlers that are only available in external DEX format.<br />
+The Handler has two parameters:<br />
+<ul>
+	<li><tt>handlerJars</tt>: Colon separated list of JAR or APK files to load. This parameter is optional. If all necessary classes are available by the <tt>dexClassLoader</tt> (see "Dynamic DEX Class Loading"), this parameter is not necessary.</li>
+	<li><tt>handlerClass</tt>: The Handler class to use.
+</ul>
+All other parameters defined in the Handler definition are passed to the Handler defined in the <tt>handlerClass</tt> parameter.
+<h3>Dynamic Filter</h3>
+Equivalent to the Dynamic Handler but for Filters. The class is called <tt>org.paw.filter.AndroidDynamicFilter</tt>.
+The Filter has two parameters:<br />
+<ul>
+	<li><tt>filterJars</tt>: Colon separated list of JAR or APK files to load. This parameter is optional. If all necessary classes are available by the <tt>dexClassLoader</tt> (see "Dynamic DEX Class Loading"), this parameter is not necessary.</li>
+	<li><tt>filterClass</tt>: The Filter class to use.
+</ul>
+All other parameters defined in the Filter definition are passed to the Filter defined in the <tt>filterClass</tt> parameter.
+<p></p>
+
+<h3>Native Mapper</h3>The Native Mapper allows to map URLs to native DEXed classes allowing for a much better performance than interpreted BeanShell code.<br />
+To use the Native Mapper, create a DEXed jar file and put it inside the <tt>/sdcard/paw/webconf/dex</tt> directory.<br />
+<br />
+DEXed classes can be created by using the dx command form the Android SDK:<br />
+<tt>./dx --dex --output=out_dex.jar --positions=lines in.jar</tt><br />
+<br />
+The mapping file has the following format and has to be placed in the <tt>/sdcard/paw/webconf/mapping</tt> directory:<br />
+<br />
+<tt>URL=DEX class name</tt><br />
+<br />
+All files present in that directory will be loaded by the Native Mapper.<br />
+<br />
+Here is an example file content from the Web Application:<br />
+<tt>/app/get_app_icon.xhtml=de.fun2code.android.pawserver.external.webapp.graphics.FetchAppIcon<br />
+  /app/graphics/contact_photo.xhtml=de.fun2code.android.pawserver.external.webapp.graphics.FetchContactPhoto<br />
+  /app/get_scaled_image.xhtml=de.fun2code.android.pawserver.external.webapp.graphics.FetchScaledImage<br />
+  /app/graphics/albumart.xhtml=de.fun2code.android.pawserver.external.webapp.graphics.FetchAlbumArt<br />
+  /app/graphics/system_load_image.xhtml=de.fun2code.android.pawserver.external.webapp.graphics.DrawLoadImage<br />
+  </tt>
+<p>
+The class that is called must define a method with the name <tt>response</tt> and the following signature:<br>
+<tt>public void respond(Request request, Server server, Hashtable&lt;String, Object&gt; parameters)</tt>
+<br><br>
+Alle the variables available in BeanShell XHTML files are also passed to this method.
+</p>
+
+<p></p>
+
+<h2>Scoping</h2>
+The server noch supports two scopes. A Server and a Session scope.<br>
+Objects can be placed inside the scoped with the following commands:
+<pre><tt>
+serverPut(key, object);
+serverGet(key);
+
+sessionPut(key, object);
+sessionGet(key);
+</tt></pre>
+
+<h2>BeanShell</h2>
+BeanShell now has an additional variable <tt>$$</tt> which is an alias for the BeanShell interpreter.<br>
+This can be used to generate output without linebreak by using the <tt>$$.print()</tt> command.
+<p></p>
+To get request parameters the <tt>paramters</tt> <i>Hashtable</i> is provided. The till now uses statement <tt>request.getQueryData()</tt> is deprecated, because there were encoding problems with this function.<br>
+As an example: To get the parameter value of a parameter called <tt>text</tt> you would use: <tt>parameters.get("text");</tt>
+
+<h2>Android Functions</h2>
+In this vesion interacting with Android has been improved.<br>
+For some of these functions it is necessary that the PAW Server activity is active in the foreground.
+The activity is therefore automatically, if needed.
+<p></p>
+Below are examples which demonstrate these commands. To test them yourself you can change the code inside the text fields.
+<p></p>
+
+<h3>Scan Barcode</h3>
+For this functionality to work, the Barcode Scanner application has to be installed.<br>
+If this is not the case, you can press the following button and the Android Market will be opened on your device:
+<button onClick="executeScript('barcodeScannerScript', 'barcodeScannerScriptLoader');">Install Barcode Scanner</button><input id="barcodeScannerScript" type="hidden" value='openUri("market://search?q=pname:com.google.zxing.client.android");'>&nbsp;<img id="barcodeScannerScriptLoader" src="../images/loader.gif" style="display: none;" width="16">
+<p></p>
+<textarea cols="80" rows="1" id="scanScript">
+res = scanBarcode();
+$$.print(res);
+</textarea><br>
+Result:<br><textarea type="text" id="scanScriptResult" cols="40" rows="1"></textarea><p></p>
+<button onClick="executeScript('scanScript', 'scanScriptLoader', 'scanScriptResult');">Execute Script</button>&nbsp;<img id="scanScriptLoader" src="../images/loader.gif" style="display: none;" width="16">
+<p></p>
+<h3>Display Toast Message</h3>
+As duration parameter <tt>"short"</tt> or <tt>"long"</tt> can be used.<p></p>
+<textarea cols="80" rows="1" id="toastScript">
+makeToast("Test Toast message...", "short");
+</textarea><p></p>
+<button onClick="executeScript('toastScript', 'toastScriptLoader');">Execute Script</button>&nbsp;<img id="toastScriptLoader" src="../images/loader.gif" style="display: none;" width="16">
+<p></p>
+
+<h3>Display Alert Dialog</h3>
+<textarea cols="80" rows="1" id="alertScript">
+showAlert("Dialog Title", "The text message.");
+</textarea><p></p>
+<button onClick="executeScript('alertScript', 'alertScriptLoader');">Execute Script</button>&nbsp;<img id="alertScriptLoader" src="../images/loader.gif" style="display: none;" width="16">
+<p></p>
+
+<h3>Display Alert Dialog with Input</h3>
+<textarea cols="80" rows="1" id="dialogInputScript">
+res=showInputAlert("Dialog Title", "Type in some text:");
+$$.print(res);
+</textarea><br>
+Result:<br><textarea type="text" id="dialogInputScriptResult" cols="40" rows="1"></textarea><p></p>
+<p></p>
+<button onClick="executeScript('dialogInputScript', 'dialogInputScriptLoader', 'dialogInputScriptResult');">Execute Script</button>&nbsp;<img id="dialogInputScriptLoader" src="../images/loader.gif" style="display: none;" width="16">
+<p></p>
+
+<h3>Send an Email</h3>
+<textarea cols="80" rows="1" id="mailScript">
+sendMail("android@fun2code.de", "Test Mail from PAW Server", "Hello,\nThis is just a test mail :)");
+</textarea><p></p>
+<button onClick="executeScript('mailScript', 'mailScriptLoader');">Execute Script</button>&nbsp;<img id="mailScriptLoader" src="../images/loader.gif" style="display: none;" width="16">
+<p></p>
+
+<h3>Open an URI</h3>
+<textarea cols="80" rows="1" id="openUriScript">
+openUri("market://search?q=pname:de.fun2code.android.pawserver");
+</textarea><p></p>
+<button onClick="executeScript('openUriScript', 'openUriScriptLoader');">Execute Script</button>&nbsp;<img id="openUriScriptLoader" src="../images/loader.gif" style="display: none;" width="16">
+<p></p>
+
+<h3>Dialing a Number</h3>
+Opens the dialer app, the user has to start the call manually.<br/>
+The phone number is provided as parameter.<br/>
+As a demo the below script calls the USSD code <tt>*100#</tt>. This code might not be available on all carriers.<p></p>
+<textarea cols="80" rows="1" id="dialScript">
+dial("*100#");
+</textarea><p></p>
+<button onClick="executeScript('dialScript', 'dialScriptLoader');">Execute Script</button>&nbsp;<img id="dialScriptLoader" src="../images/loader.gif" style="display: none;" width="16">
+<p></p>
+
+<h3>Calling a Number</h3>
+Calls the phone app on the phone and dials the number right away. The phone number is provided as parameter.<br/>
+As a demo the below script calls the USSD code <tt>*100#</tt>. This code might not be available on all carriers.<p></p>
+<textarea cols="80" rows="1" id="callScript">
+call("*100#");
+</textarea><p></p>
+<button onClick="executeScript('callScript', 'callScriptLoader');">Execute Script</button>&nbsp;<img id="callScriptLoader" src="../images/loader.gif" style="display: none;" width="16">
+<p></p>
+
+<h3>Ending a Phone Call</h3>
+The BeanShell command <tt>endCall()</tt> ends a phone call.<br/>
+<b>Note:</b> This uses unofficial API calls!
+<br><br>
+<textarea cols="80" rows="4" id="endCallScript">
+endCall();
+</textarea><br>
+<button onClick="executeScript('endCallScript', 'endCallScriptLoader');">Execute Script</button>&nbsp;<img id="endCallScriptLoader" src="../images/loader.gif" style="display: none;" width="16">
+<p></p>
+
+<h3>Accelerometer Support</h3>
+Accelerometer support has been added in this release.<br>
+The sensor instance can be obtained by calling <tt>de.fun2code.android.pawserver.AndroidInterface.getSensorListener()</tt>.<br>
+The SensorListener has the following methods:
+<ul>
+	<li><tt>getX()</tt></li>
+	<li><tt>getY()</tt></li>
+	<li><tt>getZ()</tt></li>
+	<li><tt>getForce()</tt></li>
+</ul>
+
+Force calculation is experimental. The force is calculated like this:<br>
+<tt>Math.abs(dataX + dataY + dataZ - last_x - last_y - last_z) / diffTime * 10000;</tt>
+<p></p>
+There is also a web service (<tt>/app/ws/sensor_data.xhtml</tt>) which return a JSON array.<br><br>
+JSON output:</br>
+<textarea id="sensor_json" rows="2" cols="80">
+</textarea>
+<h4>Example</h4>
+The below example shows the orientation of your phone. Turn your phone and the image should turn as well.
+<p></p>
+<img id="phone" src="../images/nexus_one.png">
+<p></p>
+<!-- Just to get some space -->
+<div style="height: 50px;"></div>
+<h3><a name="media_player">Media Player support</a></h3>
+It is now possible to get information from and control the Android Media Player.<br>
+This is using undocumented classes, so support might break in future Android releases.
+<p></p>
+To get the Media Player object the following code can be used:<br><br>
+<tt>import de.fun2code.android.pawserver.AndroidInterface;</tt><br>
+<tt>AndroidInterface.getMediaPlayerService().getPlayBackService();</tt>
+<p></p>
+The Media Player object supports the following methods:<br>
+<pre><tt>
+    void openfile(String path);
+    void openfileAsync(String path);
+    void open(in int [] list, int position);
+    int getQueuePosition();
+    boolean isPlaying();
+    void stop();
+    void pause();
+    void play();
+    void prev();
+    void next();
+    long duration();
+    long position();
+    long seek(long pos);
+    String getTrackName();
+    String getAlbumName();
+    int getAlbumId();
+    String getArtistName();
+    int getArtistId();
+    void enqueue(in int [] list, int action);
+    int [] getQueue();
+    void moveQueueItem(int from, int to);
+    void setQueuePosition(int index);
+    String getPath();
+    int getAudioId();
+    void setShuffleMode(int shufflemode);
+    int getShuffleMode();
+    int removeTracks(int first, int last);
+    int removeTrack(int id);
+    void setRepeatMode(int repeatmode);
+    int getRepeatMode();
+    int getMediaMountedCount();
+</tt></pre>
+
+<p></p>
+
+<h3>Speech To Text</h3>
+Checking for available Intents and speech to text support have been inplemented.<br>
+The commands are:<br>
+<p>
+<tt>boolean istIntentAvailable(String intent)</tt><br>
+<tt>String speechToText(String title)</tt>
+</p>
+<p></p>
+Below are examples which demonstrate these commands. To test them yourself you can change the code inside the text fields.
+<p></p>
+
+<textarea cols="80" rows="10" id="speechToTextScript">
+import android.speech.RecognizerIntent;
+
+if(isIntentAvailable(RecognizerIntent.ACTION_RECOGNIZE_SPEECH)) {
+  res = speechToText("Text to speech");
+}
+else {
+  res = "SpeechToText not supported!";
+}
+$$.print(res);
+</textarea><br>
+Result:<br><textarea type="text" id="speechToTextScriptResult" cols="40" rows="1"></textarea><p></p>
+<p></p>
+<button onClick="executeScript('speechToTextScript', 'speechToTextScriptLoader', 'speechToTextScriptResult');">Execute Script</button>&nbsp;<img id="speechToTextScriptLoader" src="../images/loader.gif" style="display: none;" width="16">
+<p></p>
+
+<h3>Save Bookmark</h3>
+The <tt>saveBookmark(String title, String url)</tt> command saves a bookmark in the phones browser.<br>
+</p>
+<p></p>
+Below is an example that demonstrates this command. To test them yourself you can change the code inside the text fields.
+<p></p>
+
+<textarea cols="80" rows="4" id="saveBookmarkScript">
+saveBookmark("http://www.fun2code.de", "Fun2Code");
+</textarea>
+<p></p>
+<button onClick="executeScript('saveBookmarkScript', 'saveBookmarkScriptLoader');">Execute Script</button>&nbsp;<img id="saveBookmarkScriptLoader" src="../images/loader.gif" style="display: none;" width="16">
+<p></p>
+<h3>XML-RCP support</h3>
+The server now supports XML-RCP from <a href="http://code.google.com/p/android-xmlrpc" target="_blank" class="link">http://code.google.com/p/android-xmlrpc</a>.<br>
+For an example have a look at the <a href="../code_snippets/XML-RCP.xhtml" target="content" class="link">XML-RCP code snippet</a>.
+<p></p>
+<h3>GPS</h3>
+Functions for activating GPS have been added. The GPS has to be enabled manually by the user on the device before this can work.
+When the function <tt>acivateGPS(true)</tt> is used the GPS icon should appear in the statusbar.<br>
+The function <tt>acivateGPS(false)</tt> will stop the device from receiving GPS signals. The GPS icon should disappear in the statusbar.<br>
+To get the last GPS position the command <tt>getGpsLocation()</tt> which returns an Android <tt>Location</tt> object can be used.
+<p></p>
+Below code will start the GPS and stop it again after 5 seconds.
+<p></p>
+
+<textarea cols="80" rows="4" id="gpsScript">
+activateGps(true);
+Thread.sleep(5000);
+activateGps(false);
+</textarea>
+<p></p>
+<button onClick="executeScript('gpsScript', 'gpsScriptLoader');">Execute Script</button>&nbsp;<img id="gpsScriptLoader" src="../images/loader.gif" style="display: none;" width="16">
+<p></p>
+
+<h3>WiFi</h3>
+To switch WiFi on and off use the command <tt>enableWifi(boolean)</tt> can be used.<br>
+This of course only makes sense if the PAW server is not running on WiFi.
+<p></p>
+Below code will stop WiFi and restart it after 2 seconds.
+<p></p>
+
+<textarea cols="80" rows="4" id="wifiScript">
+enableWifi(false);
+Thread.sleep(2000);
+enableWifi(true);
+</textarea>
+<p></p>
+<button onClick="executeScript('wifiScript', 'wifiScriptLoader');">Execute Script</button>&nbsp;<img id="wifiScriptLoader" src="../images/loader.gif" style="display: none;" width="16">
+<p></p>
+<h3>Orientation Sensor</h3>
+In addition to GPS functions the compass orientation can be queried.<br>
+The following script retrieves the current bearing every two seconds.<br><br>
+<textarea cols="80" rows="6" id="compassScript">
+import de.fun2code.android.pawserver.AndroidInterface;
+
+sensorListener = AndroidInterface.getSensorListener();
+bearing = sensorListener.getOrientBearing();
+$$.print(bearing);
+</textarea><br>
+Result:<br><input type="text" id="compassScriptResult">&nbsp;&nbsp;<img id="compassScriptLoader" src="../images/loader.gif" style="display: none;" width="16"><p></p>
+Bearing of device:<br>
+<img id="compass" src="../images/compass_rose.png">
+<p></p>
+The sensor listener provided the following orientation methods:
+<ul>
+	<li><tt>getOrientBearing()</tt> - Returns the bearing</li>
+	<li><tt>getOrientAccuracy()</tt> - Gets the accuracy (0=unreliable, 1=low, 2=medium, 3=high)</li>
+	<li><tt>getLastOrientTimestamp()</tt> - Timestamp of last update in millis</li>
+</ul>
+<p></p>
+<h3>Proximity Sensor</h3>
+To get the value of the proximity sensor the method <tt>getProximity()</tt> is provided by the sensor listener.<br><br>
+<textarea cols="80" rows="4" id="proximityScript">
+import de.fun2code.android.pawserver.AndroidInterface;
+
+sensorListener = AndroidInterface.getSensorListener();
+$$.print( sensorListener.getProximity());
+</textarea><br>
+Result:<br><textarea type="text" id="proximityScriptResult" cols="40" rows="1"></textarea><p></p>
+<p></p>
+<button onClick="executeScript('proximityScript', 'proximityScriptLoader', 'proximityScriptResult');">Execute Script</button>&nbsp;<img id="proximityScriptLoader" src="../images/loader.gif" style="display: none;" width="16">
+<p></p>
+<h3>Light Sensor</h3>
+To get the brightness in Lux of the ligh sensor the method <tt>getBrightness()</tt> is provided by the sensor listener.<br><br>
+<textarea cols="80" rows="4" id="lightScript">
+import de.fun2code.android.pawserver.AndroidInterface;
+
+sensorListener = AndroidInterface.getSensorListener();
+$$.print( sensorListener.getBrightness());
+</textarea><br>
+Result:<br><textarea type="text" id="lightScriptResult" cols="40" rows="1"></textarea><p></p>
+<p></p>
+<button onClick="executeScript('lightScript', 'lightScriptLoader', 'lightScriptResult');">Execute Script</button>&nbsp;<img id="lightScriptLoader" src="../images/loader.gif" style="display: none;" width="16">
+<p></p>
+<h3>Pressure Sensor</h3>
+To get the pressure in hPa (millibar) of the pressure sensor (barometer) the method <tt>getPressure()</tt> is provided by the sensor listener.<br><br>
+<textarea cols="80" rows="4" id="pressureScript">
+import de.fun2code.android.pawserver.AndroidInterface;
+
+sensorListener = AndroidInterface.getSensorListener();
+$$.print(sensorListener.getPressure());
+</textarea><br>
+Result:<br><textarea type="text" id="pressureScriptResult" cols="40" rows="1"></textarea><p></p>
+<p></p>
+<button onClick="executeScript('pressureScript', 'pressureScriptLoader', 'pressureScriptResult');">Execute Script</button>&nbsp;<img id="pressureScriptLoader" src="../images/loader.gif" style="display: none;" width="16">
+<p></p>
+<h3>Gyroscope Sensor</h3>
+Values from the Gyroscope sensor are provided by the following methods of the sensor listener:<br>
+<ul>
+  <li><tt>getGyroX()</tt>: Angular speed around the x-axis (radians/second).</li>
+  <li><tt>getGyroY()</tt>: Angular speed around the y-axis (radians/second).</li>
+  <li><tt>getGyroZ()</tt>: Angular speed around the z-axis (radians/second).</li>
+</ul>
+<textarea cols="80" rows="4" id="gyroScript">
+import de.fun2code.android.pawserver.AndroidInterface;
+
+sensorListener = AndroidInterface.getSensorListener();
+print("Gyro X: " + sensorListener.getGyroX());
+print("Gyro Y: " + sensorListener.getGyroY());
+print("Gyro Z: " + sensorListener.getGyroZ());
+</textarea><br>
+Result:<br><textarea type="text" id="gyroScriptResult" cols="40" rows="4"></textarea><p></p>
+<p></p>
+<button onClick="executeScript('gyroScript', 'gyroScriptLoader', 'gyroScriptResult');">Execute Script</button>&nbsp;<img id="gyroScriptLoader" src="../images/loader.gif" style="display: none;" width="16">
+<p></p>
+<h3>Text To Speech</h3>
+Text To Speech is now supported by the <tt>speack(text, locale)</tt> method.<br>
+<b>Note: </b>Text To Speech is only supported since Android 1.6.<br><br>
+
+<textarea cols="80" rows="4" id="ttsScript">
+speak("This is a test message", new Locale("en"));
+</textarea>
+<p></p>
+<button onClick="executeScript('ttsScript', 'ttsScriptLoader');">Execute Script</button>&nbsp;<img id="ttsScriptLoader" src="../images/loader.gif" style="display: none;" width="16">
+<p></p>
+
+<h3>Relative Humidity Sensor</h3>
+To get the relative humidity of the humidty sensor (in %) the method <tt>getRelativeHumidity()</tt> is provided by the sensor listener.<br><br>
+<textarea cols="80" rows="4" id="humidityScript">
+import de.fun2code.android.pawserver.AndroidInterface;
+
+sensorListener = AndroidInterface.getSensorListener();
+$$.print(sensorListener.getRelativeHumidity());
+</textarea><br>
+Result:<br><textarea type="text" id="humidityScriptResult" cols="40" rows="1"></textarea><p></p>
+<p></p>
+<button onClick="executeScript('humidityScript', 'humidityScriptLoader', 'humidityScriptResult');">Execute Script</button>&nbsp;<img id="humidityScriptLoader" src="../images/loader.gif" style="display: none;" width="16">
+<p></p>
+
+<h3>Ambient Temperature Sensor</h3>
+To get the ambient temperature of the temperature sensor (in °C) the method <tt>getAmbientTemperature()</tt> is provided by the sensor listener.<br><br>
+<textarea cols="80" rows="4" id="ambientTemperatureScript">
+import de.fun2code.android.pawserver.AndroidInterface;
+
+sensorListener = AndroidInterface.getSensorListener();
+$$.print(sensorListener.getAmbientTemperature());
+</textarea><br>
+Result:<br><textarea type="text" id="ambientTemperatureScriptResult" cols="40" rows="1"></textarea><p></p>
+<p></p>
+<button onClick="executeScript('ambientTemperatureScript', 'ambientTemperatureScriptLoader', 'ambientTemperatureScriptResult');">Execute Script</button>&nbsp;<img id="ambientTemperatureScriptLoader" src="../images/loader.gif" style="display: none;" width="16">
+<p></p>
+
+<h3>Camera Preview</h3>
+<p>
+<b>Note:</b> Works only on Froyo (Android 2.2) and up!
+</p>
+<p style="border: 1px dotted white; padding: 5px;">
+A simple script than demonstrates the use of the camera preview as public webcam can be found <a href="/app/download/webcam_simple.txt" target="_blank" class="link">here</a>. Just download it to your <tt>/sdcard/paw/html</tt> directory and change the file extension to <tt>xhtml</tt>.
+</p>
+<p>
+<b>The camera is not a shared resource, so the camera has to be stopped (closed) before it can be reused by another application!</b>
+<p>
+The <tt>CameraPreview</tt> class in the <tt>de.fun2code.android.pawserver.media</tt> package provides the following methods:
+<br><br>
+<table cellpadding="5">
+<tr><td><tt>CameraPreview getInstance()</tt></td><td>Return the <tt>CameraPreview</tt> instance. Because the camera is not a shared resource this is a singleton.</td></tr>
+<tr><td><tt>setFile(File file)</tt></td><td>Sets the output file.</td></tr>
+<tr><td><tt>File getFile()</tt></td><td>Returns the output file.</td></tr>
+<tr><td><tt>setBackupDirectory(File dir)</tt></td><td>Sets the backup directory which stores copies of the images. The directory must exist. File format is: <tt>yyyyMMddHHmmss.&lt;ext&gt;</tt></td></tr>
+<tr><td><tt>File getBackupDirectory()</tt></td><td>Returns the backup directory.</td></tr>
+<tr><td><tt>setQuality(int quality)</tt></td><td>Sets the image quality in %. Has to be between 0 and 100. Defaults to 100.</td></tr>
+<tr><td><tt>int getQuality()</tt></td><td>Gets the image quality in %.</td></tr>
+<tr><td><tt>setRotation(int deg)</tt></td><td>Sets the image rotation in degrees. 0 is the default rotation (device in landscape, camera to the left).</td></tr>
+<tr><td><tt>int getRotation()</tt></td><td>Gets the image rotation in degrees.</td></tr>
+<tr><td><tt>setSize(int width, int height)</tt></td><td>Sets the preview size. Has to be a valid size! Valid sizes can be retrieved by the <tt>getSupportedSizes()</tt> method.</td></tr>
+<tr><td><tt>List<Camera.Size> getSupportedSizes()</tt></td><td>Returns a list of supported sizes.</td></tr>
+<tr><td><tt>setFormat(Bitmap.CompressFormat format)</tt></td><td>Sets the image output format. Defaults to JPEG.</td></tr>
+<tr><td><tt>Bitmap.CompressFormat getFormat()</tt></td><td>Returns the image output format.</td></tr>
+<tr><td><tt>setInterval(Integer interval)</tt></td><td>Defines how often images are written. Defaults to 0.</td></tr>
+<tr><td><tt>setPrintGeoLocation(boolean enable, String foregroundRGB, String backgroundRGB)</tt></td><td>Specifies if and in which color the geo location header is printed.</td></tr>
+<tr><td><tt>setCameraId(id)</tt></td><td>Sets the camera ID. The default is 1. This might be useful if the front-facing-camera should be used instead of the default.</td></tr>
+<tr><td><tt>int getCameraId()</tt></td><td>Gets the camera ID. The default is 1.</td></tr>
+<tr><td><tt>Camera getCamera()</tt></td><td>Returns the camera object, or <tt>null</tt> if preview has not been started.</td></tr>
+<tr><td><tt>boolean start()</tt></td><td>Aquires the camera and starts the preview. Returns <tt>true</tt> on success otherwise <tt>false</tt>.</td></tr>
+<tr><td><tt>stop()</tt></td><td>Stops the preview and releases the camera.</td></tr>
+<tr><td><tt>boolean isCameraIdSupported()</tt></td><td>Checks if camera IDs (since Gingerbread) are supported. Returns <tt>true</tt> on success, othewise <tt>false</tt>.</td></tr>
+<tr><td><tt>int getBackCameraId()</tt></td><td>Returns the ID of the back facing camera. If no camera is found <tt>-1</tt> is returned.</td></tr>
+<tr><td><tt>int getFrontCameraId()</tt></td><td>Returns the ID of the front facing camera. If no camera is found <tt>-1</tt> is returned.</td></tr>
+<tr><td><tt>void setSurfaceEnabled(boolean state)</tt></td><td>The surface view can be enabled or disabled. Without surface, camera preview might not work on some devices! It's enabled by default.</td></tr>
+<tr><td><tt>void setSurfaceSize(int width, int heigt)</tt></td><td>Sets the size of the surface view. Default is width=-1 and height=-1 which results in a full screen view.</td></tr>
+</table>
+</p>
+<br><br>
+The preview supports header and footer information. If specified the  header contains geo information provided by the Google Geocoder. The footer contains the date if specified.<br><br>
+Below is a sample image:<br><br>
+<img src="/app/images/camera_preview.jpg">
+</p>
+<p>
+The following script will create an image in the <tt>/sdcard</tt> directory with the name <tt>webcam_test.jpg</tt> with the size of 320x240 pixels, a geo header, date footer  and the image quality of 50%.<br>
+It starts the camera preview, waits four seconds and stops the preview.<br><br>
+You can use the buttons below the script to view and delete the image.
+</p>
+<textarea cols="80" rows="12" id="previewScript">
+import de.fun2code.android.pawserver.media.*;
+
+cp = CameraPreview.getInstance();
+cp.setSize(320, 240);
+cp.setFile(new File("/sdcard/webcam_test.jpg"));
+cp.setQuality(50);
+cp.setPrintDate(true, "#ffffff", "#55000000");
+cp.setPrintGeoLocation(true, "#ffffff", "#55000000");
+cp.start();
+Thread.sleep(4000);
+cp.stop();
+</textarea>
+<p></p>
+<button onClick="executeScript('previewScript', 'previewScriptLoader');">Execute Script</button>&nbsp;<img id="previewScriptLoader" src="../images/loader.gif" style="display: none;" width="16">
+<p>
+<button onClick="window.open('../get_file.xhtml?file=/sdcard/webcam_test.jpg', 'cameraPreviewTest');">Show Image</button>
+<button onClick="executeScript('deleteFileScript', 'deleteScriptLoader');">Delete Image</button>
+&nbsp;<img id="deleteScriptLoader" src="../images/loader.gif" style="display: none;" width="16">
+</p>
+<p>&nbsp;</p>
+<textarea id="deleteFileScript" style="display: none;">
+new File("/sdcard/webcam_test.jpg").delete();
+</textarea>
+<p></p>
+<h3>Notifications</h3>
+Notifications are supported by three methods.
+<p>
+A <a href="../code_snippets/Notifications.xhtml" target="content" class="link">Notification Builder</a> is available in the <i>Code Snippets</i> section.
+</p>
+<table>
+<tr><td valign="top"><tt>showNotification(ticker, header, text)</tt></td><td>This is a simple function and generates a simple text message. It's equivalent to calling <tt>showNotification(null, ticker, header, text, null, true, null, true, true)</tt>. It returns the notification id.<br><br></td></tr>
+<tr><td valign="top"><tt>showNotification(icon, ticker, header, text, id, light, color, sound, vibrate)</tt></td><td>Generates a notification with the following parameters:<br>
+<ul>
+	<li><tt>icon:</tt> Icon resource id. If <tt>null</tt> <tt>de.fun2code.android.pawserver.R.drawable.notification</tt> is used.</li>
+	<li><tt>ticker:</tt>Ticker text. If <tt>null</tt> no notification will be displayed in the status bar.</li>
+	<li><tt>header:</tt>Header text. If <tt>null</tt> no notification will be displayed in the status bar.</li>
+	<li><tt>text:</tt>Text displayed beneath the header. If <tt>null</tt> no notification will be displayed in the status bar.</li>
+	<li><tt>id:</tt>Notification id. If <tt>null</tt> a random id will be generated.</li>
+	<li><tt>light:</tt><tt>true</tt> if LED light should be used, otherwise <tt>false</tt>.</li>
+	<li><tt>color:</tt>LED RGB color (#rrggbb). If <tt>null</tt> standard color will be used.</li>
+	<li><tt>sound:</tt><tt>true</tt> if sound should be used, otherwise <tt>false</tt>.</li>
+	<li><tt>vibrate:</tt><tt>true</tt> if vibration should be used, otherwise <tt>false</tt>.</li>
+</ul> 
+<p>
+It returns the notification id.
+<p>
+</td></tr>
+<tr><td valign="top"><tt>cancelNotification(id)</tt></td><td>Cancels the notification with the given id.<br><br></td></tr>
+</table>
+<p>
+The below script will display two notifications, one with the simple and one with the extended method.<br>
+After 15 seconds the notifications will be cleared.
+</p>
+<textarea cols="80" rows="16" id="notifyScript">
+id1 = showNotification("Test Notification 1", "Notification Header", "Notification Text");
+
+id2 = showNotification(com.android.internal.R.drawable.ic_menu_notifications, "Test Notification 2", "Notification Header", "Notification Text", null, true, "#0000FF", true, true);
+
+Thread.sleep(15000);
+
+cancelNotification(id1);
+cancelNotification(id2);
+</textarea>
+<p></p>
+<button onClick="executeScript('notifyScript', 'notifyScriptLoader');">Execute Script</button>&nbsp;<img id="notifyScriptLoader" src="../images/loader.gif" style="display: none;" width="16">
+<p></p>
+<h3>Vibration</h3>
+<p>
+Vibration is supported by the simple method <tt>vibrate(millis)</tt> which causes the device to vibrate for the given number of milliseconds.<br>
+The script below vibrates for 3 seconds.
+</p>
+<textarea cols="80" rows="4" id="vibrateScript">
+vibrate(3000);
+</textarea>
+<p></p>
+<button onClick="executeScript('vibrateScript', 'vibrateScriptLoader');">Execute Script</button>&nbsp;<img id="vibrateScriptLoader" src="../images/loader.gif" style="display: none;" width="16">
+<p></p>
+<h3>Image Filters</h3>
+<p>
+Image filters for grayscale and sepia are available.
+</p>
+The two methods <tt>Graphics.filterBitmapSepia(String)</tt> and <tt>Graphics.filterBitmapGrayScale(String)</tt> in the package <tt>de.fun2code.android.pawserver.util.Graphics</tt> take the filename (as String) and return a <tt>android.graphics.Bitmap</tt> as result.
+
+<h3>Clipboard</h3>
+<p>
+With the methods <tt>String readFromClipboard()</tt> and <tt>writeToClipboard(String)</tt> it is now possible to read from and write to the the clipboard of the device.
+</p>
+The example will write a text to the clipboard of the device and read it afterwards.
+<textarea cols="80" rows="4" id="clipboardScript">
+writeToClipboard("Clipboard Text");
+$$.print(readFromClipboard());
+</textarea><br>
+Result:<br><textarea type="text" id="clipboardScriptResult" cols="40" rows="1"></textarea>
+<p></p>
+<button onClick="executeScript('clipboardScript', 'clipboardScriptLoader', 'clipboardScriptResult');">Execute Script</button>&nbsp;<img id="clipboardScriptLoader" src="../images/loader.gif" style="display: none;" width="16">
+<p></p>
+
+<h3>Send SMS Message</h3>
+The following command sends a SMS message and stores it in the outbox. The return value indicates if the message could be sent.<br>
+<tt>boolean sendSMS(String number, String message)</tt>
+<p>
+To send a SMS message that is not stored in the outbox the following command with <tt>silent</tt> set to <tt>true</tt> can be used:<br>
+<tt>boolean sendSMS(String number, String message, boolean silent)</tt>
+</p>
+<p></p>
+<h3>SMS Actions</h3>
+<p>
+SMS Actions are scripts that are executed when a SMS message with the correct <b>Name</b> and <b>PIN</b> combination arrives.<br>
+Actions can be registered with <tt>SmsListener</tt> available in the <tt>de.fun2code.android.pawserver.listener</tt> package.<br><br>
+
+The SMS has to have the following format to be processed by an action:<br>
+<tt>ActionName</tt><b>:</b><tt>PIN</tt><b>:</b><tt>[Additional Arguments]</tt>
+<p></p>
+The scripts have access to the following additional variables:
+<p>
+<ul>
+<li><tt>smsArgs</tt>: Additional arguments that can be added after the last colon.</li>
+<li><tt>smsNumber</tt>: The phone number of the SMS sender.</li>
+</ul>
+</p>
+</p>
+
+<p></p>
+The <tt>SmsListener</tt> provides the following Action methods:
+<p>
+<ul>
+<li><tt>boolean registerAction(String name, String pin, String code)</tt>: Registers a new Action. Returns <tt>true</tt> on success, otherwise <tt>false</tt>.</li>
+<li><tt>boolean updateAction(String name, String pin, String code)</tt>: Updates an existing Action. Returns <tt>true</tt> on success, otherwise <tt>false</tt>.</li>
+<li><tt>boolean removeAction(String name)</tt>: Updates an existing Action. Returns <tt>true</tt> on success, otherwise <tt>false</tt>.</li>
+<li><tt>TreeMap getActions()</tt>: Returns all Actions as TreeMap.</li>
+<li><tt>clearActions()</tt>: Clears all Actions.</li>
+<li><tt>testMessage(String phoneNumber, String smsBody)</tt>: Tests an Action.</li>
+</ul>
+</p>
+</p>
+
+<p>
+The example registers a SMS Action which displays the additional arguments of a SMS message as Toast message if the message has the following format:<br>
+<tt>reply:123:Test arguments...</tt><br><br>
+The last command tests the message.
+</p>
+<textarea cols="80" rows="6" id="smsActionScript">
+import de.fun2code.android.pawserver.listener.*;
+
+SmsListener.registerAction("test", "123", "makeToast(\"Number: \" + smsNumber + \" Args: \" + smsArgs, \"short\");");
+SmsListener.testMessage("5463", "test:123:Test arguments...");
+</textarea>
+<p></p>
+<button onClick="executeScript('smsActionScript', 'smsActionScriptLoader');">Execute Script</button>&nbsp;<img id="clipboardScriptLoader" src="../images/loader.gif" style="display: none;" width="16">&nbsp;<img id="smsActionScriptLoader" src="../images/loader.gif" style="display: none;" width="16">
+<p></p>
+
+
+<h3>SMS Scripts</h3>
+<p>
+SMS Scripts are scripts that are executed in alphabetic order each time a SMS message arrives.<br>
+Scripts can be registered with <tt>SmsListener</tt> available in the <tt>de.fun2code.android.pawserver.listener</tt> package.<br><br>
+
+<p></p>
+The scripts have access to the following additional variables:
+<p>
+<ul>
+<li><tt>smsMessage</tt>: SMS body.</li>
+<li><tt>smsNumber</tt>: The phone number of the SMS sender.</li>
+</ul>
+</p>
+</p>
+
+<p></p>
+The <tt>SmsListener</tt> provides the following Script methods:
+<p>
+<ul>
+<li><tt>boolean registerScript(String name, String code)</tt>: Registers a new Script. Returns <tt>true</tt> on success, otherwise <tt>false</tt>.</li>
+<li><tt>boolean updateScript(String name, String code)</tt>: Updates an existing Script. Returns <tt>true</tt> on success, otherwise <tt>false</tt>.</li>
+<li><tt>boolean removeScript(String name)</tt>: Updates an existing Script. Returns <tt>true</tt> on success, otherwise <tt>false</tt>.</li>
+<li><tt>TreeMap getScripts()</tt>: Returns all Scripts as TreeMap.</li>
+<li><tt>clearScripts()</tt>: Clears all Scripts.</li>
+<li><tt>testMessage(String phoneNumber, String smsBody)</tt>: Tests the Scripts.</li>
+</ul>
+</p>
+</p>
+
+<p>
+The example registers a SMS Scripts which displays the number and message as Toast message on the display of the device.<br>
+The last line is used to test the Script.
+</p>
+<textarea cols="80" rows="6" id="smsScriptsScript">
+import de.fun2code.android.pawserver.listener.*;
+
+SmsListener.registerScript("test", "makeToast(\"Number: \" + smsNumber + \" Message: \" + smsMessage, \"short\");");
+SmsListener.testMessage("5463", "SMS message...");
+</textarea>
+<p></p>
+<button onClick="executeScript('smsScriptsScript', 'smsScriptsScriptLoader');">Execute Script</button>&nbsp;<img id="clipboardScriptLoader" src="../images/loader.gif" style="display: none;" width="16">&nbsp;<img id="smsScriptsScript" src="../images/loader.gif" style="display: none;" width="16">
+<p></p>
+
+<h3>Sharing</h3>
+The shared <tt>Intents</tt> are stored in a <tt>HashMap&lt;Long, Intent&gt;</tt> in the server scope.<br>
+The key of the map is a timestamp which can be used to display the date when the content has been shared.<br>
+To receive the map use the following code:
+<pre>
+server.props.get("de.fun2code.andoid.pawserver.key.share")
+</pre>
+<p></p>
+<h3>Broadcast Listeners</h3>
+<p>
+The following methods are available in the <tt>de.fun2code.android.pawserver.util.IntentUtil</tt> class to handle broadcast events:
+<ul>
+	<li><tt>static Intent getIntentResultFromBroadcast(context, intentAction)</tt> - Waits for a single <tt>Intent</tt> to accure and provides this as return value. The integer result code is available as extra data in the resulting intent ("result"). </li>
+	<li><tt>static Intent getIntentResultFromBroadcast(context, intentAction, millis)</tt> - Waits for a single <tt>Intent</tt> for the specified amount of time and provides this as return value. The integer result code is available as extra data in the resulting intent ("result"). </li>
+		<li><tt>static List<Intent> getIntentResultsFromBroadcast(context, intentAction, millis)</tt> - Collects <tt>Intent</tt> tfor the specified amount of milli seconds and returns them as <tt>List</tt>. The integer result code is available as extra data in the resulting intents ("result").</li>
+</ul>
+</p>
+<p>
+
+To create <tt>BroadcastListiner</tt> which executes a BeanShell script in the <tt>onReceive()</tt> method when an <tt>Intent</tt> is received the method <tt>buildReceiver</tt> from the <tt>de.fun2code.android.pawserver.util.BroadcastReceiverUtil</tt> class can be used. The <tt>intent</tt> and <tt>context</tt> objects are available from within the script.
+<ul>
+	<li><tt>static BroadcatLister buildReceiver(script);</tt></li>
+		
+</ul>
+
+</p>
+<p>
+The example shows how to uses the <tt>IntentUtil.getIntentResultFromBroadcast()</tt> to receive the battery status in a single <tt>Intent</tt> an prints the result. It also registers two BroadCastListeners by using <tt>BroadcastReceiverUtil.buildReceiver()</tt> for five seconds that will display and remove notifictions if power is plugged or unplugged.
+</p>
+<textarea cols="80" rows="10" id="broadcastListenersScript1">
+import de.fun2code.android.pawserver.util.*;
+import android.content.Intent;
+import android.content.IntentFilter;
+
+service = server.props.get("serviceContext");
+
+// Get single Intent
+intent = IntentUtil.getIntentResultFromBroadcast(service, Intent.ACTION_BATTERY_CHANGED);
+level = intent.getIntExtra("level", 0);
+print("Battery Level: " + level + "%");
+
+// Register BroadcastListener with IntentFilter, register it and remove
+// it after 5 seconds.
+receiver1 = BroadcastReceiverUtil.buildReceiver("showNotification(null, \"Power connected!\", \"Device has been connected to power.\", \"Charging...\", 815, true, null, true, true);");
+receiver2 = BroadcastReceiverUtil.buildReceiver("cancelNotification(815);");
+filter1 = new IntentFilter(Intent.ACTION_BATTERY_CHANGED);
+filter2 = new IntentFilter(Intent.ACTION_POWER_DISCONNECTED);
+
+service.registerReceiver(receiver1, filter1);
+service.registerReceiver(receiver2, filter2);
+
+Thread.sleep(5000);
+service.unregisterReceiver(receiver1);
+service.unregisterReceiver(receiver2);
+
+
+</textarea><br>
+Result:<br><textarea type="text" id="broadcastListenersScriptResult1" cols="40" rows="6"></textarea><p></p>
+<p></p>
+<button onClick="executeScript('broadcastListenersScript1', 'broadcastListenersScriptLoader1', 'broadcastListenersScriptResult1');">Execute Script</button>&nbsp;<img id="broadcastListenersScriptLoader1" src="../images/loader.gif" style="display: none;" width="16">
+<p></p>
+
+<h3>NFC</h3>
+Reading of NFC tags is supported by the <tt>AndroidInterface</tt> class method <tt>Intent getNfcIntent(int timeoutSec)</tt>.<br/>
+The method expects a timeout parameter in seconds.
+<p>
+Here is an example, that shows how to retrieve the Tag from the resulting Intent:<br/>
+</p>
+<textarea cols="80" rows="14" id="nfcScript">
+import de.fun2code.android.pawserver.AndroidInterface;
+import android.nfc.NfcAdapter;
+
+intent = AndroidInterface.getNfcIntent(5); // 5 secs timeout
+if(intent != null) {
+  tag = intent.getParcelableExtra(NfcAdapter.EXTRA_TAG);
+  print(tag);
+}
+else {
+  print("No Tag found!");
+}
+
+</textarea>
+<br>
+Result:<br><textarea type="text" id="nfcScriptResult" cols="80" rows="2"></textarea>
+<p></p>
+<button onclick="executeScript('nfcScript', 'nfcScriptLoader', 'nfcScriptResult');">Execute Script</button>&nbsp;<img id="nfcScriptLoader" src="../images/loader.gif" style="display: none;" width="16">
+<p></p>
+
+<h3>NDEF Records</h3>
+<fieldset style="width: 50%">
+<legend><b>Note:</b></legend>
+The purpose of the NDEF record classes is to simplify reading and writing of NDEF messages.<br/>
+A sample NFC reader/writer application is available as <a href="http://paw-android.fun2code.de/plugins/" class="link" target="content">plugin</a>.
+</fieldset>
+<p>
+The package <tt>de.fun2code.android.pawserver.media.nfc.ndef</tt> contain the following classes to support NDEF records:
+</p>
+<table>
+<tr><td><tt>TextRecord</tt></td><td>NDEF Text record.</td></tr>
+<tr><td><tt>URIRecord</tt></td><td>NDEF URI records.</td></tr>
+<tr><td><tt>SmartPosterRecord</tt></td><td>NDEF Smart poster records.</td></tr>
+<tr><td><tt>MimeMediaRecord</tt></td><td>NDEF Mime Media poster records.</td></tr>
+</table>
+
+<p>
+All record types contain a <tt>writeTag(Tag)</tt> method which returns one of the following codes defined in the class <tt>de.fun2code.android.pawserver.media.nfc.Constants</tt>:<br/>
+</p>
+<table>
+<tr><td><tt>SUCCESS</tt></td><td>Write was successful.</td></tr>
+<tr><td><tt>ERROR</tt></td><td>An Error occured.</td></tr>
+<tr><td><tt>MESSAGE_TOO_LARGE</tt></td><td>Message was too large, which means longer than the maximum NDEF message length.</td></tr>
+</table>
+
+<h4>TextRecord</h4>
+<p>
+Text NFEF record which takes text and language code as argument.
+The follwing methods are defined:
+</p>
+<table>
+<tr><td><tt>TextRecord(String languageCode, String text)</tt></td><td>The constructor. Arguments are language code (e.g. "en") and text.</td></tr>
+<tr><td><tt>String getText()</tt></td><td>Returns the text.</td></tr>
+<tr><td><tt>String getLanguageCode()</tt></td><td>Returns the language code.</td></tr>
+<tr><td><tt>static TextRecord parse(NdefRecord record)</tt></td><td>Parses a <tt>NdefRecord</tt> and returns a <tt>TextRecord</tt> instance.</td></tr>
+<tr><td><tt>static boolean isText(NdefRecord record)</tt></td><td>Checks if the given <tt>NdefRcord</tt> is a NDEF Text record.</td></tr>
+<tr><td><tt>static NdefRecord createRecord(String text, String languageCode)</tt></td><td>Creates a new Text <tt>NdefRecord</tt></td></tr>
+<tr><td><tt> int writeTag(Tag tag)</tt></td><td>Writes the tag and returns the result code (see <tt>Constants</tt> mentioned above.)</td></tr>
+</table>
+
+<h4>UriRecord</h4>
+<p>
+URI NFEF record which takes the URI as argument.
+The follwing methods are defined:
+</p>
+<table>
+<tr><td><tt>UriRecord(Uri uri)</tt></td><td>The constructor. Arguments an URI.</td></tr>
+<tr><td><tt>Uri getUri()</tt></td><td>Returns the URI.</td></tr>
+<tr><td><tt>static UriRecord parse(NdefRecord record)</tt></td><td>Parses a <tt>NdefRecord</tt> and returns a <tt>UriRecord</tt> instance.</td></tr>
+<tr><td><tt>static boolean isUri(NdefRecord record)</tt></td><td>Checks if the given <tt>NdefRcord</tt> is a NDEF URI record.</td></tr>
+<tr><td><tt>static NdefRecord createRecord(URI uri)</tt></td><td>Creates a new URI <tt>NdefRecord</tt></td></tr>
+<tr><td><tt> int writeTag(Tag tag)</tt></td><td>Writes the tag and returns the result code (see <tt>Constants</tt> mentioned above.)</td></tr>
+</table>
+
+<h4>SmartPosterRecord</h4>
+<p>
+Smart Poster NFEF record which takes URI, text and language code as argument.
+The follwing methods are defined:
+</p>
+<table>
+<tr><td><tt>SmartPosterRecord(URI uri, String languageCode, String text)</tt></td><td>The constructor. Arguments are URI, language code (e.g. "en") and text.</td></tr>
+<tr><td><tt>Uri getUri()</tt></td><td>Returns the URI.</td></tr>
+<tr><td><tt>String getText()</tt></td><td>Returns the text.</td></tr>
+<tr><td><tt>String getLanguageCode()</tt></td><td>Returns the language code.</td></tr>
+<tr><td><tt>static SmartPosterRecord parse(NdefRecord record)</tt></td><td>Parses a <tt>NdefRecord</tt> and returns a <tt>SmartPosterRecord</tt> instance.</td></tr>
+<tr><td><tt>static boolean isText(NdefRecord record)</tt></td><td>Checks if the given <tt>NdefRcord</tt> is a NDEF Smart Poster record.</td></tr>
+<tr><td><tt>static NdefRecord createRecord(URI uri, String languageCode, String text)</tt></td><td>Creates a new Smart Poster <tt>NdefRecord</tt></td></tr>
+<tr><td><tt> int writeTag(Tag tag)</tt></td><td>Writes the tag and returns the result code (see <tt>Constants</tt> mentioned above.)</td></tr>
+</table>
+
+<h4>MimeMediaRecord</h4>
+<p>
+Mime Media NFEF record which takes a mimetype and byte array data as argument.
+The follwing methods are defined:
+</p>
+<table>
+<tr><td><tt>MimeMediaRecord(String mimeType, byte[] data)</tt></td><td>The constructor. Arguments are mimetype and byte array.</td></tr>
+<tr><td><tt>String getMimeType()</tt></td><td>Returns the mimetype.</td></tr>
+<tr><td><tt>byte[] getData()</tt></td><td>Returns the binary data.</td></tr>
+<tr><td><tt>static MimeMediaRecord parse(NdefRecord record)</tt></td><td>Parses a <tt>NdefRecord</tt> and returns a <tt>MimeMediaRecord</tt> instance.</td></tr>
+<tr><td><tt>static boolean isText(NdefRecord record)</tt></td><td>Checks if the given <tt>NdefRcord</tt> is a NDEF Mime Media record.</td></tr>
+<tr><td><tt>static NdefRecord createRecord(String mimeType, byte[] data)</tt></td><td>Creates a new Mime Media <tt>NdefRecord</tt></td></tr>
+<tr><td><tt> int writeTag(Tag tag)</tt></td><td>Writes the tag and returns the result code (see <tt>Constants</tt> mentioned above.)</td></tr>
+</table>
+<p></p>
+
+<h3>WebSockets</h3>
+PAW supports WebSockets with a <tt>WebSocket</tt> handler that can be inserted into the <tt>handler.xml</tt> file.<br/>
+The handler has two parameters, <tt>config</tt> and <tt>basedir</tt>. The <tt>config</tt> parameter defines where the WebSocket configuration is located, the <tt>basedir</tt> parameter defines the root directoty for BeanShell scripts.
+<p>
+Here is a sample handler configuration, which should be located before the authentication handler:
+<pre>
+  &lt;handler status="active"&gt;
+    &lt;name&gt;WebSocket Handler&lt;/name&gt;
+    &lt;description>WebSocket Handler&lt;/description&gt;
+    &lt;removable>true&lt;/removable&gt;
+    &lt;id>websocket&lt;/id&gt;
+    &lt;files/&gt;
+    &lt;params&gt;
+      &lt;param name="websocket.class" value="org.paw.handler.android.websocket.WebSocketHandler" /&gt;
+      &lt;param name="websocket.basedir" value="[PAW_HOME]" /&gt;
+      &lt;param name="websocket.config" value="[PAW_HOME]/webconf/websocket.conf" /&gt;
+    &lt;/params&gt;
+  &lt;/handler&gt;
+</pre>
+</p>
+
+<h4>WebSocket Configuration</h4>
+The WebSocket configuration file is a simple textfile whith the following format:
+<pre>&lt;WebSocket protocol&gt;:&lt;BeanShell file (extension .bsh) or native class&gt;</pre>
+The first parameter is the WebSocket protocol which defined by the <tt>sec-websocket-protocol</tt> header field.
+Regular Expression are supported as protocol name.<br/>
+The second is a BeanShell script with the extension <tt>.bsh</tt> or a native class.
+<p>
+Sample configuration file:
+<pre>
+# Format:
+# Protocol:Bsh script (.bsh extension) or class name
+#
+chat.*:webSocketTest.WebSocketTest
+echo:html/websocket_echo.bsh
+</pre>
+</p>
+
+<h4>BeanShell Scripts</h4>
+The easiest way to use WebSockets are BeanShell scripts. These are quite slow, so in a production environmant you should consider using native classes.<br/>
+The following variables are passed: <tt>action</tt>, <tt>protocol</tt>, <tt>socket</tt>, <tt>sockets</tt>, <tt>message</tt>.<br/><br/>
+The <tt>action</tt> variable can be <tt>"connect"</tt>, <tt>"disconnect"</tt> or <tt>"text"</tt>. The value <tt>"connect"</tt> is set if a client connects to a socket and <tt>"disconnect"</tt> if a client disconnects. In addition the used protocol name and the <i>Socket</i> are passed. The <tt>sockets</tt> and <tt>message</tt> variables are not present in these cases.<br/><br/>
+If a text message is received, the <tt>message</tt> and <tt>sockets</tt> variables are passed. The variable <tt>message</tt> contains the text message as <i>String</i>. All sockets belonging to the protocol are stored inside the <tt>sockets</tt> variable which is a <i>List<i> of <i>Socket</i>s.
+<br/><br/>
+To send a message to a socket, the following call can be used:<br/>
+<tt>de.fun2code.android.pawserver.websocket.WebSocketMessage.sendMessage(message, socket)</tt>
+<p>
+Here is a sample scripts, which sends the received message to all connected clients:<br/>
+<pre>
+if(action.equals("text")) {
+    for(sock : sockets) {
+        try {
+            de.fun2code.android.pawserver.websocket.WebSocketMessage.sendMessage(message, sock);
+        }
+        catch(e) {}
+    }
+}
+</pre>
+</p>
+
+<h4>Native Classes</h4>
+Using native classes significantly increases performance, but they are not as easy to use in comparison to BeanShell scripts.<br/>
+<p>
+To get started, put the following <i>JAR</i> file to the classpath of your project: <a class="link" href="../get_file.xhtml?file=<bsh>$$.print(server.props.get("serviceContext").pawHome + "/html/app/download/pawWebSocket.jar");</bsh>" target="_blank">pawWebSocket.jar</a>
+</p>
+
+After the code is compiled, you have to convert the calses into <i>DEX</i> format and put them into the <tt>PAW_HOME/webconf/dex</tt> directory.<br/>
+A detailed description can be found inside the following blog post: <a class="link" href="http://fun2code-blog.blogspot.de/2011/07/paw-dynamic-dex-class-loading.html" target="_blank">PAW - Dynamic DEX Class Loading</a>
+
+<p>
+Here is a sample Java classfile that does exactly the same as the BeanShell sample above:<br7>
+<pre>
+import java.io.IOException;
+import java.net.Socket;
+import java.util.List;
+
+import de.fun2code.android.pawserver.websocket.WebSocketListener;
+import de.fun2code.android.pawserver.websocket.WebSocketMessage;
+
+public class WebSocketTest implements WebSocketListener{
+
+	@Override
+	public void onConnect(Socket socket, String protocol) {
+	}
+
+	@Override
+	public void onDisconnect(Socket socket, String protocol) {
+	}
+
+	@Override
+	public void onMessage(String message, Socket socket, String protocol,
+			List<Socket> connectedSockets) {
+		for(Socket sock : connectedSockets) {
+			try {
+				WebSocketMessage.sendMessage(message, sock);
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
+	}
+
+}
+</pre>
+</p>
+<p></p>
+
+<p>&nbsp;</p>
+</body>
+</html>

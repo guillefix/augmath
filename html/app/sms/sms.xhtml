@@ -1,0 +1,294 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+<bsh>source(server.props.get("serviceContext").pawHome + "/html/app/bsh/i18n.bsh");</bsh>
+<script type="text/javascript" src="../js/jquery.js"></script>
+<script type="text/javascript" src="../js/jquery.simplyCountable.js"></script>
+<title><bsh>translate("send_message.title");</bsh></title>
+<link rel="stylesheet" href="../css/default.css">
+<script type="text/javascript">
+	$(document).ready(function()
+	{
+		$('#message').simplyCountable({
+		counter: '#counter',
+			countType: 'characters',
+			countDirection: 'up'
+		});
+	});
+
+	function clearElements(type) {
+		 $("#formDiv").find(':input').each(function() {
+			if(this.type == type) {
+				switch(type) {
+				    case 'password':
+				    case 'select-multiple':
+				    case 'select-one':
+				    case 'text':
+				    case 'textarea':
+					$(this).val('');
+					break;
+				    case 'checkbox':
+				    case 'radio':
+					this.checked = false;
+				}
+			}
+   		 });
+
+	}
+
+	 function selChkClick() {
+		selectAllRows($("#selChk").attr('checked'))
+	 }
+
+	 function selectAllRows(select) {
+		$("#dataTable").find("input:checkbox").attr('checked', select);
+	 }
+</script>
+
+</head>
+<body>
+<bsh>source(server.props.get("serviceContext").pawHome + "/html/app/auth.bsh");</bsh>
+
+<bsh>
+import android.app.Service;
+import android.provider.Contacts.People;
+import android.provider.Contacts.Phones;
+import android.net.Uri;
+import android.database.Cursor;
+import android.telephony.gsm.SmsManager;
+import android.content.Intent;
+import android.app.PendingIntent;
+import de.fun2code.android.pawserver.util.*;
+</bsh>
+
+<bsh>
+NAME_DELIMITER = "@DEL@";
+</bsh>
+
+<bsh>
+service = (Service) server.props.get("serviceContext");
+
+number = parameters.get("number");
+message = parameters.get("message");
+
+compose = parameters.get("compose");
+backUrl = parameters.get("back");
+contactId = parameters.get("contactId");
+
+if(backUrl != null) {
+	print("<div style='float: right;'><a href='" + backUrl + "'><img src='../images/back.png' title='Back' style='width: 48px;'></a></div>");
+}
+</bsh>
+
+<h3><bsh>translate("send_message.title");</bsh></h3>
+<form name="smsForm" action="sms.xhtml" method="post">
+<div xstyle="border: 1px solid white;">
+
+<bsh>
+if(number != null && message != null) {
+
+  if(number instanceof List) {
+          for(num : number) {
+                  if(num == null || num.length() == 0) continue;
+		  outString = num;
+
+		  if(num.contains(NAME_DELIMITER)) {
+			split = num.split(NAME_DELIMITER);
+			num = split[0];
+			name = split[1];
+
+			outString = num + " (" + name + ")";
+		  }
+
+		  sendRes = SmsUtil.sendSms(num, message);
+		  if(sendRes) {
+		  	print("<p><img src='../images/smiley.png' style='width: 24px;'>&nbsp;<b><font color='green'>&nbsp;" + translateRaw("send_message.message.success") + " " + outString + "</font></b></p>");
+		  }
+		  else {
+			print("<p><img src='../images/warning.png' style='width: 24px;'>&nbsp;<b><font color='red'>&nbsp;" + translateRaw("send_message.message.error") + " " + outString + "</font></b></p>");
+		  }
+	  }
+  }
+  else {
+	 outString = number;
+	 if(number.contains(NAME_DELIMITER)) {
+	   split = number.split(NAME_DELIMITER);
+	   number = split[0];
+	   name = split[1];
+
+	   outString = number + " (" + name + ")";
+          }
+
+	  sendRes = SmsUtil.sendSms(number, message);
+	  if(sendRes) {
+	  	print("<p><img src='../images/smiley.png' style='width: 24px;'>&nbsp;<b><font color='green'>&nbsp;" + translateRaw("send_message.message.success") + " " + number + "</font></b></p>");
+	  }
+	  else {
+		print("<p><img src='../images/warning.png' style='width: 24px;'>&nbsp;<b><font color='red'>&nbsp;" + translateRaw("send_message.message.error") + " " + number + "</font></b></p>");
+	  }
+  }
+}
+
+if(compose != null && !compose.equals("")) {
+	outString = compose;
+	if(compose.contains(NAME_DELIMITER)) {
+		split = compose.split(NAME_DELIMITER);
+		num = split[0];
+		name = split[1];
+
+		outString = num + " (" + name + ")";
+	}
+
+	if(contactId != null) {
+		print("<p><img src='../graphics/contact_photo.xhtml?contactId=" + contactId + "' align='middle' style='border: 1px solid black;'></p>");
+	}
+
+	print("<p>&nbsp;" + translateRaw("send_message.label.recipient") + ": <b>" + outString + "</b><p>");
+	print("<input type='hidden' name='number' value='" + compose + "'>");
+	print("<input type='hidden' name='compose' value='" + compose + "'>");
+}
+else {
+	print("<div id='formDiv' style='overflow: auto; height: 300px; width: 100%; border: 1px solid white;'>");
+	print("<p><b>" + translateRaw("send_message.label.individual_number") + "</b>&nbsp;&nbsp;<input type='text' name='number' style='background : #C9C9C9; border: 1px solid black; xbackground-image: url(../images/dial_input_background.png); height: 36px; width: 300px; color: black; font-size: 20px;' Xoninput='clearElements(\"radio\")'></p>");
+
+	print("<table border='0' id='dataTable' cellpadding='4' cellspacing='0' style='width: 100%; font-size: 12px; border: 1px solid black;'>");
+	print("<tr><th>&nbsp;</th><th style='text-align: left;'>" + translateRaw("send_message.table.name") + "</th><th style='text-align: left;'>" + translateRaw("send_message.table.mobile_phone") + "</th><th><span><input id='selChk' type='checkbox' onClick='selChkClick();' /></span></th></tr>");
+	// Switch between new and old Contacts API
+	if(Integer.parseInt(android.os.Build.VERSION.SDK) >= 5) {
+		String[] contactsColumns = { android.provider.ContactsContract.Data.RAW_CONTACT_ID, android.provider.ContactsContract.CommonDataKinds.StructuredName.DISPLAY_NAME };
+		String[] phonesColumns = { android.provider.ContactsContract.CommonDataKinds.Phone.NUMBER, android.provider.ContactsContract.CommonDataKinds.Phone.TYPE};
+
+		contactsUri = android.provider.ContactsContract.Data.CONTENT_URI;
+		phonesUri = android.provider.ContactsContract.CommonDataKinds.Phone.CONTENT_URI;
+
+		curContacts = service.getContentResolver().query(contactsUri, contactsColumns, // Which columns to return
+			  android.provider.ContactsContract.CommonDataKinds.StructuredName.MIMETYPE + "=?",
+			  new String[] { android.provider.ContactsContract.CommonDataKinds.StructuredName.CONTENT_ITEM_TYPE },
+			  android.provider.ContactsContract.CommonDataKinds.StructuredName.DISPLAY_NAME + " ASC" // Order-by clause (ascending by name)
+			  );
+
+		colour = "#eaeaea";
+			  
+		if(curContacts .moveToFirst()) {
+		do {
+
+			id = curContacts.getString(curContacts .getColumnIndex(android.provider.ContactsContract.Data.RAW_CONTACT_ID));
+			name = curContacts.getString(curContacts .getColumnIndex(android.provider.ContactsContract.CommonDataKinds.StructuredName.DISPLAY_NAME));
+
+			phonesWhere = android.provider.ContactsContract.CommonDataKinds.Phone.TYPE + "=" + android.provider.ContactsContract.CommonDataKinds.Phone.TYPE_MOBILE + " AND " + android.provider.ContactsContract.CommonDataKinds.Phone.RAW_CONTACT_ID + "=" + id;
+			curPhones = service.getContentResolver().query(phonesUri, phonesColumns, // Which columns to return
+						phonesWhere, // WHERE clause; which rows to return(all rows)
+						null, // WHERE clause selection arguments (none)
+						android.provider.ContactsContract.CommonDataKinds.Phone.NUMBER + " ASC" // Order-by clause (ascending by name)
+						);
+						
+			if (curPhones.moveToFirst()) {
+						colour = colour.equals("#eaeaea") ? "white" : "#eaeaea";
+						c = 0;
+						do {
+							phoneNo = curPhones.getString(curPhones.getColumnIndex(android.provider.ContactsContract.CommonDataKinds.Phone.NUMBER));
+							type = curPhones.getLong(curPhones.getColumnIndex(android.provider.ContactsContract.CommonDataKinds.Phone.TYPE));
+							
+							$$.print("<tr style='background:" + colour + ";'>");
+
+							if(c == 0) {
+								$$.print("<td><img src='../graphics/contact_photo.xhtml?contactId=" + id + "' align='middle' style='width: 32px;'></td>");
+							}
+							else {
+								$$.print("<td>&nbsp;</td>");
+							}
+
+							print("<td style='color: black;'>" + (c > 0 ? "&nbsp;" : name) + "</td><td style='color: black;'>" + phoneNo + "</td><td  align='center'><input type='checkbox' name='number' value='" + phoneNo + NAME_DELIMITER + name + "' Xonclick='clearElements(\"text\")'></td>");
+							
+							c++;
+						} while (curPhones.moveToNext());
+			}
+			curPhones.close();
+		} while(curContacts .moveToNext());
+		}
+
+		curContacts .close();
+	}
+	else {
+		String[] contactsColumns = { People._ID, People.NAME, People.NUMBER};
+		String[] phonesColumns = { Phones.NUMBER, Phones.TYPE};
+
+		contactsUri = People.CONTENT_URI;
+		phonesUri = Phones.CONTENT_URI;
+		try {
+			curContacts = service.getContentResolver().query(contactsUri, contactsColumns, // Which columns to return
+				null, // WHERE clause; which rows to return(all rows)
+				null, // WHERE clause selection arguments (none)
+				"People.NAME ASC" // Order-by clause (ascending by name)
+				);
+
+			colour = "#eaeaea";
+
+			if (curContacts.moveToFirst()) {
+				do {
+				// Get the field values
+				name = curContacts.getString(curContacts.getColumnIndex(People.NAME));
+				id = curContacts.getString(curContacts.getColumnIndex(People._ID));		
+
+				phonesWhere = "TYPE=" + Phones.TYPE_MOBILE + " AND PERSON=" + id;
+
+				try {
+					curPhones = service.getContentResolver().query(phonesUri, phonesColumns, // Which columns to return
+						phonesWhere, // WHERE clause; which rows to return(all rows)
+						null, // WHERE clause selection arguments (none)
+						"Phones.NUMBER ASC" // Order-by clause (ascending by name)
+						);
+
+					if (curPhones.moveToFirst()) {
+						colour = colour.equals("#eaeaea") ? "white" : "#eaeaea";
+						c = 0;
+							do {
+							phoneNo = curPhones.getString(curPhones.getColumnIndex(Phones.NUMBER));
+							$$.print("<tr style='background:" + colour + ";'>");
+
+							if(c == 0) {
+								$$.print("<td><img src='../graphics/contact_photo.xhtml?contactId=" + id + "' align='middle' style='width: 32px;'></td>");
+							}
+							else {
+								$$.print("<td>&nbsp;</td>");
+							}
+
+							print("<td style='color: black;'>" + (c > 0 ? "&nbsp;" : name) + "</td><td style='color: black;'>" + phoneNo + "</td><td  align='center'><input type='checkbox' name='number' value='" + phoneNo + NAME_DELIMITER + name + "' Xonclick='clearElements(\"text\")'></td>");
+							c++;
+						} while (curPhones.moveToNext());
+					}
+				}
+				finally {
+					curPhones.close();
+				}
+		
+				print("</tr>");
+			
+				} while (curContacts.moveToNext());
+			}
+		}
+		finally {
+			curContacts.close();
+		}
+	}
+}
+</bsh>
+</table>
+</div>
+</div>
+
+<h3><bsh>translate("send_message.label.sms_message");</bsh>:</h3>
+<textarea id="message" name="message" style="width: 100%;"  rows="10" style="background: white;">
+</textarea>
+
+<bsh>
+if(backUrl != null) {
+	print("<input type='hidden' name='back' value='" + backUrl + "'>");
+}
+</bsh>
+
+<p style="width: 100%; text-align: left; color: #ababab;"><bsh>translate("send_message.label.characters");</bsh>: <span id="counter"></span></p>
+<input type="submit" value="<bsh>translate("send_message.button.send_sms");</bsh>">
+</form>
+</body>
+</hmtl>

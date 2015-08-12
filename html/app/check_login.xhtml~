@@ -1,0 +1,39 @@
+<html>
+<body>
+<bsh>
+import org.json.*;
+import android.content.SharedPreferences;
+import android.app.Service;
+
+service = (Service) server.props.get("serviceContext");
+preferences = service.getSharedPreferences("PawServer", 0);
+
+jsonLogin = new JSONObject();
+username = request.getQueryData().get("username");
+password = request.getQueryData().get("password");
+
+cookieName = "authenticated";
+
+if(username != null && password != null && username.equals(preferences.getString("webAppUsername", "admin")) &&
+   request.getQueryData().get("password").equals(preferences.getString("webAppPassword", "paw"))) {
+	jsonLogin.put("success", true);
+	jsonLogin.put("redirect", "index.xhtml");
+
+	//authenticated = true;
+	// Use cookie instead
+	request.addHeader("Set-Cookie", cookieName + "=true; PATH=/app");
+
+	unset("username");
+	unset("password");
+}
+else {
+	jsonLogin.put("success", false);
+	jsonLogin.put("message", "Login incorrect!");
+}
+
+request.sendResponse(jsonLogin.toString().getBytes(), "text/plain");
+request.out.flush();
+request.out.close();
+</bsh>
+</body>
+</html>

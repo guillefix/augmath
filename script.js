@@ -167,12 +167,16 @@ $("#prev_step").on("click", function () {//FIX THIS
 });
 
 $("#make_json").on("click", function () {
+	alert("topkek");
+	console.log("topkek");
 	console.log("selected_nodes_id_rec");
 	console.log(JSON.stringify(selected_nodes_id_rec));
 	console.log("math_str_rec");
 	console.log(JSON.stringify(math_str_rec));
 	console.log("manipulation_rec");
 	console.log(JSON.stringify(manipulation_rec));
+	alert("bottomkek");
+	console.log("bottomkek");
 });
 
 //USEFUL FUNCTIONS
@@ -667,6 +671,8 @@ function parse_poly(root, poly, parent_id, is_container) {
 }
 //this function prepares and renders the function with LaTeX, it also calls parse_poly to create the tree
 function prepare(math) {
+	
+	console.log("lel");
 
 	math = math.replace(/\\frac{}/g, "\\frac{1}")
 				.replace(/=$/, "=0")

@@ -1,0 +1,48 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+<bsh>source(server.props.get("serviceContext").pawHome + "/html/app/bsh/i18n.bsh");</bsh>
+<title><bsh>translate("find_mobile.title");</bsh></title>
+<link rel="stylesheet" href="css/default.css">
+<script type="text/javascript" src="js/jquery.js"></script>
+<script type="text/javascript">
+	var running = false;
+
+	$(document).ready(function() {	
+			$("#loader").hide();
+		});
+
+	function buttonStartStop() {
+		running = running ? false: true;
+		
+		if(running) {
+			$("#button").val(running ? "<bsh>translate("find_mobile.button_stop");</bsh>": "<bsh>translate("find_mobile.button_start");</bsh>");
+			$("#loader").show();
+			playRingtone();
+		}
+		else {
+			$("#button").attr("disabled", true);
+			stopRingtone();
+		}
+
+		
+	}
+
+	function playRingtone() {
+		$.post("play_ringtone.xhtml", { play: "1" }, function(data) { if(running) { playRingtone(); } });
+	}
+
+	function stopRingtone() {
+		$.post("play_ringtone.xhtml", { stop: "1" }, function(data) { $("#loader").hide(); $("#button").val(running ? "Stop": "Start"); $("#button").attr("disabled", false);});
+	}
+</script>
+</head>
+<body>
+<bsh>source(server.props.get("serviceContext").pawHome + "/html/app/auth.bsh");</bsh>
+<h3><bsh>translate("find_mobile.title");</bsh>  <img id="loader" src="images/loader.gif" width="16"></h3>
+<bsh>translate("find_mobile.description");</bsh>
+<p></p>
+<input type="button" id="button" onClick="buttonStartStop();" value="<bsh>translate("find_mobile.button_start");</bsh>">
+
+</body>
+</html>

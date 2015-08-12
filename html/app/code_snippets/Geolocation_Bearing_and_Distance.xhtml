@@ -1,0 +1,279 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+<title>Geolocation, Bearing and Distance</title>
+<link rel="stylesheet" href="../css/default.css">
+<style type="text/css">
+      .CodeMirror-line-numbers {
+        width: 2.2em;
+        color: #aaa;
+        background-color: #eee;
+        text-align: right;
+        padding-right: .3em;
+        font-size: 10pt;
+        font-family: monospace;
+        padding-top: .4em;
+      }
+	  .CodeMirror-wrapping {
+		background: white;
+	  }
+    </style>
+
+<script type="text/javascript" src="../js/jquery.js"></script>
+<script type="text/javascript" src="../js/executeScript.js"></script>
+<script type="text/javascript" src="../js/jquery.rotate.js"></script>
+
+<script type="text/javascript">
+	$(document).ready(function() {
+			$("#source").focus();
+			updateAll();
+	});
+
+	function calculate() {
+		if($("#coordsSourceLat").val().length == 0 || $("#coordsDestLat").val().length == 0) {
+			alert("Loctions have not been set!");
+			return;
+		}
+
+		getResult();
+	}
+
+	function updateAll() {
+		$("#compass").rotate($("#compassBearing").val() * -1, 'abs');
+
+		if($("#result").val().length > 0) {
+			splitRes = $("#result").val().split(";");
+			$("#distance").val(splitRes[0]);
+			$("#bearingAbs").val(splitRes[1]);
+			$("#bearingRel").val(splitRes[2]);
+
+			$("#bearingAbsImg").rotate($("#bearingAbs").val(), 'abs');
+			$("#bearingRelImg").rotate($("#bearingRel").val(), 'abs');
+		}
+
+		setTimeout("updateAll();", 2000);
+	}
+
+	function getLocation(input, outputLat, outputLon, loader) {
+		getGeoLocation(input, outputLat, "lat", loader);
+		getGeoLocation(input, outputLon, "lon", loader);
+	}
+
+	function getGPSLocation(input, outputLat, outputLon, loader) {
+		getDeviceLocation(input, outputLat, "lat", loader);
+		getDeviceLocation(input, outputLon, "lon", loader);
+	}
+
+	function getGeoLocation(input, output, type, loader) {
+		scriptOrg = $("#geoCoderScript").val();
+		script = scriptOrg;
+		script = script.replace(/%type%/, type);
+		script = script.replace(/%loc%/, $("#" + input).val());
+		$("#geoCoderScript").val(script);
+		executeScript('geoCoderScript', loader, output);
+		$("#geoCoderScript").val(scriptOrg);
+	}
+
+	function getDeviceLocation(input, output, type, loader) {
+		scriptOrg = $("#deviceLocationScript").val();
+		script = scriptOrg;
+		script = script.replace(/%type%/, type);
+		$("#deviceLocationScript").val(script);
+		executeScript('deviceLocationScript', loader, output);
+		$("#deviceLocationScript").val(scriptOrg);
+	}
+
+	function getResult() {
+		scriptOrg = $("#bearingScript").val();
+		script = scriptOrg;
+		script = script.replace(/%sourceLat%/, $("#coordsSourceLat").val());
+		script = script.replace(/%sourceLon%/, $("#coordsSourceLon").val());
+		script = script.replace(/%destLat%/, $("#coordsDestLat").val());
+		script = script.replace(/%destLon%/, $("#coordsDestLon").val());
+		script = script.replace(/%compass%/, $("#compassBearing").val().length > 0 ? $("#compassBearing").val() : 0);		
+//alert(script);
+		$("#bearingScript").val(script);
+		executeScript('bearingScript', 'loaderCalc', 'result');
+		$("#bearingScript").val(scriptOrg);
+	}
+
+	function showGoogleMaps(latId, lonId) {
+		if($("#" + latId).val().length > 0) {
+			script = "openUri(\"geo:" + $("#" + latId).val() + "," + $("#" + lonId).val() + "?z=20\");";
+			$("#maps").val(script);
+			executeScript('maps');
+		}
+		
+	}
+
+	function keyListener(objEvt, type){
+  		var keyCode = (window.event) ? window.event.keyCode : objEvt.which;
+		if(keyCode == 13) {
+  		 	$("#" + type + "Button").click();
+		}
+	}
+</script>
+
+
+</head>
+<body>
+<bsh>source(server.props.get("serviceContext").pawHome + "/html/app/auth.bsh");</bsh>
+<h1>Geolocation, Bearing and Distance</h1>
+<p>
+This page demonstrates the use of the Android compass and Geocoder to calculat distance and bearing.
+</p>
+<p>
+<fieldset>
+<legend>Input Parameters</legend>
+<table>
+<tr>
+<td>Current Location:</td><td><input id="source" type="text" tabindex="1" size="60" onKeyDown="return keyListener(event, 'source')"></td><td><button  id="sourceButton" onclick="getLocation('source', 'coordsSourceLat', 'coordsSourceLon', 'loaderSource');">Set location</button><button onclick="getGPSLocation('source', 'coordsSourceLat', 'coordsSourceLon', 'loaderSource');">Get location from device</button><img id="loaderSource" src="../images/loader.gif" style="display: none;" width="16"></td>
+</tr>
+<tr>
+<td>Destination Location:</td><td><input id="dest" type="text" tabindex="2" size="60" onKeyDown="return keyListener(event, 'dest')"></td><td><button id="destButton" onclick="getLocation('dest', 'coordsDestLat', 'coordsDestLon', 'loaderDest');">Set location</button><img id="loaderDest" src="../images/loader.gif" style="display: none;" width="16"></td>
+</tr>
+<str>
+<td colspan="3">
+<button onCLick="executeScript('compassBearingScript', 'loaderCalc', 'compassBearing');" tabindex="3">Set Compass</button>
+<button onCLick="$('#compassBearing').val('0.0');">Reset Compass</button>
+</td>
+</tr>
+<tr>
+<td colspan="3">
+<br>
+<button onCLick="calculate();"  tabindex="4">Calculate</button>
+<img id="loaderCalc" src="../images/loader.gif" style="display: none;" width="16">
+</td>
+</tr>
+</table>
+</fieldset>
+</p>
+<p>
+<fieldset>
+<legend>Calculated Parameters</legend>
+<table>
+<tr><td>Current Coordinates:</td><td><input id="coordsSourceLat" type="text" readonly> lat</td><td><input id="coordsSourceLon" type="text" readonly> lon&nbsp;&nbsp;<button title="Shown in Google Maps on Device" onClick="showGoogleMaps('coordsSourceLat', 'coordsSourceLon');">Google Maps</button></td></tr>
+<tr><td>Destination Coordinates:</td><td><input id="coordsDestLat" type="text" readonly> lat</td><td><input id="coordsDestLon" type="text" readonly> lon&nbsp;&nbsp;<button title="Shown in Google Maps on Device" onClick="showGoogleMaps('coordsDestLat', 'coordsDestLon');">Google Maps</button></td></tr>
+<tr><td>Compass Bearing:</td><td><input id="compassBearing" type="text" value="0.0" readonly size="4"><big>°</big></td></tr>
+</table>
+<img id="compass" src="../images/compass_rose.png">
+</fieldset>
+</p>
+<fieldset>
+<legend>Result</legend>
+<table cellpadding="10">
+<tr>
+<td>Distance:</td><td><input type="text" id="distance" readonly>m</td>
+<td>Bearing Absolute:<input type="text" id="bearingAbs" readonly size="8">°</td>
+<td>Bearing Relative:<input type="text" id="bearingRel" readonly size="8">°</td>
+</tr>
+<tr>
+<td></td>
+<td align="center"><img id="bearingAbsImg" src="images/arrow_up.png"><br>Absolute</td>
+<td align="center"><img id="bearingRelImg" src="images/arrow_up.png"><br>Relative (to compass)</td>
+</tr>
+</table>
+</fieldset>
+</p>
+
+<p>&nbsp;</p>
+
+<!-- Hidden field for result string -->
+<input type="hidden" id="result">
+<!-- Hidden field for google maps -->
+<input type="hidden" id="maps">
+<!-- The scripts -->
+<textarea id="compassBearingScript" style="display: none;">
+import de.fun2code.android.pawserver.AndroidInterface;
+
+sensorListener = AndroidInterface.getSensorListener();
+if(sensorListener.getOrientAccuracy() == 0) {
+	// Wait for sensorListener if accuracy is not reliable
+	Thread.sleep(100);
+}
+bearing = sensorListener.getOrientBearing();
+$$.print(bearing);
+</textarea>
+
+<textarea id="geoCoderScript" style="display: none;">
+import android.location.Geocoder;
+
+type="%type%";
+
+service = server.props.get("serviceContext");
+gc = new Geocoder(service);
+
+addrList = gc.getFromLocationName("%loc%", 1);
+
+if(addrList.size() > 0) {
+	$$.print((type.equals("lat") ? addrList.get(0).getLatitude() : addrList.get(0).getLongitude()));
+}
+else {
+	$$.print("");
+}
+</textarea>
+
+<textarea id="deviceLocationScript" style="display: none;">
+type="%type%";
+/* Old version
+waitSeconds = 10;
+activateGps(true);
+do {
+	if(getGpsLocation() != null && (System.currentTimeMillis() - getGpsLocation().getTime() < 10 * 1000)) {
+		break;
+	}
+	Thread.sleep(1000);
+} while(--waitSeconds > 0);
+loc = getGpsLocation();
+
+activateGps(false);
+*/
+
+import android.content.Context;
+import android.location.*;
+
+service = server.props.get("serviceContext");
+
+lm = service.getSystemService(Context.LOCATION_SERVICE);
+
+crit = new Criteria();
+crit.setAccuracy(Criteria.ACCURACY_FINE);
+
+provider = lm.getBestProvider(crit, true);
+loc = lm.getLastKnownLocation(provider);
+
+// Old Verson --> if(loc != null  && (System.currentTimeMillis() - getGpsLocation().getTime() < 10 * 1000)) {
+if(loc != null) {
+	$$.print((type.equals("lat") ? loc.getLatitude() : loc.getLongitude()));
+}
+else {
+	$$.print("");
+}
+</textarea>
+
+<textarea id="bearingScript" style="display: none;">
+import android.location.Location;
+
+
+source = new Location("");
+source.setLatitude(%sourceLat%);
+source.setLongitude(%sourceLon%);
+
+dest = new Location("");
+dest.setLatitude(%destLat%);
+dest.setLongitude(%destLon%);
+
+// Compass bearing
+source.setBearing((int) %compass%);
+
+bearing = source.bearingTo(dest);
+bearing = bearing < 0 ? 360 + bearing : bearing;
+
+bearingCompass = 360 - (source.getBearing() - bearing);
+bearingCompass = bearingCompass > 360 ? bearingCompass - 360 : bearingCompass;
+
+$$.print(source.distanceTo(dest) + ";" + bearing + ";" + bearingCompass);
+</textarea>
+
+</body>
+</html>

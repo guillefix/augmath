@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<filters>
+  <filter status="inactive" type="httpProxy">
+    <name>RegExp Filters</name>
+    <description>This filter is used to filter HTTP responses with
+regular expression.
+Replace and size filters are supported.
+@URL "html/filters/regexp_filters.html"</description>
+    <removable>false</removable>
+    <id>regFilters</id>
+    <files />
+    <params>
+      <param name="regFilters.class" value="org.paw.filter.PawRegFilter" />
+      <param name="regFilters.config" value="conf/reg-filter.xml" />
+    </params>
+  </filter>
+  <filter status="inactive" type="httpProxy">
+    <name>Animated GIF Filter</name>
+    <description>Filters animated gif images in the way that it
+removed all but the first frame.
+@URL "html/filters/animated_gif_filter.html"</description>
+    <removable>true</removable>
+    <id>animatedGifFilters</id>
+    <files />
+    <params>
+      <param name="animatedGifFilters.class" value="org.paw.filter.AnimatedGifFilter" />
+    </params>
+  </filter>
+  <filter status="inactive" type="httpProxy">
+    <name>GIF Size Filter</name>
+    <description>Filters GIF images by size.
+It uses the file bannersizes for size information.
+@URL "html/filters/gif_size_filter.html"</description>
+    <removable>true</removable>
+    <id>gifSizeFilter</id>
+    <files>
+      <file>conf/bannersizes</file>
+    </files>
+    <params>
+      <param name="gifSizeFilter.class" value="org.paw.filter.GifSizeFilter" />
+      <param name="gifSizeFilter.image" value="[PAW_HOME]/images/ad_transp.gif" />
+      <param name="gifSizeFilter.filename" value="[PAW_HOME]/conf/bannersizes" />
+    </params>
+  </filter>
+  <filter status="inactive" type="httpProxy">
+    <name>Response Headers</name>
+    <description>Allows the manipulation of response headers.
+@URL "html/filters/response_headers.html"</description>
+    <removable>true</removable>
+    <id>responseheaders</id>
+    <files>
+      <file>conf/headers-response</file>
+    </files>
+    <params>
+      <param name="responseheaders.class" value="org.paw.filter.ResponseHeadersFilter" />
+      <param name="responseheaders.headers" value="conf/headers-response" />
+    </params>
+  </filter>
+  <filter status="inactive" type="httpProxy">
+    <name>Visualization Filter</name>
+    <description>Logs HTTP Protocol conversation between Client and Server.
+Output is written to logfile.
+Should only be used for debugging, because logfile can get very large.
+@URL "html/filters/visualization_filter.html"</description>
+    <removable>true</removable>
+    <id>VisualizeFilter</id>
+    <files />
+    <params>
+      <param name="VisualizeFilter.class" value="org.paw.filter.VisualizeFilter" />
+    </params>
+  </filter>
+</filters>
+
+

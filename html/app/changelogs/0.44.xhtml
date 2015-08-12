@@ -1,0 +1,39 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+<title>Changelog 0.44</title>
+<link rel="stylesheet" href="../css/default.css">
+<script type="text/javascript" src="../js/jquery.js"></script>
+<script type="text/javascript" src="../js/executeScript.js"></script>
+<script type="text/javascript" src="../js/jquery.rotate.js"></script>
+</head>
+<body>
+<bsh>source(server.props.get("serviceContext").pawHome + "/html/app/auth.bsh");</bsh>
+<h1>Changelog - Version 0.44</h1>
+
+<h2>Web App</h2>
+<ul>
+<li>System load information has been added to toolbar.</li>
+<li>Toolbar icons can now be switched on/off (<i>Server -> Toolbar</i>).</li>
+<li>Adjust Volume settings (<i>System -> Volumes</i>).</li>
+<li>Text output via Text To Speech (<i>Media -> Text To Speech</i>).</li>
+<li>Possibility to back up APK files (<i>System -> APK Backup</i>).</li>
+<li>New demo: Geolocation, Bearing and Distance</li>
+<li>New code snippet: Render View</li>
+</ul>
+<p></p>
+
+<h2>Android Functions</h2>
+<h3>Text To Speech</h3>
+Text To Speech is now supported by the <tt>speack(text, locale)</tt> method.<br>
+<b>Note: </b>Text To Speech is only supported since Android 1.6.<br><br>
+
+<textarea cols="80" rows="4" id="ttsScript">
+speak("This is a test message", new Locale("en", "EN"));
+</textarea>
+<p></p>
+<button onClick="executeScript('ttsScript', 'ttsScriptLoader');">Execute Script</button>&nbsp;<img id="ttsScriptLoader" src="../images/loader.gif" style="display: none;" width="16">
+<p></p>
+
+</body>
+</html>

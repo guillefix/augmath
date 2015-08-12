@@ -1,0 +1,273 @@
+<bsh>source(server.props.get("serviceContext").pawHome + "/html/app/auth.bsh");</bsh>
+
+<bsh>
+import java.text.SimpleDateFormat;
+import org.json.*;
+import org.paw.util.*;
+import org.apache.commons.fileupload.*;
+
+baseDir = server.props.get("serviceContext").pawHome + "/html/app/filemanager";
+
+jsonStr = "" + parameters.get("mode");
+mime = "text/plain";
+
+
+getInfo(file) {
+
+	//dateFormat = new SimpleDateFormat("MM/dd/yyyy kk:mm:ss");
+    dateFormat = new SimpleDateFormat("MM/dd/yyyy HH:mm:ss");
+
+	if(file.isDirectory()) {
+		ext = "dir";
+		preview = "images/fileicons/_Open.png";
+	}
+	else {
+		ext = file.getName().lastIndexOf(".") != -1 ? file.getName().substring(file.getName().lastIndexOf(".")+1) : "txt";
+		ext = ext.toLowerCase();
+		preview = new File(baseDir + "/images/fileicons/" + ext + ".png").exists() ? ("images/fileicons/" + ext + ".png") : "images/fileicons/default.png";
+	}
+
+	jobj = new JSONObject();
+	jobj.put("Path", file.getPath());
+	jobj.put("Filename", file.getName());
+	jobj.put("Filetype", ext);
+	jobj.put("Preview", preview);
+	
+	jobjP = new JSONObject();
+	jobjP.put("Date Created", JSONObject.NULL);
+	jobjP.put("Date Modified", dateFormat.format(file.lastModified()));
+	jobjP.put("Height", JSONObject.NULL);
+	jobjP.put("Width", JSONObject.NULL);
+	jobjP.put("Size", file.length());
+	jobj.put("Properties", jobjP);	
+
+	jobj.put("Error", "");
+	jobj.put("Code", 0);
+
+	return jobj;
+}
+
+deleteDirectory(path) {
+    if( path.exists() ) {
+      File[] files = path.listFiles();
+      for(int i=0; i<files.length; i++) {
+         if(files[i].isDirectory()) {
+           deleteDirectory(files[i]);
+         }
+         else {
+           files[i].delete();
+         }
+      }
+    }
+    return( path.delete() );
+}
+
+
+
+
+if(parameters.get("mode") != null) {
+	mode = parameters.get("mode");
+
+	if(mode.equals("getinfo")) {
+		path = parameters.get("path");
+		if(path != null) {
+			json = getInfo(new File(path));
+			jsonStr = json.toString();
+		}
+	}
+
+	else if(mode.equals("getfolder")) {
+		path = parameters.get("path");
+		if(path != null && new File(path).isDirectory()) {
+			json = new JSONArray();
+			
+			files = new File(path).listFiles();
+			Arrays.sort(files);
+
+			for(File file : files) {
+				// Do not show . folders and files
+				if(file.getName().startsWith(".")) { continue; }
+				json.put(getInfo(file));
+			}
+			jsonStr = json.toString();
+		}
+		else {
+			jsonStr = path;
+		}
+	}
+
+	else if(mode.equals("rename")) {
+		error = "";
+		code = 0;
+		
+		oldPath = parameters.get("old");
+		newName = parameters.get("new");
+
+		oldName = oldPath.substring(oldPath.lastIndexOf("/") + 1);
+		path = oldPath.substring(0, oldPath.lastIndexOf("/") + 1);
+
+		try {
+			if(!new File(path + oldName).renameTo(new File(path + newName))) {
+				error = "Could not rename!";
+				code = 2;
+			}
+		} catch(e) {
+			code = 1;
+			error = e.toString();
+		}
+
+		json = new JSONObject();
+		json.put("Old Path", path);
+		json.put("Old Name", oldName);
+		json.put("New Path", path);
+		json.put("New Name", newName);
+		json.put("Error", error);
+		json.put("Code", code);
+
+		jsonStr = json.toString();	
+	}
+
+	else if(mode.equals("delete")) {
+		error = "";
+		code = 0;
+		
+		path = parameters.get("path");
+
+		f = new File(path);
+		
+		parent = f.getParent();
+
+		if(parent != null) {
+   			parent += parent.endsWith("/") ? "" : "/";
+		}
+		else {
+    			parent = "/";
+		}
+
+		try {
+			res = false;
+
+			if(f.isDirectory()) {
+				res = deleteDirectory(f);
+			}
+			else {
+				res = f.delete();
+			}
+
+			if(!res) {
+				error = "Could not delete!";
+				code = 2;
+			}
+		} catch(e) {
+			code = 1;
+			error = e.toString();
+		}
+
+		json = new JSONObject();
+
+		// New, not in standard definition
+		json.put("Parent", parent);
+
+		json.put("Path", path);
+		json.put("Error", error);
+		json.put("Code", code);
+
+		jsonStr = json.toString();	
+	}
+
+	else if(mode.equals("addfolder")) {
+		error = "No error";
+		code = 0;
+		
+		path = parameters.get("path");
+		name = parameters.get("name");
+
+		try {
+			new File(path + name).mkdirs();
+		} catch(e) {
+			code = 1;
+			error = e.toString();
+		}
+
+		json = new JSONObject();
+		json.put("Parent", path);
+		json.put("Name", name);
+		json.put("Error", error);
+		json.put("Code", code);
+
+		jsonStr = json.toString();	
+	}
+
+	else if(mode.equals("download")) {
+		file = new File(parameters.get("path"));
+		mime ="application/x-download";
+		request.responseHeaders.put("Content-disposition", "attachment; filename=\"" + file.getName() + "\"");
+		fis = new FileInputStream(file);
+
+		request.sendResponse(fis, (int)file.length(), mime, 200);
+		fis.close();
+		request.out.flush();
+		request.out.close();
+	}
+}
+
+// The add command
+type = (String) request.headers.get("content-type");
+
+if (type != null &&
+	type.startsWith("multipart/form-data")) {
+			
+	try {
+		boundaryIndex = type.indexOf("boundary=");
+		byte[] boundary = (type.substring(boundaryIndex + 9)).getBytes();
+		MultipartStream multipartStream =  new MultipartStream(request.in, boundary);
+		boolean nextPart = multipartStream.skipPreamble();
+
+		currentpath = null;
+		filename = null;
+
+		while(nextPart) {
+
+		  headers = multipartStream.readHeaders();
+
+		  if(headers.contains("currentpath")) {
+		     data = new ByteArrayOutputStream();
+		     multipartStream.readBodyData(data);
+		     currentpath = data.toString();
+		  }
+		  else if(headers.contains("filename=\"") && currentpath != null) {
+		     filename = headers.substring(headers.indexOf("filename=") + 10);
+		     filename = filename.substring(0, filename.indexOf("\""));
+		     multipartStream.readBodyData(new FileOutputStream(currentpath + filename));
+		     break;
+		  }
+		  else {
+		     multipartStream.discardBodyData();
+		  }
+
+		  nextPart = multipartStream.readBoundary();
+		}
+
+		error = "";
+		code = 0;
+	}
+	catch(e) {
+		code = 1;
+		error = e.toString();
+	}
+
+	json = new JSONObject();
+	json.put("Path", currentpath);
+	json.put("Name", filename);
+	json.put("Error", error);
+	json.put("Code", code);
+	jsonStr = "<textarea>" + json.toString() + "</textarea>";
+	mime = "text/html";
+}
+
+request.sendResponse(jsonStr.getBytes(), mime);
+request.out.flush();
+request.out.close();
+
+
+</bsh>

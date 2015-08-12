@@ -1,0 +1,86 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+<bsh>source(server.props.get("serviceContext").pawHome + "/html/app/bsh/i18n.bsh");</bsh>
+
+<title><bsh>translate("directory_protection.title");</bsh></title>
+<link rel="stylesheet" href="css/default.css">
+<script type="text/javascript" src="js/jquery.js"></script>
+<script type="text/javascript" src="js/executeScript.js"></script>
+<script type="text/javascript">
+	function crypt(input, output, loader) {
+		scriptOrg = $("#cryptScript").val();
+		script = scriptOrg;
+		script = script.replace(/%pass%/, $("#" + input).val());
+
+		$("#cryptScript").val(script);
+		executeScript('cryptScript', loader, output);
+		$("#cryptScript").val(scriptOrg);
+	}
+
+	function saveFile(input, filename, error, loader) {
+		$("#" + loader).show();
+		$.post("save_file.xhtml", {file: filename, content: $("#" + input).val()},
+			function(data) {
+				$("#" + loader).hide();
+				if(data.success) {
+					$("#" + error).html("");
+				}
+				else {
+					$("#" + error).html(data.message).fadeIn();
+				}
+
+			}, "json");
+	}
+</script>
+</head>
+<body>
+<bsh>source(server.props.get("serviceContext").pawHome + "/html/app/auth.bsh");</bsh>
+<h3><img src="images/shield.png" align="middle">&nbsp;<bsh>translate("directory_protection.title");</bsh></h3>
+<p style="color: gray;">
+<bsh>translate("directory_protection.info");</bsh>
+</p>
+<fieldset style="width: 80%;">
+<legend><bsh>translate("directory_protection.label.directory_definition");</bsh></legend>
+<p style="color: gray;">
+<bsh>translate("directory_protection.label.directory_definition_info");</bsh></p>
+<textarea id="dirs" rows="15" style="width: 100%;">
+<bsh>cat(server.props.get("serviceContext").pawHome + "/webconf/auth/dirs.conf");</bsh>
+</textarea>
+<br>
+<button onClick="saveFile('dirs', '<bsh>$$.print(server.props.get("serviceContext").pawHome)</bsh>/webconf/auth/dirs.conf', 'dirsError', 'dirsLoader')"><bsh>translate("directory_protection.button.save");</bsh></button>&nbsp;<img id="dirsLoader" src="images/loader.gif" style="display: none;" width="16"><span id="dirsError" style="color: red;"></span>
+</fieldset>
+<br>
+<fieldset style="width: 80%;">
+<legend><bsh>translate("directory_protection.label.user_definition");</bsh></legend>
+<p style="color: gray;">
+<bsh>translate("directory_protection.label.user_definition_info");</bsh>
+</p>
+<textarea id="users" rows="15" style="width: 100%;">
+<bsh>cat(server.props.get("serviceContext").pawHome + "/webconf/auth/users.conf");</bsh>
+</textarea>
+<br>
+<button onClick="saveFile('users', '<bsh>$$.print(server.props.get("serviceContext").pawHome)</bsh>/webconf/auth/users.conf', 'usersError', 'usersLoader')"><bsh>translate("directory_protection.button.save");</bsh></button>&nbsp;<img id="usersLoader" src="images/loader.gif" style="display: none;" width="16"><span id="usersError" style="color: red;"></span>
+</fieldset>
+<br>
+<fieldset style="width: 80%;">
+<legend><bsh>translate("directory_protection.label.crypt_util");</bsh></legend>
+<p style="color: gray;">
+<bsh>translate("directory_protection.label.crypt_util_info");</bsh>
+</p>
+<table>
+<tr><td><bsh>translate("directory_protection.label.password");</bsh>:</td><td><input id="password" type="text"></td></tr>
+<tr><td><bsh>translate("directory_protection.label.crypt_result");</bsh>:</td><td><input id="cryptRes" type="text" readonly></td></tr>
+</table>
+
+<textarea cols="80" rows="4" id="cryptScript" style="visibility:hidden; display: none;">
+import de.fun2code.android.pawserver.util.*;
+$$.print(JCrypt.cryptRandom("%pass%"));
+</textarea>
+<p></p>
+<button onClick="crypt('password', 'cryptRes', 'cryptScriptLoader');"><bsh>translate("directory_protection.button.crypt_password");</bsh></button>&nbsp;<img id="cryptScriptLoader" src="images/loader.gif" style="display: none;" width="16">
+<p></p>
+</fieldset>
+<p>&nbsp;</p>
+</body>
+</html>

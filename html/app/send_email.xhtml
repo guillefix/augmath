@@ -1,0 +1,81 @@
+<html>
+<head>
+<bsh>
+// Get email adresses
+import android.provider.Contacts;
+import android.database.Cursor;
+
+
+service = server.props.get("serviceContext");
+cr = service.getContentResolver();
+
+emailCur = cr.query(
+      Contacts.ContactMethods.CONTENT_EMAIL_URI,
+  new String[] { "data", "name" }, // Columns
+      null, // Where
+      null, // Where params
+      null); // order
+
+javaScriptArray = "[";
+while (emailCur.moveToNext()) {
+  cols = emailCur.getColumnCount();
+  mail = emailCur.getString(0);
+  name = emailCur.getString(1);
+
+  if(name == null) { name = mail; }
+  
+  javaScriptArray += "\"" + name + " <" + mail + ">\"";
+  if(!emailCur.isLast()) { javaScriptArray += ", "; }
+}
+javaScriptArray += "]";
+emailCur.close();
+</bsh>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+<bsh>source(server.props.get("serviceContext").pawHome + "/html/app/bsh/i18n.bsh");</bsh>
+<script type="text/javascript" src="js/jquery.js"></script>
+<script type="text/javascript" src="js/jquery-ui.js"></script>
+<script type="text/javascript">
+	$(function() {
+		var availableTags = <bsh>$$.print(javaScriptArray)</bsh>;
+		$("#to").autocomplete({
+			source: availableTags
+		});
+	});
+
+	function send(scriptId, imageId, resultId) {
+		$("#loader").show();
+		$("#info").html("<br><bsh>translate("send_email.label.info2");</bsh>");
+		$.post("send_mail.xhtml", {recipient: $("#to").val(), subject: $("#subject").val(), body: $("#body").val()}, function(data) { 
+			$("#loader").hide();
+			$("#info").html("");
+		});	
+	}
+</script>
+<title><bsh>translate("send_email.title");</bsh></title>
+<link rel="Stylesheet" type="text/css" href="css/overcast/jquery-ui.css"/>
+<link rel="stylesheet" href="css/default.css"/>
+</head>
+<body>
+<bsh>source(server.props.get("serviceContext").pawHome + "/html/app/auth.bsh");</bsh>
+
+<h3><bsh>translate("send_email.title");</bsh></h3>
+<img src='images/mail2.png' style="width: 32px;"align='middle'>&nbsp;
+<bsh>translate("send_email.label.info");</bsh><br>
+<p></p>
+<div>
+<b><bsh>translate("send_email.label.recipient");</bsh>:</b><br>
+<input type="text" id="to" style="width: 80%;">
+<p></p>
+<b><bsh>translate("send_email.label.subject");</bsh>:</b><br>
+<input type="text" id="subject" style="width: 80%;">
+<p></p>
+<b><bsh>translate("send_email.label.message");</bsh>:</b><br>
+<textarea id="body" style="width: 80%;" rows="25">
+</textarea>
+<p></p>
+<button onClick="send();"><bsh>translate("send_email.button.send_message");</bsh></button>&nbsp;<img id="loader" src="images/loader.gif" style="display: none;" width="16">
+<br>
+<span id="info"></span>
+</div>
+</body>
+</html>

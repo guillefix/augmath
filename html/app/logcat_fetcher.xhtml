@@ -1,0 +1,79 @@
+<html>
+<head>
+<link rel="stylesheet" href="css/default.css">
+</head>
+<body style="background: black;">
+<bsh>source(server.props.get("serviceContext").pawHome + "/html/app/auth.bsh");</bsh>
+<bsh>
+/*
+Usage: logcat [options] [filterspecs]
+        options include:
+          -s              Set default filter to silent.
+                          Like specifying filterspec '*:s'
+          -f <filename>   Log to file. Default to stdout
+          -r [<kbytes>]   Rotate log every kbytes. (16 if unspecified). Requires -f
+          -n <count>      Sets max number of rotated logs to <count>, default 4
+          -v <format>     Sets the log print format, where <format> is one of:
+
+                          brief process tag thread raw time threadtime long
+
+          -c              clear (flush) the entire log and exit
+          -d              dump the log and then exit (don't block)
+          -g              get the size of the log's ring buffer and exit
+          -b <buffer>     request alternate ring buffer
+                          ('main' (default), 'radio', 'events')
+          -B              output the log in binary
+        filterspecs are a series of
+          <tag>[:priority]
+
+        where <tag> is a log component tag (or * for all) and priority is:
+          V    Verbose
+          D    Debug
+          I    Info
+          W    Warn
+          E    Error
+          F    Fatal
+          S    Silent (supress all output)
+
+        '*' means '*:d' and <tag> by itself means <tag>:v
+
+        If not specified on the commandline, filterspec is set from ANDROID_LOG_TAGS.
+        If no filterspec is found, filter defaults to '*:I'
+
+        If not specified with -v, format is set from ANDROID_PRINTF_LOG
+        or defaults to "brief"
+*/
+
+colours = new Hashtable();
+colours.put("V", "white");
+colours.put("D", "blue");
+colours.put("I", "green");
+colours.put("W", "yellow");
+colours.put("E", "red");
+colours.put("F", "red");
+colours.put("S", "white");
+
+String format = parameters.get("format");
+String tag = parameters.get("tag");
+String priority = parameters.get("priority");
+
+if(tag == null || tag.equals("")) { tag = "*"; }
+
+String[] command = { "logcat", "-d" , "-v", format, tag + ":" + priority};
+
+java.lang.Process logcatProc = Runtime.getRuntime().exec(command);
+
+// Read standard output
+BufferedReader procout = new BufferedReader( new InputStreamReader(logcatProc.getInputStream()) );
+String line;
+while ((line = procout.readLine()) != null) {
+	colour = colours.get(line.substring(0,1)) != null ? colours.get(line.substring(0,1)) : "white";
+	print("<font color='" + colour + "'>" + line + "</font><br>");
+}
+
+logcatProc.getInputStream().close();
+procout.close();
+
+</bsh>
+</body>
+</hmtl>

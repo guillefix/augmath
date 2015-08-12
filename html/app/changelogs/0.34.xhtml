@@ -1,0 +1,33 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+<title>Changelog 0.34</title>
+<link rel="stylesheet" href="../css/default.css">
+<script type="text/javascript" src="../js/jquery.js"></script>
+<script type="text/javascript" src="../js/executeScript.js"></script>
+</head>
+<body>
+<bsh>source(server.props.get("serviceContext").pawHome + "/html/app/auth.bsh");</bsh>
+<h1>Changelog - Version 0.34</h1>
+This is mainly a bugfix release.
+
+<p></p>
+<h2>Server</h2>
+<ul>
+  <li>
+PAW can now use SSL as connection protocol.<br>If HTTPS is selected a 1024 bit self signed RSA certificate is used. The certificate has to be imported into the web browser. With HTTPS enabled the server response might be a little bit slower.
+<p>HTTP is still used as default to not confuse users.</p>
+  </li>
+</ul>
+<p></p>
+
+<h2>Web App</h2>
+<ul>
+  <li>
+	HTTP/HTTPS settings habe been added to the <i>Server Settings</i>.
+  </li>
+</ul>
+<p></p>
+
+</body>
+</html>

@@ -1,0 +1,16 @@
+<html>
+<body>
+<bsh>
+service = server.props.get("serviceContext");
+source(service.pawHome + "/html/app/bsh/authDb.bsh");
+
+if(isSessionInDatabase()) {
+	deleteAuthSession();
+}
+
+request.redirect("/app/login.xhtml", null);
+request.flush();
+request.close();
+</bsh>
+</body>
+</html>

@@ -1,0 +1,42 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+<title>Changelog 0.94</title>
+<link rel="stylesheet" href="../css/default.css">
+<script type="text/javascript" src="../js/jquery.js"></script>
+<script type="text/javascript" src="../js/executeScript.js"></script>
+</head>
+<body>
+<bsh>source(server.props.get("serviceContext").pawHome + "/html/app/auth.bsh");</bsh>
+<h1>Changelog - Version 0.94</h1>
+<p>This release contains:
+<ul>
+    <li>New utility method <tt>UploadUtil.processUpload()</tt> to simplify file uploads</li>
+    <li>BeanShell command <tt>inlude()</tt></li>
+    <li>Chrome Web Sockets bug fix</li>
+    <li>File upload size limit of 2 GB has been removed</li>
+    <li>Filemanager: File modification time shows 00:xx:xx instead of 24:xx:xx</li>
+</ul>
+</p>
+
+<h2>BeanShell</h2>
+<h3>Include BeanShell XHTML Content</h3>
+The BeanShell command <tt>include(filename)</tt> can be used to include text files containing XHTML BeanShell tags (<tt>&lt;bsh&gt; ... &lt;/bsh&gt;</tt>).<br />
+The filenames can be absolute or relative to the current script location.<br /><br />
+Example: <br />
+<pre>
+&lt;bsh&gt;include("filename.inc");&lt;/bsh&gt;
+</pre>
+<p></p>
+
+<h2>PAW Functions</h2>
+<h3>File Upload</h3>
+File uploads have now been simplified by providing the two uitlity methods <tt>UploadUtil.processUpload(File outDir, Request request, boolean overwrite)</tt> and <tt>UploadUtil.processUpload(File outDir, Request request, boolean overwrite, String[] allowedExtensions)</tt> which are available inside the <tt>de.fun2code.android.pawserver.util</tt> package.<br/>
+<br/>
+The parameter <tt>outDir</tt> specifies the directory where to store the files. The second parameter is the <tt>request</tt> object available from within any <tt>xhtml</tt> page. The last parameter <tt>ovewrite</tt> specifies if files should be overwritten or not. If this parameter is <tt>false</tt> a number will be appended if a file already exists (e.g. foo-3.png).<br/>
+In addition to the first method, the second has an additional parameter called <tt>allowedExtensions</tt>. This is a string arraw that specifies the allowed file extensions (case is ignored).
+<p></p>
+
+<p></p>
+</body>
+</html>

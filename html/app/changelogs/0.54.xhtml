@@ -1,0 +1,36 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+<title>Changelog 0.54</title>
+<link rel="stylesheet" href="../css/default.css">
+<script type="text/javascript" src="../js/jquery.js"></script>
+<script type="text/javascript" src="../js/executeScript.js"></script>
+<script type="text/javascript" src="../js/jquery.rotate.js"></script>
+</head>
+<body>
+<bsh>source(server.props.get("serviceContext").pawHome + "/html/app/auth.bsh");</bsh>
+<h1>Changelog - Version 0.54</h1>
+<p>
+<img src="../images/mail.png">&nbsp;&nbsp;This release mainly contains SMS improvements.
+</p>
+<h2>Web App</h2>
+<ul>
+<li>New threaded SMS view.</li>
+<li>Sending of SMS has been improved: <ul><li>Success/Failure should now be reported correctly.</li><li>Messages are copied to outbox.</li><li>Large messages are supported.</li><li>Multiple recipients are supported.</li></ul></li>
+<li>APK Backup now only shows unprotected apps. This was a bug, protected apps can not be copied anyway.</li>
+<li>Share Content now detects URL and provides an icon to open it in a new browser window.
+</ul>
+<p></p>
+
+<h2>Android Functions</h2>
+Improvements in the following function (sie <a href="../dev/paw_functions.xhtml" class="link">PAW Functions</a> for more detail):
+<ul>
+<li>Methods <tt>setComeraId(id)</tt> and <tt>getComeraId()</tt> have been added to <i>Camera Preview</i></li>
+<li>Intents returned by <tt>getIntentResultFromBroadcast()</tt> and <tt>getIntentResultsFromBroadcast()</tt> now include the result code as extra.</li>
+<li>The <tt>sendSMS()</tt> command has been improved.</li>
+</ul>
+<p></p>
+Get and Post parameters are combined and multiple variables are stored into an <tt>ArrayList</tt>.
+<p></p>
+</body>
+</html>

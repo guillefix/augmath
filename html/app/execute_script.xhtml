@@ -1,0 +1,35 @@
+<bsh>source(server.props.get("serviceContext").pawHome + "/html/app/auth.bsh");</bsh>
+<bsh>
+import org.json.*;
+
+script = parameters.get("script");
+json = new JSONObject();
+if(script != null) {
+	interpreter = new bsh.Interpreter();
+ 	interpreter.set("$$", interpreter);
+	interpreter.set("server", server);
+	interpreter.set("request", request);
+	stdout = new ByteArrayOutputStream();
+	ps = new PrintStream(stdout);
+	interpreter.setOut(ps);
+        interpreter.setErr(ps);
+	
+	try {
+		interpreter.eval(script);
+	}
+	catch(e) {
+		ps.append(e.toString());
+	}
+
+	json.put("success", true);
+	json.put("output", stdout.toString());
+}
+else {
+	json.put("success", false);
+	json.put("message", "No Source to execute!");
+}
+
+request.sendResponse(json.toString().getBytes(), "text/plain");
+request.out.flush();
+request.out.close();
+</bsh>

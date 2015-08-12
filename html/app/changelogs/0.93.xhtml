@@ -1,0 +1,46 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+<title>Changelog 0.93</title>
+<link rel="stylesheet" href="../css/default.css">
+<script type="text/javascript" src="../js/jquery.js"></script>
+<script type="text/javascript" src="../js/executeScript.js"></script>
+</head>
+<body>
+<bsh>source(server.props.get("serviceContext").pawHome + "/html/app/auth.bsh");</bsh>
+<h1>Changelog - Version 0.93</h1>
+<p>This release contains:
+<ul>
+    <li>Bug Fix in basic request handling</tt></li>
+    <li>New PAW Funcions call() and dial()</tt></li>
+</ul>
+</p>
+
+<h2>Request Handling Bug Fix</h2>
+There was a request string decoding bug which was introduced by URL Unicode support.<br/>
+This should be fixed.
+
+<h2>PAW Functions</h2>
+<h3>Dialing a Number</h3>
+Opens the dialer app, the user has to start the call manually.<br/>
+The phone number is provided as parameter.<br/>
+As a demo the below script calls the USSD code <tt>*100#</tt>. This code might not be available on all carriers.<p></p>
+<textarea cols="80" rows="1" id="dialScript">
+dial("*100#");
+</textarea><p></p>
+<button onClick="executeScript('dialScript', 'dialScriptLoader');">Execute Script</button>&nbsp;<img id="dialScriptLoader" src="../images/loader.gif" style="display: none;" width="16">
+<p></p>
+
+
+<h3>Calling a Number</h3>
+Calls the phone app on the phone and dials the number right away. The phone number is provided as parameter.<br/>
+As a demo the below script calls the USSD code <tt>*100#</tt>. This code might not be available on all carriers.<p></p>
+<textarea cols="80" rows="1" id="callScript">
+call("*100#");
+</textarea><p></p>
+<button onClick="executeScript('callScript', 'callScriptLoader');">Execute Script</button>&nbsp;<img id="callScriptLoader" src="../images/loader.gif" style="display: none;" width="16">
+<p></p>
+
+<p></p>
+</body>
+</html>

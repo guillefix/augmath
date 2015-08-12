@@ -1,0 +1,36 @@
+<bsh>
+/*
+Paints the system load status bar
+*/
+
+import android.graphics.*;
+import android.graphics.Bitmap.CompressFormat;
+
+width  = parameters.get("width");
+height = parameters.get("height");
+value = parameters.get("value");
+
+if(width == null || height == null || value == null) return;
+
+w = Integer.parseInt(width);
+h = Integer.parseInt(height);
+v = Integer.parseInt(value);
+
+bitmap = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888);
+canvas = new Canvas(bitmap);
+paint = new Paint();
+paint.setColor(Color.TRANSPARENT);
+canvas.drawRect(0, 0, w, h, paint);
+paint.setColor(Color.parseColor("#6b8e23"));
+dh = (int) (h * v / 100);
+if(dh == 0) dh = 1; // One pixel minimum
+canvas.drawRect(0, h - dh, w, h, paint);
+
+bos = new ByteArrayOutputStream();
+bitmap.compress(CompressFormat.PNG, 0 /*ignored for PNG*/, bos);
+byte[] bitmapdata = bos.toByteArray();
+
+request.sendResponse(bitmapdata, "image/png");
+request.out.flush();
+request.out.close();
+</bsh>

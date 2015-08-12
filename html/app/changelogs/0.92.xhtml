@@ -1,0 +1,54 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+<title>Changelog 0.92</title>
+<link rel="stylesheet" href="../css/default.css">
+<script type="text/javascript" src="../js/jquery.js"></script>
+<script type="text/javascript" src="../js/executeScript.js"></script>
+</head>
+<body>
+<bsh>source(server.props.get("serviceContext").pawHome + "/html/app/auth.bsh");</bsh>
+<h1>Changelog - Version 0.92</h1>
+<p>This release contains:
+<ul>
+    <li>Port Check</li>
+    <li>Russian Translation<li>
+    <lli>WiFi Lock</li>
+    <li>URL Unicode Supports</li>
+    <li>New BeanShell Version</li>
+</ul>
+</p>
+
+<h2>App</h2>
+<h3>Port Check</h3>
+The app now checks if the selected port is available and shows an appropriate message. In former versions the message was generic and did lead do some confusion.
+
+<h3>Russion Translation</h3>
+The app is now also available in Russian (thanks to Dmitry Shvidunov).
+
+<h2>Server</h2>
+<h3>WiFi Lock</h3>
+WiFi should stay on and should not be turned off if device goes to sleep.
+
+<h3>URL Unicode Supports</h3>
+Unicode characters are now supported inside URLs.
+
+<h3>New BeanShell Version</h3>
+BeanShell has to be updated to <a href="http://code.google.com/p/beanshell2" class="link" target="_blank">BeanShell 2.1.8</a><br/>
+With new version BeanShell supports long string literals:
+<p>
+<textarea cols="80" rows="10" id="longstringliteral">
+String xml =  """
+<books>
+    <book>
+        <title>Beanshell2</title>
+        ...
+    </book>
+    ...
+</books>""";
+</textarea>
+</p>
+
+<p></p>
+</body>
+</html>

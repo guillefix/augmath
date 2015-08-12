@@ -1,0 +1,91 @@
+<html>
+<head>
+<bsh>source(server.props.get("serviceContext").pawHome + "/html/app/bsh/i18n.bsh");</bsh>
+<title><bsh>translate("call_log.title");</bsh></title>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+<link rel="stylesheet" href="css/default.css">
+</head>
+<body>
+<bsh>source(server.props.get("serviceContext").pawHome + "/html/app/auth.bsh");</bsh>
+
+<h3><bsh>translate("call_log.title");</bsh></h3>
+<bsh>translate("call_log.description");</bsh>
+<p></p>
+<div style="overflow: auto; height: 90%; width: 100%;">
+<table border="0" cellpadding="4" cellspacing="0" style="width: 100%; font-size: 12px; border: 1px solid black;">
+<tr><th style="text-align: left;"><bsh>translate("call_log.table.number");</bsh></th><th style="text-align: left;"><bsh>translate("call_log.table.date");</bsh></th><th style="text-align: left;"><bsh>translate("call_log.table.duration");</bsh></th></tr>
+<bsh>
+import android.app.Service;
+import android.database.Cursor;
+import android.net.Uri;
+import java.text.DateFormat;
+import android.provider.CallLog;
+
+service = (Service) server.props.get("serviceContext");
+
+SORT_ORDER = CallLog.Calls.DATE + " DESC";
+
+cursor = service.getContentResolver().query(
+	CallLog.Calls.CONTENT_URI,
+	new String[] { CallLog.Calls.NUMBER, CallLog.Calls.CACHED_NAME,
+                CallLog.Calls.DATE,
+                CallLog.Calls.DURATION, CallLog.Calls.TYPE },
+	null,
+	null,
+	SORT_ORDER);
+
+if (cursor != null) {
+	try {
+		colour = "#eaeaea";
+		count = cursor.getCount();
+		if (cursor.moveToFirst()) {
+			do {
+				colour = colour.equals("#eaeaea") ? "white" : "#eaeaea";
+
+				callNumber = cursor.getString(0);
+				callName = cursor.getString(1);
+		                callDate = cursor.getLong(2);
+		                callDuration = cursor.getLong(3);
+				callType = cursor.getLong(4);
+
+				callImage = "";
+				callTypeLabel = "";
+
+				switch(callType) {
+					case CallLog.Calls.INCOMING_TYPE:
+						callImage = "images/call_incoming.png";
+						callTypeLabel = translateRaw("tooltip.phone_incoming");
+						break;
+					case CallLog.Calls.OUTGOING_TYPE:
+						callImage = "images/call_outgoing.png";
+						callTypeLabel = translateRaw("tooltip.phone_outgoing");
+						break;
+					case CallLog.Calls.MISSED_TYPE:
+						callImage = "images/call_missed.png";
+						callTypeLabel = translateRaw("tooltip.phone_missed");
+						break;
+				}
+				
+				if(!callNumber.equals("-1")) {
+					phoneLink = "<a href='dial.xhtml?number=" + URLEncoder.encode(callNumber) + "' style='color: black;' class='link'>" + (callName != null ? callName : callNumber)  + "</a>";
+				}
+				else {
+					phoneLink = "Unknown";
+				}
+
+				print("<tr style='background: " + colour + ";'><td><img src='" + callImage + "' style='width: 16px;'  xalign='middle' title='" + callTypeLabel + "'>&nbsp;" + phoneLink  + "</td><td style='color: black;'>" + DateFormat.getDateTimeInstance(DateFormat.MEDIUM, DateFormat.MEDIUM).format(new Date(callDate))  + "</td><td style='color: black;'>" + callDuration + "</td></tr>");
+
+			} while(cursor.moveToNext());
+		}
+	}
+	finally {
+		cursor.close();
+	}
+}
+
+</bsh>
+</table>
+</div>
+
+</body>
+</html>

@@ -1,0 +1,70 @@
+<bsh>source(server.props.get("serviceContext").pawHome + "/html/app/auth.bsh");</bsh>
+<bsh>
+import android.content.Intent;
+
+service = server.props.get("serviceContext");
+key = parameters.get("key");
+
+if(key != null) {
+    timestamp = Long.parseLong(key);
+	
+	props = server.props.get("de.fun2code.andoid.pawserver.key.share");
+	if(props != null && props.get(timestamp) != null) {
+		intent = props.get(timestamp);
+
+		uri = null;
+		textString = null;
+
+		if(!intent.getAction().equals(Intent.ACTION_SEND_MULTIPLE)) {
+			uri = intent.getExtras().getParcelable(Intent.EXTRA_STREAM);
+			textString = intent.getExtras().getString(Intent.EXTRA_TEXT);
+		}
+		else {
+			type = parameters.get("type");
+			pos = Integer.parseInt(parameters.get("pos"));
+
+			if(type.equals("stream")) {
+				uri = intent.getParcelableArrayListExtra(Intent.EXTRA_STREAM).get(pos);
+			}
+			else if(type.equals("text")) {
+				textString = intent.getStringArrayListExtra(Intent.EXTRA_TEXT).get(pos);
+			}
+		}
+
+		if(uri != null) {
+			stream = service.getContentResolver().openInputStream(uri);
+		
+			mimetype = intent.getType();
+			ext = null;
+		
+			if(uri.toString().startsWith("file://")) {
+				ext = uri.toString().substring(uri.toString().lastIndexOf(".") + 1).toLowerCase();
+				if(server.props.get("mime." + ext) != null) {
+					mimetype = server.props.get("mime." + ext);
+				}
+			}
+
+			// If no valid mimetype was found, use standard
+			if(mimetype.contains("*")) {
+				mimetype = "application/octet-stream";
+			}
+
+			if(ext != null) {
+				request.responseHeaders.put("Content-disposition", "attachment; filename=\"" + key + "." + ext + "\"");
+			}
+		
+			request.sendResponse(stream, stream.available(), mimetype, 200);
+			stream.close();
+			request.out.flush();
+			request.out.close();
+		}
+		else if(textString != null) {
+			request.sendResponse(new ByteArrayInputStream(textString.getBytes()), textString.length(),"text/plain", 200);
+			stream.close();
+			request.out.flush();
+			request.out.close();
+		}
+	}
+}
+</bsh>
+

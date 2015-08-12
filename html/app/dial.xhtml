@@ -1,0 +1,195 @@
+<html>
+<head>
+<bsh>source(server.props.get("serviceContext").pawHome + "/html/app/bsh/i18n.bsh");</bsh>
+<title><bsh>translate("dial_number.title");</bsh></title>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+<link rel="stylesheet" href="css/default.css">
+<script type="text/javascript" src="js/jquery.js"></script>
+<script type="text/javascript">
+	$(document).ready(function() {
+		// Set focus on first text field
+		$("input:text:visible:first").focus();
+	});
+</script>
+</head>
+<body>
+<bsh>source(server.props.get("serviceContext").pawHome + "/html/app/auth.bsh");</bsh>
+
+<h3><bsh>translate("dial_number.title");</bsh></h3>
+<bsh>translate("dial_number.description");</bsh>
+<p></p>
+<bsh>
+import android.app.Service;
+import android.content.Intent;
+import android.net.Uri;
+import android.provider.Contacts.People;
+import android.provider.Contacts.Phones;
+import android.database.Cursor;
+
+service = (Service) server.props.get("serviceContext");
+
+action = parameters.get("action");
+phoneNumber = parameters.get("number");
+
+if(action != null) {
+    if(action.equals("dial") && phoneNumber != null && !phoneNumber.equals("")) {
+        call(phoneNumber);
+    }
+    else if(action.equals("endCall")) {
+        endCall();
+    }
+}
+</bsh>
+
+<div style="width: 360px;">
+<form action="dial.xhtml" method="post">
+<input type="hidden" id="action" name="action" value="dial" />
+<table border="0">
+<tr><td>
+<bsh>print("<input type='text' name='number' style='background : #C9C9C9; border: 1px solid black; xbackground-image: url(images/dial_input_background.png); height: 36px; width: 300px; color: black; font-size: 20px;' value='" + (phoneNumber != null ? phoneNumber : "") + "'>");</bsh>
+</td>
+<td>
+<button type="submit" style="height: 36px;" title="<bsh>translate("dial_number.button");</bsh>"><img src="images/call_outgoing.png" />
+</td>
+<td>
+<button type="submit" onCLick="document.getElementById('action').value='endCall'" style="height: 36px;" title="<bsh>translate("dial_number.button_end");</bsh>"><img src="images/call_missed.png" /></button>
+</td></tr>
+</table>
+<p></p>
+</form>
+</div>
+
+<h3><bsh>translate("dial_number.subtitle");</bsh></h3>
+<bsh>translate("dial_number.subdescription");</bsh>
+<p></p>
+<bsh>
+	print("<div style='overflow: auto; height: 70%; width: 100%;'>");
+	print("<table border='0' cellpadding='4' cellspacing='0' style='width: 100%; font-size: 12px; border: 1px solid black;'>");
+	print("<tr><th>&nbsp;</th><th style='text-align: left;'>" + translateRaw("dial_number.table.name") + "</th><th style='text-align: left;'>" + translateRaw("dial_number.table.phone") + "</th></tr>");
+
+	// Switch between new and old Contacts API
+	if(Integer.parseInt(android.os.Build.VERSION.SDK) >= 5) {
+		String[] contactsColumns = { android.provider.ContactsContract.Data.RAW_CONTACT_ID, android.provider.ContactsContract.CommonDataKinds.StructuredName.DISPLAY_NAME };
+		String[] phonesColumns = { android.provider.ContactsContract.CommonDataKinds.Phone.NUMBER, android.provider.ContactsContract.CommonDataKinds.Phone.TYPE};
+
+		contactsUri = android.provider.ContactsContract.Data.CONTENT_URI;
+		phonesUri = android.provider.ContactsContract.CommonDataKinds.Phone.CONTENT_URI;
+
+		curContacts = service.getContentResolver().query(contactsUri, contactsColumns, // Which columns to return
+			  android.provider.ContactsContract.CommonDataKinds.StructuredName.MIMETYPE + "=?",
+			  new String[] { android.provider.ContactsContract.CommonDataKinds.StructuredName.CONTENT_ITEM_TYPE },
+			  android.provider.ContactsContract.CommonDataKinds.StructuredName.DISPLAY_NAME + " ASC" // Order-by clause (ascending by name)
+			  );
+
+		colour = "#eaeaea";
+			  
+		if(curContacts .moveToFirst()) {
+		do {
+
+			id = curContacts.getString(curContacts .getColumnIndex(android.provider.ContactsContract.Data.RAW_CONTACT_ID));
+			name = curContacts.getString(curContacts .getColumnIndex(android.provider.ContactsContract.CommonDataKinds.StructuredName.DISPLAY_NAME));
+
+			phonesWhere = android.provider.ContactsContract.CommonDataKinds.Phone.RAW_CONTACT_ID + "=" + id;
+			curPhones = service.getContentResolver().query(phonesUri, phonesColumns, // Which columns to return
+						phonesWhere, // WHERE clause; which rows to return(all rows)
+						null, // WHERE clause selection arguments (none)
+						android.provider.ContactsContract.CommonDataKinds.Phone.NUMBER + " ASC" // Order-by clause (ascending by name)
+						);
+						
+			if (curPhones.moveToFirst()) {
+						colour = colour.equals("#eaeaea") ? "white" : "#eaeaea";
+						c = 0;
+						do {
+							phoneNo = curPhones.getString(curPhones.getColumnIndex(android.provider.ContactsContract.CommonDataKinds.Phone.NUMBER));
+							type = curPhones.getLong(curPhones.getColumnIndex(android.provider.ContactsContract.CommonDataKinds.Phone.TYPE));
+							
+							$$.print("<tr style='background:" + colour + ";'>");
+
+							if(c == 0) {
+								$$.print("<td><img src='graphics/contact_photo.xhtml?contactId=" + id + "' align='middle' style='width: 32px;'></td>");
+							}
+							else {
+								$$.print("<td>&nbsp;</td>");
+							}
+
+							print("<td style='color: black;'>" + (c > 0 ? "&nbsp;" : name) + "</td><td><a href='dial.xhtml?number=" + URLEncoder.encode(phoneNo) + "' class='link' style='color: black;'>" + phoneNo + "</a>" + (type == Phones.TYPE_MOBILE ? "<img src='images/phone.png' style='width: 14px;' title='" + translateRaw("tooltip.phone_mobile") + "'>" : "") + "</td>");
+							
+							c++;
+						} while (curPhones.moveToNext());
+			}
+			curPhones.close();
+		} while(curContacts .moveToNext());
+		}
+
+		curContacts .close();
+	}
+	else { // Old API
+		String[] contactsColumns = { People._ID, People.NAME, People.NUMBER};
+		String[] phonesColumns = { Phones.NUMBER, Phones.TYPE};
+
+		contactsUri = People.CONTENT_URI;
+		phonesUri = Phones.CONTENT_URI;
+		try {
+			curContacts = service.getContentResolver().query(contactsUri, contactsColumns, // Which columns to return
+				null, // WHERE clause; which rows to return(all rows)
+				null, // WHERE clause selection arguments (none)
+				"People.NAME ASC" // Order-by clause (ascending by name)
+				);
+
+			colour = "#eaeaea";
+
+			if (curContacts.moveToFirst()) {
+				do {
+				// Get the field values
+				name = curContacts.getString(curContacts.getColumnIndex(People.NAME));
+				id = curContacts.getString(curContacts.getColumnIndex(People._ID));		
+
+				phonesWhere = "PERSON=" + id;
+
+				try {
+					curPhones = service.getContentResolver().query(phonesUri, phonesColumns, // Which columns to return
+						phonesWhere, // WHERE clause; which rows to return(all rows)
+						null, // WHERE clause selection arguments (none)
+						"Phones.NUMBER ASC" // Order-by clause (ascending by name)
+						);
+
+					if (curPhones.moveToFirst()) {
+						colour = colour.equals("#eaeaea") ? "white" : "#eaeaea";
+						c = 0;
+							do {
+							phoneNo = curPhones.getString(curPhones.getColumnIndex(Phones.NUMBER));
+							type = curPhones.getLong(curPhones.getColumnIndex(Phones.TYPE));
+
+							$$.print("<tr style='background:" + colour + ";'>");
+
+							if(c == 0) {
+								$$.print("<td><img src='graphics/contact_photo.xhtml?contactId=" + id + "' align='middle' style='width: 32px;'></td>");
+							}
+							else {
+								$$.print("<td>&nbsp;</td>");
+							}
+
+							print("<td style='color: black;'>" + (c > 0 ? "&nbsp;" : name) + "</td><td><a href='dial.xhtml?number=" + URLEncoder.encode(phoneNo) + "' class='link' style='color: black;'>" + phoneNo + "</a>" + (type == Phones.TYPE_MOBILE ? "<img src='images/phone.png' style='width: 14px;' title='" + translateRaw("tooltip.phone_mobile") + "'>" : "") + "</td>");
+							c++;
+						} while (curPhones.moveToNext());
+					}
+				}
+				finally {
+					curPhones.close();
+				}
+		
+				print("</tr>");
+			
+				} while (curContacts.moveToNext());
+			}
+		}
+		finally {
+			curContacts.close();
+		}
+	}
+</bsh>
+</table>
+</div>
+</div>
+</body>
+</html>

@@ -1,0 +1,147 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+<title>Render View</title>
+<link rel="stylesheet" href="../css/default.css">
+<script type="text/javascript" src="../js/jquery.js"></script>
+<script type="text/javascript" src="../js/executeScript.js"></script>
+<script type="text/javascript">
+function renderImage() {
+	$("#image").attr("src", "Render_View.xhtml?render=true&text=" + escape($("#text").val()) + "&width=" + escape($("#width").val()) + "&height=" + escape($("#height").val()) + "&color=" + escape($("#color").val().replace(/#/g, "")));
+}
+</script>
+</head>
+<body>
+<bsh>source(server.props.get("serviceContext").pawHome + "/html/app/auth.bsh");</bsh>
+<h1>Render View</h1>
+<p>
+This example renders a view that includes a button directly on the Android device and returns a PNG image.<br>
+Press the <b>Render</b> button to display the image.
+</p>
+<table>
+<tr><td>Text:</td><td> <input type="text" id="text" value="Hello"></td></tr>
+<tr><td>Width:</td><td> <input type="text" id="width" value="100"></td></tr>
+<tr><td>Height:</td><td> <input type="text" id="height" value="60"></td></tr>
+<tr><td>Text Color:</td><td><input type="text" id="color" value="#000000"></td></tr>
+</table>
+<p>
+<button onClick="renderImage();">Render</button>
+</p>
+<p>
+<image id="image" src="../images/transparent.png">
+</p>
+
+<hr>
+<p>
+URL parameters:<br><br>
+<table border="1">
+<tr><td><b>text</b></td><td>Button text</td></tr>
+<tr><td><b>width</b></td><td>Button width</td></tr>
+<tr><td><b>height</b></td><td>Button height</td></tr>
+<tr><td><b>color</b></td><td>Text color (RGB without '#')</td></tr>
+</table>
+</p>
+Here is the code that renders the button.<br>
+If you would like to try it out, just copy the code into a <b>xhtml</b> file.<br>
+
+<p>
+<pre>
+ &lt;bsh>
+	import android.graphics.*;
+	import android.graphics.Bitmap.CompressFormat;
+	import android.widget.*;
+
+	service = server.props.get("serviceContext");
+
+	// Some defaults
+	width = 100;
+	height = 60;
+	text = "";
+	color = "#000000";
+
+	// Handle parameters
+	if(parameters.get("text") != null) text = parameters.get("text");
+	if(parameters.get("width") != null) width = Integer.parseInt(parameters.get("width"));
+	if(parameters.get("height") != null) height = Integer.parseInt(parameters.get("height"));
+	if(parameters.get("color") != null) color = "#" + parameters.get("color");
+
+	// Render the view to a Bitmap
+	paint = new Paint();
+	relLayout = new RelativeLayout(service);
+	relLayout.setLayoutParams(new RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.FILL_PARENT,RelativeLayout.LayoutParams.FILL_PARENT));
+
+	bitmap = Bitmap.createBitmap(width,height,Bitmap.Config.ARGB_8888);
+	canvas = new Canvas(bitmap);
+
+	button = new Button(service);
+	button.setTextColor(Color.parseColor(color));
+	button.setText(text);
+	button.layout(0, 0, width, height);
+	relLayout.addView(button);
+
+	relLayout.draw(canvas);
+
+	// Convert Bitmap to PNG and send to browser
+	bos = new ByteArrayOutputStream();
+	bitmap.compress(CompressFormat.PNG, 0 /*ignored for PNG*/, bos);
+	byte[] bitmapdata = bos.toByteArray();
+
+	request.sendResponse(bitmapdata, "image/png");
+	request.out.flush();
+	request.out.close();
+ &lt;/bsh>
+</pre>
+</p>
+
+
+</body>
+</html>
+
+
+
+<bsh>
+if(parameters.get("render") != null) {
+	import android.graphics.*;
+	import android.graphics.Bitmap.CompressFormat;
+	import android.widget.*;
+
+	service = server.props.get("serviceContext");
+
+	// Some defaults
+	width = 100;
+	height = 60;
+	text = "";
+	color = "#000000";
+
+	// Handle parameters
+	if(parameters.get("text") != null) text = parameters.get("text");
+	if(parameters.get("width") != null) width = Integer.parseInt(parameters.get("width"));
+	if(parameters.get("height") != null) height = Integer.parseInt(parameters.get("height"));
+	if(parameters.get("color") != null) color = "#" + parameters.get("color");
+
+	// Render the View to a Bitmap
+	paint = new Paint();
+	relLayout = new RelativeLayout(service);
+	relLayout.setLayoutParams(new RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.FILL_PARENT,RelativeLayout.LayoutParams.FILL_PARENT));
+
+	bitmap = Bitmap.createBitmap(width,height,Bitmap.Config.ARGB_8888);
+	canvas = new Canvas(bitmap);
+
+	button = new Button(service);
+	button.setTextColor(Color.parseColor(color));
+	button.setText(text);
+	button.layout(0, 0, width, height);
+	relLayout.addView(button);
+
+	relLayout.draw(canvas);
+
+	// Convert Bitmap to PNG and send to browser
+	bos = new ByteArrayOutputStream();
+	bitmap.compress(CompressFormat.PNG, 0 /*ignored for PNG*/, bos);
+	byte[] bitmapdata = bos.toByteArray();
+
+	request.sendResponse(bitmapdata, "image/png");
+	request.out.flush();
+	request.out.close();
+}
+</bsh>

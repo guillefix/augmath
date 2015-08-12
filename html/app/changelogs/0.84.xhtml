@@ -1,0 +1,143 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+<title>Changelog 0.84</title>
+<link rel="stylesheet" href="../css/default.css">
+<script type="text/javascript" src="../js/jquery.js"></script>
+<script type="text/javascript" src="../js/executeScript.js"></script>
+</head>
+<body>
+<bsh>source(server.props.get("serviceContext").pawHome + "/html/app/auth.bsh");</bsh>
+<h1>Changelog - Version 0.84</h1>
+<p>This release contains:
+<ul>
+ <li>Bug fixes.</li>
+ <li>Pressure sensor support.</li>
+ <li>Gyroscope sensor support.</li>
+ <li>NFC helper classes to read/write Text, URI, Smart Poster and Mime Media NDEF records.</li>
+</ul>
+</p>
+
+<h2>PAW Functions</h2>
+<h3>Pressure Sensor</h3>
+To get the pressure in hPa (millibar) of the pressure sensor (barometer) the method <tt>getPressure()</tt> is provided by the sensor listener.<br><br>
+<textarea cols="80" rows="4" id="pressureScript">
+import de.fun2code.android.pawserver.AndroidInterface;
+
+sensorListener = AndroidInterface.getSensorListener();
+$$.print(sensorListener.getPressure());
+</textarea><br>
+Result:<br><textarea type="text" id="pressureScriptResult" cols="40" rows="1"></textarea><p></p>
+<p></p>
+<button onClick="executeScript('pressureScript', 'pressureScriptLoader', 'pressureScriptResult');">Execute Script</button>&nbsp;<img id="pressureScriptLoader" src="../images/loader.gif" style="display: none;" width="16">
+<p></p>
+
+<h3>Gyroscope Sensor</h3>
+Values from the Gyroscope sensor are provided by the following methods of the sensor listener:<br>
+<ul>
+  <li><tt>getGyroX()</tt>: Angular speed around the x-axis (radians/second).</li>
+  <li><tt>getGyroY()</tt>: Angular speed around the y-axis (radians/second).</li>
+  <li><tt>getGyroZ()</tt>: Angular speed around the z-axis (radians/second).</li>
+</ul>
+<textarea cols="80" rows="4" id="gyroScript">
+import de.fun2code.android.pawserver.AndroidInterface;
+
+sensorListener = AndroidInterface.getSensorListener();
+print("Gyro X: " + sensorListener.getGyroX());
+print("Gyro Y: " + sensorListener.getGyroY());
+print("Gyro Z: " + sensorListener.getGyroZ());
+</textarea><br>
+Result:<br><textarea type="text" id="gyroScriptResult" cols="40" rows="4"></textarea><p></p>
+<p></p>
+<button onClick="executeScript('gyroScript', 'gyroScriptLoader', 'gyroScriptResult');">Execute Script</button>&nbsp;<img id="gyroScriptLoader" src="../images/loader.gif" style="display: none;" width="16">
+<p></p>
+
+<h3>NDEF Records</h3>
+<fieldset style="width: 50%">
+<legend><b>Note:</b></legend>
+The purpose of the NDEF record classes is to simplify reading and writing of NDEF messages.<br/>
+A sample NFC reader/writer application is available as <a href="http://paw-android.fun2code.de/plugins/" class="link" target="content">plugin</a>.
+</fieldset>
+<p>
+The package <tt>de.fun2code.android.pawserver.media.nfc.ndef</tt> contain the following classes to support NDEF records:
+</p>
+<table>
+<tr><td><tt>TextRecord</tt></td><td>NDEF Text record.</td></tr>
+<tr><td><tt>URIRecord</tt></td><td>NDEF URI records.</td></tr>
+<tr><td><tt>SmartPosterRecord</tt></td><td>NDEF Smart poster records.</td></tr>
+<tr><td><tt>MimeMediaRecord</tt></td><td>NDEF Mime Media poster records.</td></tr>
+</table>
+
+<p>
+All record types contain a <tt>writeTag(Tag)</tt> method which returns one of the following codes defined in the class <tt>de.fun2code.android.pawserver.media.nfc.Constants</tt>:<br/>
+</p>
+<table>
+<tr><td><tt>SUCCESS</tt></td><td>Write was successful.</td></tr>
+<tr><td><tt>ERROR</tt></td><td>An Error occured.</td></tr>
+<tr><td><tt>MESSAGE_TOO_LARGE</tt></td><td>Message was too large, which means longer than the maximum NDEF message length.</td></tr>
+</table>
+
+<h4>TextRecord</h4>
+<p>
+Text NFEF record which takes text and language code as argument.
+The follwing methods are defined:
+</p>
+<table>
+<tr><td><tt>TextRecord(String languageCode, String text)</tt></td><td>The constructor. Arguments are language code (e.g. "en") and text.</td></tr>
+<tr><td><tt>String getText()</tt></td><td>Returns the text.</td></tr>
+<tr><td><tt>String getLanguageCode()</tt></td><td>Returns the language code.</td></tr>
+<tr><td><tt>static TextRecord parse(NdefRecord record)</tt></td><td>Parses a <tt>NdefRecord</tt> and returns a <tt>TextRecord</tt> instance.</td></tr>
+<tr><td><tt>static boolean isText(NdefRecord record)</tt></td><td>Checks if the given <tt>NdefRcord</tt> is a NDEF Text record.</td></tr>
+<tr><td><tt>static NdefRecord createRecord(String text, String languageCode)</tt></td><td>Creates a new Text <tt>NdefRecord</tt></td></tr>
+<tr><td><tt> int writeTag(Tag tag)</tt></td><td>Writes the tag and returns the result code (see <tt>Constants</tt> mentioned above.)</td></tr>
+</table>
+
+<h4>UriRecord</h4>
+<p>
+URI NFEF record which takes the URI as argument.
+The follwing methods are defined:
+</p>
+<table>
+<tr><td><tt>UriRecord(Uri uri)</tt></td><td>The constructor. Arguments an URI.</td></tr>
+<tr><td><tt>Uri getUri()</tt></td><td>Returns the URI.</td></tr>
+<tr><td><tt>static UriRecord parse(NdefRecord record)</tt></td><td>Parses a <tt>NdefRecord</tt> and returns a <tt>UriRecord</tt> instance.</td></tr>
+<tr><td><tt>static boolean isUri(NdefRecord record)</tt></td><td>Checks if the given <tt>NdefRcord</tt> is a NDEF URI record.</td></tr>
+<tr><td><tt>static NdefRecord createRecord(URI uri)</tt></td><td>Creates a new URI <tt>NdefRecord</tt></td></tr>
+<tr><td><tt> int writeTag(Tag tag)</tt></td><td>Writes the tag and returns the result code (see <tt>Constants</tt> mentioned above.)</td></tr>
+</table>
+
+<h4>SmartPosterRecord</h4>
+<p>
+Smart Poster NFEF record which takes URI, text and language code as argument.
+The follwing methods are defined:
+</p>
+<table>
+<tr><td><tt>SmartPosterRecord(URI uri, String languageCode, String text)</tt></td><td>The constructor. Arguments are URI, language code (e.g. "en") and text.</td></tr>
+<tr><td><tt>Uri getUri()</tt></td><td>Returns the URI.</td></tr>
+<tr><td><tt>String getText()</tt></td><td>Returns the text.</td></tr>
+<tr><td><tt>String getLanguageCode()</tt></td><td>Returns the language code.</td></tr>
+<tr><td><tt>static SmartPosterRecord parse(NdefRecord record)</tt></td><td>Parses a <tt>NdefRecord</tt> and returns a <tt>SmartPosterRecord</tt> instance.</td></tr>
+<tr><td><tt>static boolean isText(NdefRecord record)</tt></td><td>Checks if the given <tt>NdefRcord</tt> is a NDEF Smart Poster record.</td></tr>
+<tr><td><tt>static NdefRecord createRecord(URI uri, String languageCode, String text)</tt></td><td>Creates a new Smart Poster <tt>NdefRecord</tt></td></tr>
+<tr><td><tt> int writeTag(Tag tag)</tt></td><td>Writes the tag and returns the result code (see <tt>Constants</tt> mentioned above.)</td></tr>
+</table>
+
+<h4>MimeMediaRecord</h4>
+<p>
+Mime Media NFEF record which takes a mimetype and byte array data as argument.
+The follwing methods are defined:
+</p>
+<table>
+<tr><td><tt>MimeMediaRecord(String mimeType, byte[] data)</tt></td><td>The constructor. Arguments are mimetype and byte array.</td></tr>
+<tr><td><tt>String getMimeType()</tt></td><td>Returns the mimetype.</td></tr>
+<tr><td><tt>byte[] getData()</tt></td><td>Returns the binary data.</td></tr>
+<tr><td><tt>static MimeMediaRecord parse(NdefRecord record)</tt></td><td>Parses a <tt>NdefRecord</tt> and returns a <tt>MimeMediaRecord</tt> instance.</td></tr>
+<tr><td><tt>static boolean isText(NdefRecord record)</tt></td><td>Checks if the given <tt>NdefRcord</tt> is a NDEF Mime Media record.</td></tr>
+<tr><td><tt>static NdefRecord createRecord(String mimeType, byte[] data)</tt></td><td>Creates a new Mime Media <tt>NdefRecord</tt></td></tr>
+<tr><td><tt> int writeTag(Tag tag)</tt></td><td>Writes the tag and returns the result code (see <tt>Constants</tt> mentioned above.)</td></tr>
+</table>
+<p></p>
+
+<p></p>
+</body>
+</html>

@@ -1,0 +1,138 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<link rel="stylesheet" href="css/default.css">
+
+<bsh>source(server.props.get("serviceContext").pawHome + "/html/app/auth.bsh");</bsh>
+<bsh>
+// Set PAW Version
+import android.content.SharedPreferences;
+import android.content.SharedPreferences.Editor;
+import android.app.Service;
+
+service = (Service) server.props.get("serviceContext");
+preferences = service.getSharedPreferences("PawServer", 0);
+pawVersion = preferences.getString("Version", "na");
+
+// Put version into server scope
+serverPut("pawVersion", pawVersion);
+
+print("<script type='text/javascript'> function setPawVersion() { $('#pawVersion').html('" + pawVersion + "'); }</script>");
+</bsh>
+
+<script type="text/javascript" src="js/jquery.js"></script>
+<script type="text/javascript" src="js/jquery-ui.js"></script>
+<script type="text/javascript">
+	var menuHidden = false;
+	$(document).ready(function() {
+		$("#accordion").accordion();
+		setPawVersion();
+	});
+
+	function ShowHideMenu(){
+		$("#navbar").animate({"width": "toggle"}, { duration: 10 });
+		menuHidden = menuHidden ? false : true;
+
+
+		if(menuHidden) {
+   			$("#contentDiv").css("width", "100%");
+		}
+		else{
+   			$("#contentDiv").css("width", "80%");
+		}
+
+
+	}
+</script>
+
+
+
+<title>PAW Server</title>
+</head>
+
+
+<body style="overflow: hidden;">
+<bsh>cat(server.props.get("serviceContext").pawHome + "/html/app/statusbar.inc");</bsh>
+
+<a href="#" onClick="ShowHideMenu(); return false" alt="toggle menu" title="Toggle Menu"><img src="images/menu_toggle.png" style="width: 22px;"></a>
+
+<div>
+
+<div style="float: left; width: 15%; height: 90%; background: black; margin-bottom: 10px; border: 2px solid black; overflow: auto; border:0;" id="navbar">
+<p></p>
+<img src="images/phone.png" alt="phone" align="bottom" width="25"><b>Phone</b>
+<hr>
+<img src="images/star.png">&nbsp;<a href="dial.xhtml" target="content">Dial a Number</a></li>
+<br>
+<img src="images/star.png">&nbsp;<a href="call_log.xhtml" target="content">Call Log</a></li>
+<br>
+<img src="images/star.png">&nbsp;<a href="find_mobile.xhtml" target="content">Find Mobile</a></li>
+<p></p>
+<img src="images/sms.png" alt="fun" align="bottom" width="25"><b>SMS</b>
+<hr>
+<img src="images/star.png">&nbsp;<a href="sms_inbox_sent.xhtml" target="content">Inbox</a>
+<br>
+<img src="images/star.png">&nbsp;<a href="sms_inbox_sent.xhtml?type=sent" target="content">Outbox</a>
+<br>
+<img src="images/star.png">&nbsp;<a href="sms.xhtml" target="content">Send Message</a>
+<p></p>
+<img src="images/media.png" alt="fun" align="bottom" width="25"><b>Media</b>
+<hr>
+<img src="images/star.png">&nbsp;<a href="file_browser.xhtml" target="content">File Browser</a></li>
+<br>
+<img src="images/star.png">&nbsp;<a href="camera_images.xhtml" target="content">Camera Images</a>
+<br>
+<img src="images/star.png">&nbsp;<a href="changewallpaper.xhtml" target="content">Change Wallpaper</a></li>
+<br>
+<p></p>
+<img src="images/smiley.png" alt="fun" align="bottom" width="25"><b>Fun</b>
+<hr>
+<img src="images/star.png">&nbsp;<a href="memory.xhtml" target="content">Memory</a>
+<p></p>
+<img src="images/system.png" alt="system" align="bottom" width="25"><b>System</b>
+<hr>
+<img src="images/star.png">&nbsp;<a href="processlist.xhtml" target="content">Pocess List</a>
+<br>
+<img src="images/star.png">&nbsp;<a href="installed_apps.xhtml" target="content">Installed Apps</a>
+<br>
+<img src="images/star.png">&nbsp;<a href="logcat.xhtml" target="content">LogCat</a>
+<p></p>
+<img src="images/server.png" alt="server" align="bottom" width="25"><b>Server</b>
+<hr>
+<img src="images/star.png">&nbsp;<a href="server_settings.xhtml" target="content">Settings</a>
+<br>
+<img src="images/star.png">&nbsp;<a href="server_stats.xhtml" target="content">Statistics</a>
+<br>
+<img src="images/star.png">&nbsp;<a href="server_shutdown.xhtml" target="content">Shutdown</a>
+<p></p>
+<img src="images/develop.png" alt="develop" align="bottom" width="25"><b>Development</b>
+<hr>
+<img src="images/star.png">&nbsp;<a href="console.xhtml" target="content">BeanShell Console</a>
+<p></p>
+<img src="images/info.png" alt="info" align="bottom" width="25"><b>Information</b>
+<hr>
+<img src="images/star.png">&nbsp;<a href="changelogs.xhtml" target="content">Changelogs</a>
+<br>
+<img src="images/star.png">&nbsp;<a href="feedback.xhtml" target="content">Feedback</a>
+<p></p>
+<br><br>
+<a href="logout.xhtml"><img src="images/logout.png" style="width: 32px;"> Logout...</a>
+</div>
+
+<!-- To make iframe hight: 100% work in Firefox and IE -->
+<style type="text/css"> 
+   html, body, div, iframe { margin:0; padding:0; height:100%; } 
+   iframe { display:block; width:100%; border:none; } 
+  </style> 
+
+<div id="contentDiv" style="float: left; width: 80%; height: 100%; margin-bottom: 10px; margin-left: 20px; background: black; border: 4px solid black;">
+<iframe name="content" src="start.xhtml" width="100%" height="90%" frameborder="0" style="width: 100%; height: 90%; overflow: auto; margin: 0; border: 0; display: block;"></iframe>
+
+</div>
+
+</div>
+
+
+
+</body>
+</html>

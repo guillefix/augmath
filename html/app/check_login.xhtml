@@ -1,0 +1,52 @@
+<html>
+<body>
+<bsh>
+import org.json.*;
+import android.content.SharedPreferences;
+import android.app.Service;
+
+service = server.props.get("serviceContext");
+source(service.pawHome + "/html/app/bsh/authDb.bsh");
+source(service.pawHome + "/html/app/bsh/i18n.bsh");
+
+preferences = service.getSharedPreferences("PawServer", 0);
+
+jsonLogin = new JSONObject();
+username = parameters.get("username");
+password = parameters.get("password");
+
+// Cleanup DB
+if(existsAuthDatabase()) {
+	deleteOldAuthDbEntries();
+}
+
+if(username != null && password != null && username.equals(preferences.getString("webAppUsername", "admin")) &&
+   parameters.get("password").equals(preferences.getString("webAppPassword", "paw"))) {
+	jsonLogin.put("success", true);
+	jsonLogin.put("redirect", "index.xhtml");
+
+	if(!isSessionInDatabase()) {
+		if(!insertAuthEntry()) {
+			/* If that went wrong it could be that the sessionid is present with a different UA/IP combination.
+                           Delete the old version and try again.
+			*/
+			deleteAuthSession();
+			insertAuthEntry();
+		}
+
+	}
+
+	unset("username");
+	unset("password");
+}
+else {
+	jsonLogin.put("success", false);
+	jsonLogin.put("message", translateRaw("login.incorrect"));
+}
+
+request.sendResponse(jsonLogin.toString().getBytes(), "text/plain");
+request.out.flush();
+request.out.close();
+</bsh>
+</body>
+</html>

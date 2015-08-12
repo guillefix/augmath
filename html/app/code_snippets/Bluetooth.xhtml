@@ -1,0 +1,127 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+<title>Bluetooth</title>
+<link rel="stylesheet" href="../css/default.css">
+<style type="text/css">
+      .CodeMirror-line-numbers {
+        width: 2.2em;
+        color: #aaa;
+        background-color: #eee;
+        text-align: right;
+        padding-right: .3em;
+        font-size: 10pt;
+        font-family: monospace;
+        padding-top: .4em;
+      }
+	  .CodeMirror-wrapping {
+		background: white;
+	  }
+    </style>
+
+<script type="text/javascript" src="../js/jquery.js"></script>
+<script type="text/javascript" src="../js/executeScript.js"></script>
+
+<script type="text/javascript" src="../js/codemirror/js/codemirror.js"></script>
+<script type="text/javascript" src="../js/codemirror/js/mirrorframe.js"></script>
+
+<script type="text/javascript">
+	var editor;
+	$(document).ready(function() {
+		// Setup syntax colouring
+		var textarea = document.getElementById('code');
+		   editor = CodeMirror.fromTextArea('code', {
+			height: "350px",
+			content: textarea.value,
+			parserfile: ["tokenizejavascript.js", "parsejavascript.js"],
+			stylesheet: "../js/codemirror/css/jscolors.css",
+			path: "../js/codemirror/js/",
+			autoMatchParens: true,
+			lineNumbers: true
+		  });
+	
+		// Set focus on first textarea
+		$("textarea:visible:first").focus();
+
+		// Add line numbers
+		//$("#code").linedtextarea();
+ 	});
+
+	function execute() {
+		$("#code2").val(editor.getCode());
+		executeScript('code2', 'loader', 'output');
+	}
+</script>
+
+
+</head>
+<body>
+<bsh>source(server.props.get("serviceContext").pawHome + "/html/app/auth.bsh");</bsh>
+<h1>Bluetooth</h1>
+<p>
+This code snippet shows how to list the paired and how to discover new Bluetooth devices.
+<br>
+For a detailed description how to use Bluetooth with Android have a look at the <a href="http://developer.android.com/guide/topics/wireless/bluetooth.html" class="link" target="_blank">Bluetooth article</a> from Android Developer.<br>
+
+</p>
+Code:<br>
+<textarea id="code">
+import android.bluetooth.*;
+import android.os.*;
+import android.content.*;
+import de.fun2code.android.pawserver.*;
+import de.fun2code.android.pawserver.util.*;
+
+service = server.props.get("serviceContext");
+
+Looper.prepare();
+mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
+
+// Enable Bluetooth if not enabled
+if (!mBluetoothAdapter.isEnabled()) {
+    enableBtIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
+    AndroidInterface.sendResultIntent(enableBtIntent);
+}
+
+if(mBluetoothAdapter.isEnabled()) {
+  pairedDevices = mBluetoothAdapter.getBondedDevices();
+    print("Paired devices:");
+    print("---------------");
+    
+    if (pairedDevices.size() > 0) {
+       for (BluetoothDevice device : pairedDevices) {
+           print("Name: " + device.getName() + " Address: " + device.getAddress());
+       }
+  }
+
+  // Start discovery
+  mBluetoothAdapter.startDiscovery();
+      
+  // Collect result for three seconds   
+  intents = IntentUtil.getIntentResultsFromBroadcast(service, BluetoothDevice.ACTION_FOUND, 3000);
+  
+  print("\nDiscovered devices:");
+  print("-------------------");
+  for(intent : intents) {
+      device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
+      print("Name: " + device.getName() + " Address: " + device.getAddress());
+  }
+  
+}
+
+
+
+
+</textarea>
+<!-- Hidden text area to which the code is copied before submission -->
+<textarea id="code2" style="display: none;"></textarea>
+
+<br>
+Result:<br><textarea type="text" id="output" cols="80" rows="6"></textarea><p></p>
+<p></p>
+<button onClick="execute();">Execute Script</button>&nbsp;<img id="loader" src="../images/loader.gif" style="display: none;" width="16">
+
+<p></p>
+
+</body>
+</html>

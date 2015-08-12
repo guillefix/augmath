@@ -1,0 +1,136 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+<script type="text/javascript" src="../js/jquery.js"></script>
+<script type="text/javascript" src="../js/jquery.rotate.js"></script>
+	<script type="text/javascript">
+		$(document).ready(function() {
+			updateSensor();
+		});
+
+		function updateSensor() {
+
+			$.ajax({
+			    url: '../ws/sensor_data.xhtml?' + new Date().getTime(),
+			    type: 'GET',
+			    dataType: 'json',
+			    timeout: 3000,
+			    error: function(){
+			    },
+			    success: function(data){
+				var THRESHOLD = 3;
+				var absX = Math.abs(data['x']);
+				var absY = Math.abs(data['y']);
+				if( Math.abs(absX - absY) > THRESHOLD && absX > absY) {
+					$("#phone").rotate(data['x'] < 0 ? 90: -90, 'abs');
+				}
+				else if(Math.abs(absX - absY) > THRESHOLD){
+					$("#phone").rotate(data['y'] < 0 ? 180 : 0, 'abs');
+				}
+				else {
+					$("#phone").rotate(0, 'abs');
+				}
+
+				$("#sensor_json").val("{\"x\":" + data['x'] + ",\"y\":" + data['y'] + ",\"z\":" + data['z'] + ",\"force\":" + data['force'] + "}");
+				
+			    },
+			    complete: function() {
+				setTimeout("updateSensor();", 1000);
+			    }
+			});
+
+
+		}
+	</script>
+
+
+<title>Changelog 0.33</title>
+<link rel="stylesheet" href="../css/default.css">
+</head>
+<body>
+<bsh>source(server.props.get("serviceContext").pawHome + "/html/app/auth.bsh");</bsh>
+<h1>Changelog - Version 0.33</h1>
+<p></p>
+<h2>Web App</h2>
+<ul>
+	<li>Media Player info icon has been added. Tooltip displays artist and title.</li>
+</ul>
+<p></p>
+<h2>Server</h2>
+<ul>
+	<li>On boot the receiver now waits up to one minute for the SD card to get ready, before the service is started.</li>
+</ul>
+<p></p>
+<h2>BeanShell</h2>
+<h3>Accelerometer Support</h3>
+Accelerometer support has been added in this release.<br>
+The sensor instance can be obtained by calling <tt>de.fun2code.android.pawserver.AndroidInterface.getSensorListener()</tt>.<br>
+The SensorListener has the following methods:
+<ul>
+	<li><tt>getX()</tt></li>
+	<li><tt>getY()</tt></li>
+	<li><tt>getZ()</tt></li>
+	<li><tt>getForce()</tt></li>
+</ul>
+
+Force calculation is experimental. The force is calculated like this:<br>
+<tt>Math.abs(dataX + dataY + dataZ - last_x - last_y - last_z) / diffTime * 10000;</tt>
+<p></p>
+There is also a web service (<tt>/app/ws/sensor_data.xhtml</tt>) which return a JSON array.<br><br>
+JSON output:</br>
+<textarea id="sensor_json" rows="2" cols="120">
+</textarea>
+<h4>Example</h4>
+The below example shows the orientation of your phone. Turn your phone and the image should turn as well.
+<p></p>
+<img id="phone" src="../images/nexus_one.png">
+<p></p>
+<!-- Just to get some space -->
+<div style="height: 50px;"></div>
+<h3>Media Player support</h3>
+It is now possible to get information from and control the Android Media Player.<br>
+This is using undocumented classes, so support might break in future Android releases.
+<p></p>
+To get the Media Player object the following code can be used:<br><br>
+<tt>import de.fun2code.android.pawserver.AndroidInterface;</tt><br>
+<tt>AndroidInterface.getMediaPlayerService().getPlayBackService();</tt>
+<p></p>
+The Media Player object supports the following methods:<br>
+<pre><tt>
+    void openfile(String path);
+    void openfileAsync(String path);
+    void open(in int [] list, int position);
+    int getQueuePosition();
+    boolean isPlaying();
+    void stop();
+    void pause();
+    void play();
+    void prev();
+    void next();
+    long duration();
+    long position();
+    long seek(long pos);
+    String getTrackName();
+    String getAlbumName();
+    int getAlbumId();
+    String getArtistName();
+    int getArtistId();
+    void enqueue(in int [] list, int action);
+    int [] getQueue();
+    void moveQueueItem(int from, int to);
+    void setQueuePosition(int index);
+    String getPath();
+    int getAudioId();
+    void setShuffleMode(int shufflemode);
+    int getShuffleMode();
+    int removeTracks(int first, int last);
+    int removeTrack(int id);
+    void setRepeatMode(int repeatmode);
+    int getRepeatMode();
+    int getMediaMountedCount();
+</tt></pre>
+
+<!-- Just to get some space -->
+<div style="height: 100px;"></div>
+</body>
+</html>

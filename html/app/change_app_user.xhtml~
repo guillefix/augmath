@@ -1,0 +1,41 @@
+<html>
+<body>
+<bsh>source(server.props.get("serviceContext").pawHome + "/html/app/auth.bsh");</bsh>
+<bsh>
+import org.json.*;
+import android.content.SharedPreferences;
+import android.content.SharedPreferences.Editor;
+import android.app.Service;
+
+service = (Service) server.props.get("serviceContext");
+preferences = service.getSharedPreferences("PawServer", 0);
+
+jsonLogin = new JSONObject();
+username = request.getQueryData().get("app_username");
+password = request.getQueryData().get("app_password");
+passwordRepeat = request.getQueryData().get("app_password_repeat");
+
+if(username == null || password == null || passwordRepeat == null) {
+	jsonLogin.put("success", false);
+	jsonLogin.put("message", "Wrong parameters!");
+}
+else {
+	if(password.equals(passwordRepeat)) {
+		editor = preferences.edit();
+		editor.putString("webAppUsername", username);
+		editor.putString("webAppPassword", password);
+		editor.commit();
+		jsonLogin.put("success", true);
+	}
+	else {
+		jsonLogin.put("success", false);
+		jsonLogin.put("message", "Passwords do not match!");
+	}
+}
+
+request.sendResponse(jsonLogin.toString().getBytes(), "text/plain");
+request.out.flush();
+request.out.close();
+</bsh>
+</body>
+</html>

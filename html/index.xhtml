@@ -1,0 +1,72 @@
+<html>
+<head>
+
+<style type="text/css">
+body {
+  font-size: 13px;
+  font-family: Arial, Helvetica, sans-serif;
+  color:white;
+  background: black;
+}
+table { font-size: 13px; }
+tr    { cursor: pointer; }
+</style>
+
+
+ <script type="text/javascript">
+        function changeColour(colour, id){
+                 document.getElementById(id).style.backgroundColor = colour;
+                 }
+    </script>
+
+
+<bsh>
+pawHome = server.props.get("serviceContext").pawHome;
+File[] files = new File(pawHome + "/webconf/apps").listFiles(new FilenameFilter() {
+           public boolean accept(File dir, String name) {
+                return name.toLowerCase().endsWith(".conf");
+                }
+           }
+        );
+
+Arrays.sort(files);
+
+if(files.length < 2) {
+  print("<meta http-equiv=\"Refresh\" content=\"0;URL=app/\">");
+}
+
+</bsh>
+
+<title>PAW Server</title>
+</head>
+<body>
+<center>
+<bsh>
+if(files.length > 1) {
+	$$.print("<h1>Available Applications</h1>");
+}
+</bsh>
+<p></p>
+<table cellpadding="5" cellspacing="0">
+<bsh>
+if(files.length > 1) {
+	int c=0;
+	for(File f : files) {
+		c++;
+		props = new Properties();
+		in = new FileInputStream(f);
+		props.load(in);
+		in.close();
+
+		print("<tr id='row" + c + "' onMouseOver=\"changeColour('#F5890B',this.id);\" onMouseOut=\"changeColour('black',this.id);\" onClick=\"document.location.href='" + props.getProperty("href") + "'\">");
+		print("<td><img src='" + props.getProperty("icon") + "' style='width: 48px;'></td>");
+		print("<td><big>" + props.getProperty("name") + "</big><br><small>" + props.getProperty("description") + "</small></td>");
+		print("</tr>");
+
+	}
+}
+</bsh>
+</table>
+</center>
+</body>
+</html>

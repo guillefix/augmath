@@ -1,0 +1,140 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+<title>Proximity Sensor and_LED Flash</title>
+<link rel="stylesheet" href="../css/default.css">
+<style type="text/css">
+      .CodeMirror-line-numbers {
+        width: 2.2em;
+        color: #aaa;
+        background-color: #eee;
+        text-align: right;
+        padding-right: .3em;
+        font-size: 10pt;
+        font-family: monospace;
+        padding-top: .4em;
+      }
+	  .CodeMirror-wrapping {
+		background: white;
+	  }
+    </style>
+
+<script type="text/javascript" src="../js/jquery.js"></script>
+<script type="text/javascript" src="../js/executeScript.js"></script>
+
+<script type="text/javascript" src="../js/codemirror/js/codemirror.js"></script>
+<script type="text/javascript" src="../js/codemirror/js/mirrorframe.js"></script>
+
+<script type="text/javascript">
+	var editor;
+	$(document).ready(function() {
+		// Setup syntax colouring
+		var textarea = document.getElementById('code');
+		   editor = CodeMirror.fromTextArea('code', {
+			height: "350px",
+			content: textarea.value,
+			parserfile: ["tokenizejavascript.js", "parsejavascript.js"],
+			stylesheet: "../js/codemirror/css/jscolors.css",
+			path: "../js/codemirror/js/",
+			autoMatchParens: true,
+			lineNumbers: true
+		  });
+	
+		// Set focus on first textarea
+		//$("textarea:visible:first").focus();
+
+		// Add line numbers
+		//$("#code").linedtextarea();
+ 	});
+
+	function execute() {
+		$("#code2").val(editor.getCode());
+		executeScript('code2', 'loader');
+	}
+</script>
+
+
+</head>
+<body>
+<bsh>source(server.props.get("serviceContext").pawHome + "/html/app/auth.bsh");</bsh>
+<h1>Proximity Sensor and LED Flash</h1>
+<p>
+This sample code will toggle the LED flash on or off if the proximity sensor returns zero.<br>
+On the Nexus One the Proximity sensor is lecated at the upper left corner of the phone. This might vary on other devices.<br>
+</p>
+<p>
+
+Notes:
+<ul>
+<li>
+This code will only work in Froyo (Android 2.2).<br>
+The reason for this is that that turning the LED flash light on is officially only supported since Android 2.2.
+</li>
+<li>
+<b>Do not turn the LED flash on for too long (not longer than 10 min). This is a high power LED and might be damged if it gets too hot!</b>
+</li>
+</ul>
+
+</p>
+<img src="images/nexus_one_proximity_anim.gif">&nbsp;Image: Proximity Sensor location on Nexus One
+<p>
+So if you execute the script and put you finger on the sensor the LED flash should turn on. Doing the same thing again should switch the LED flash off again.<br>
+Putting the finger on the sensor for more than 4 seconds will stop the script.
+</p>
+
+Code:<br>
+<textarea id="code">
+import de.fun2code.android.pawserver.AndroidInterface;
+import android.hardware.Camera;
+
+// Get sensor listener
+sensorListener = AndroidInterface.getSensorListener();
+
+// Get Camera and parameters
+camera = Camera.open();
+params = camera.getParameters();
+
+on = false;
+proxCount = 0;
+
+// Forever
+while(true) {
+  if(sensorListener.getProximity() == 0) {
+
+    // If the proximity sensor is 0 for four iterations (4 seconds) leave loop
+    if(++proxCount >= 4) {
+      break;
+    }
+    
+    // Toggle flash
+    on = !on;
+    params.setFlashMode(
+      on ? Camera.Parameters.FLASH_MODE_TORCH : Camera.Parameters.FLASH_MODE_OFF);
+    camera.setParameters(params);
+  }
+  else {
+    proxCount = 0;
+  }
+
+  //Wait one sec
+  Thread.sleep(1000);
+}
+
+// Switch of flash and release camera
+params.setFlashMode(Camera.Parameters.FLASH_MODE_OFF);
+camera.setParameters(params);
+camera.release();
+</textarea>
+
+<!-- Hidden text area to which the code is copied before submission -->
+<textarea id="code2" style="display: none;"></textarea>
+
+<p></p>
+<button onClick="execute();">Execute Script</button>&nbsp;<img id="loader" src="../images/loader.gif" style="display: none;" width="16">
+<p>
+&nbsp;
+</p>
+
+
+</body>
+</html>

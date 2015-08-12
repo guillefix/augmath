@@ -1,0 +1,14 @@
+/*
+  Registers I18N language bundles
+*/
+import de.fun2code.android.pawserver.util.I18N;
+
+service = server.props.get("serviceContext");
+
+// I18N directory
+i18nDir = service.pawHome + "/html/app/i18n";
+
+// Register webapp bundle
+I18N.unregister("webapp");
+I18N.register("webapp", i18nDir + "/webapp");
+

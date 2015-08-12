@@ -1,0 +1,109 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+<title>XML-RCP</title>
+<link rel="stylesheet" href="../css/default.css">
+<style type="text/css">
+      .CodeMirror-line-numbers {
+        width: 2.2em;
+        color: #aaa;
+        background-color: #eee;
+        text-align: right;
+        padding-right: .3em;
+        font-size: 10pt;
+        font-family: monospace;
+        padding-top: .4em;
+      }
+	  .CodeMirror-wrapping {
+		background: white;
+	  }
+    </style>
+
+<script type="text/javascript" src="../js/jquery.js"></script>
+<script type="text/javascript" src="../js/executeScript.js"></script>
+
+<script type="text/javascript" src="../js/codemirror/js/codemirror.js"></script>
+<script type="text/javascript" src="../js/codemirror/js/mirrorframe.js"></script>
+
+<script type="text/javascript">
+	var editor;
+	$(document).ready(function() {
+		// Setup syntax colouring
+		var textarea = document.getElementById('code');
+		   editor = CodeMirror.fromTextArea('code', {
+			height: "350px",
+			content: textarea.value,
+			parserfile: ["tokenizejavascript.js", "parsejavascript.js"],
+			stylesheet: "../js/codemirror/css/jscolors.css",
+			path: "../js/codemirror/js/",
+			autoMatchParens: true,
+			lineNumbers: true
+		  });
+	
+		// Set focus on first textarea
+		$("textarea:visible:first").focus();
+
+		// Add line numbers
+		//$("#code").linedtextarea();
+ 	});
+
+	function execute() {
+		$("#code2").val(editor.getCode());
+		executeScript('code2', 'loader', 'output');
+	}
+</script>
+
+
+</head>
+<body>
+<bsh>source(server.props.get("serviceContext").pawHome + "/html/app/auth.bsh");</bsh>
+<h1>XML-RCP</h1>
+<p>
+This snippet shows how to use XML-RCP* together with the barcode scanner (has to be installed).<br>
+It scans the barcode and queries the database from <a href="http://www.upcdatabase.com" target="_blank">http://www.upcdatabase.com</a>.
+
+<p>
+*Implementation from: <a  href="http://code.google.com/p/android-xmlrpc"target="_blank">http://code.google.com/p/android-xmlrpc</a>
+</p>
+
+</p>
+Code:<br>
+<textarea id="code">
+import org.xmlrpc.android.*;
+
+barcode = scanBarcode();
+client = new XMLRPCClient("http://www.upcdatabase.com/rpc");
+result = client.callEx("lookupUPC", new Object[] { barcode });
+
+// Found
+if(result instanceof HashMap && result.get("found")) {
+    set = result.entrySet();
+    i = set.iterator();
+
+    while(i.hasNext()){
+      e = i.next();
+      print(e.getKey() + " : " + e.getValue());
+    }
+}
+// Error
+else if(result instanceof String) {
+  print(result);
+}
+// Not found
+else {
+  print("Database entry not found.");
+}
+
+</textarea>
+<!-- Hidden text area to which the code is copied before submission -->
+<textarea id="code2" style="display: none;"></textarea>
+
+<br>
+Result:<br><textarea type="text" id="output" cols="80" rows="6"></textarea><p></p>
+<p></p>
+<button onClick="execute();">Execute Script</button>&nbsp;<img id="loader" src="../images/loader.gif" style="display: none;" width="16">
+
+<p></p>
+
+</body>
+</html>

@@ -1,0 +1,101 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+<title>Screen Dimensions</title>
+<link rel="stylesheet" href="../css/default.css">
+<style type="text/css">
+      .CodeMirror-line-numbers {
+        width: 2.2em;
+        color: #aaa;
+        background-color: #eee;
+        text-align: right;
+        padding-right: .3em;
+        font-size: 10pt;
+        font-family: monospace;
+        padding-top: .4em;
+      }
+	  .CodeMirror-wrapping {
+		background: white;
+	  }
+    </style>
+
+<script type="text/javascript" src="../js/jquery.js"></script>
+<script type="text/javascript" src="../js/executeScript.js"></script>
+
+<script type="text/javascript" src="../js/codemirror/js/codemirror.js"></script>
+<script type="text/javascript" src="../js/codemirror/js/mirrorframe.js"></script>
+
+<script type="text/javascript">
+	var editor;
+	$(document).ready(function() {
+		// Setup syntax colouring
+		var textarea = document.getElementById('code');
+		   editor = CodeMirror.fromTextArea('code', {
+			height: "350px",
+			content: textarea.value,
+			parserfile: ["tokenizejavascript.js", "parsejavascript.js"],
+			stylesheet: "../js/codemirror/css/jscolors.css",
+			path: "../js/codemirror/js/",
+			autoMatchParens: true,
+			lineNumbers: true
+		  });
+	
+		// Set focus on first textarea
+		$("textarea:visible:first").focus();
+
+		// Add line numbers
+		//$("#code").linedtextarea();
+ 	});
+
+	function execute() {
+		$("#code2").val(editor.getCode());
+		executeScript('code2', 'loader', 'output');
+	}
+</script>
+
+
+</head>
+<body>
+<bsh>source(server.props.get("serviceContext").pawHome + "/html/app/auth.bsh");</bsh>
+<h1>Screen Dimensions</h1>
+<p>
+
+The code shows how to calculate the screen dimensions of the device.<br>
+Note: This does not seem to be accurate on all devices.
+
+</p>
+Code:<br>
+<textarea id="code">
+import android.util.*;
+import android.view.WindowManager;
+import android.content.Context;
+
+// Get PAW service
+service = server.props.get("serviceContext");
+
+// Get display metrics
+metrics = new DisplayMetrics();
+display = ((WindowManager)service.getSystemService(Context.WINDOW_SERVICE)).getDefaultDisplay();
+display.getMetrics(metrics);
+
+// Display size in inch
+screenSizeXI = display.getWidth() / metrics.xdpi;
+screenSizeYI = display.getHeight() / metrics.ydpi;
+
+print("Screen: " + display.getHeight() + " x " + display.getWidth());
+print("DPI: " + metrics.ydpi + " x " + metrics.xdpi);
+print("Inch: " + screenSizeYI + " x " + screenSizeXI);
+print("Cm: " + (screenSizeYI * 2.54) + " x " + (screenSizeXI * 2.54));
+</textarea>
+<!-- Hidden text area to which the code is copied before submission -->
+<textarea id="code2" style="display: none;"></textarea>
+
+<br>
+Result:<br><textarea type="text" id="output" cols="80" rows="6"></textarea><p></p>
+<p></p>
+<button onClick="execute();">Execute Script</button>&nbsp;<img id="loader" src="../images/loader.gif" style="display: none;" width="16">
+
+<p></p>
+
+</body>
+</html>

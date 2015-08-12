@@ -1,0 +1,49 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+<bsh>source(server.props.get("serviceContext").pawHome + "/html/app/bsh/i18n.bsh");</bsh>
+
+<bsh>source(server.props.get("serviceContext").pawHome + "/html/app/auth.bsh");</bsh>
+<bsh>
+import de.fun2code.android.pawserver.*;
+import android.content.Intent;
+
+service = server.props.get("serviceContext");
+
+/* Shutdown the PAW server if kill parameter is present */
+
+if(parameters.get("kill") != null) {
+	AndroidInterface.shutdownServer();
+}
+else if(parameters.get("restart") != null) {
+    serviceIntent = new Intent(service, PawServerService.class);
+    service.stopService(serviceIntent);
+    Thread.sleep(2000);
+    service.startService(serviceIntent);
+}
+*/
+</bsh>
+<title><bsh>translate("shutdown.title");</bsh></title>
+<link rel="stylesheet" href="css/default.css">
+<script type="text/javascript" src="js/jquery.js"></script>
+<script type="text/javascript">
+	function shutdown() {
+		$.post("server_shutdown.xhtml?kill", {}, function(data) {});
+	}
+
+    function restart() {
+		$.post("server_shutdown.xhtml?restart", {}, function(data) {});
+	}
+</script>
+</head>
+<body>
+<h3><bsh>translate("shutdown.title");</bsh></h3>
+<bsh>translate("shutdown.info");</bsh>
+<p></p>
+<button onClick="shutdown()"><bsh>translate("shutdown.button.shutdown_server");</bsh></button>
+<p></p>
+<bsh>translate("shutdown.restart.info");</bsh>
+<p></p>
+<button onClick="restart()"><bsh>translate("shutdown.button.restart_server");</bsh></button>
+</body>
+</html>

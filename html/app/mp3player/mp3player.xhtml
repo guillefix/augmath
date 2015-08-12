@@ -1,0 +1,89 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+<bsh>source(server.props.get("serviceContext").pawHome + "/html/app/bsh/i18n.bsh");</bsh>
+
+<script type="text/javascript" src="../js/jquery.js"></script>
+<script type="text/javascript" src="../js/jquery-ui.js"></script>
+<script type="text/javascript" src="js/jquery.jcoverflip.js"></script>
+<link rel="stylesheet" href="../css/default.css" />
+<link rel="stylesheet" href="../css/overcast/jquery-ui.css" />
+<link rel="stylesheet" href="css/coverflip.css" />
+
+<!"-- Init CoverFlip -->
+<script type="text/javascript" src="js/init.js"></script>
+
+<script type="text/javascript">
+	function showNoAlbums() {
+		$('#wrapper').html("<h1><bsh>translate("mp3_player.no_albums");</bsh></h1>");
+	}
+</script>
+
+<title><bsh>translate("mp3_player.title");</bsh></title>
+
+</head>
+<body>
+<bsh>source(server.props.get("serviceContext").pawHome + "/html/app/auth.bsh");</bsh>
+
+<center>
+<div><h3><bsh>translate("mp3_player.title");</bsh></h3></div>
+
+<div id="wrapper">
+    <ul id="flip">
+	
+<bsh>
+import android.net.Uri;
+import android.provider.MediaStore.Audio.Media;
+ 
+uri = android.provider.MediaStore.Audio.Media.EXTERNAL_CONTENT_URI;
+ 
+String[] tags = new String[] {
+Media.ALBUM_ID,
+Media.ARTIST,
+Media.ALBUM
+};
+ 
+service = server.props.get("serviceContext");
+ 
+cursor = service.getContentResolver().query(uri, tags, Media.IS_MUSIC + "<>0", null, android.provider.MediaStore.Audio.Media.ARTIST + "," + android.provider.MediaStore.Audio.Media.ALBUM);
+
+idHash = new Hashtable();
+
+id = 0;
+
+if(cursor.moveToFirst()) {
+	do {
+		albumId = cursor.getString(cursor.getColumnIndexOrThrow(Media.ALBUM_ID));
+		artist = cursor.getString(cursor.getColumnIndexOrThrow(Media.ARTIST));
+		album = cursor.getString(cursor.getColumnIndexOrThrow(Media.ALBUM));
+		
+		if(idHash.get(albumId) == null) {
+			print("<li><span class='title' id='album_" + (id) + "' albumId='" + albumId + "'>" + artist + " / " + album + "</span><img src='../graphics/albumart.xhtml?albumId=" + albumId + "&defaultPng=images/no_image.png' onClick='initPlayer(" + id + "," + albumId + ");'/></li>");
+			idHash.put(albumId, 0);
+			id++;
+		}
+	} while(cursor.moveToNext());
+}
+
+cursor.close();
+ 
+</bsh>
+
+    </ul>
+	
+	<div id="scrollbar"></div>
+	<div style="float: right;"><img src="images/playing.png" title="<bsh>translate("mp3_player.tooltip.now_playing");</bsh>" onClick="showCurrent();" style="cursor: pointer; z-index: 100; position: relative; top: -250px; width: 24px;"></div>
+	
+</div>
+</center>
+
+<center>
+<div id="player" style="padding: 2em;"></div>
+</center>
+
+
+
+
+
+</body>
+</html>

@@ -1,0 +1,38 @@
+<bsh>source(server.props.get("serviceContext").pawHome + "/html/app/auth.bsh");</bsh>
+<bsh>
+import android.app.Service;
+import android.content.Context;
+
+import android.graphics.*;
+import android.graphics.drawable.*;
+import android.graphics.Bitmap.CompressFormat;
+
+
+service = (Service) server.props.get("serviceContext");
+taskNumber = Integer.parseInt(parameters.get("tasknumber"));
+
+
+if(taskNumber >= 0) {
+	actmgr = service.getSystemService(Context.ACTIVITY_SERVICE);
+
+
+	//tasks = actmgr.getRunningTasks(taskNumber+1);
+	tasks = actmgr.getRunningTasks(taskNumber+1);
+
+	//if (tasks.size() >= taskNumber+1) {
+	for(int i=0 ; i < tasks.size(); i++) {
+		if(tasks.get(i).thumbnail == null) continue;
+		bitmap = tasks.get(taskNumber).thumbnail;
+		bos = new ByteArrayOutputStream();
+		bitmap.compress(CompressFormat.PNG, 0 /*ignored for PNG*/, bos);
+		byte[] bitmapdata = bos.toByteArray();
+		
+		request.sendResponse(bitmapdata, "image/png");
+		request.out.flush();
+		request.out.close();
+		break;
+	}
+}
+</bsh>
+
+

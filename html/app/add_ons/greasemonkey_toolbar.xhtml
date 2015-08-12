@@ -1,0 +1,46 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+<bsh>source(server.props.get("serviceContext").pawHome + "/html/app/bsh/i18n.bsh");</bsh>
+
+<title><bsh>translate("add_ons.toolbar.title");</bsh></title>
+<link rel="stylesheet" href="../css/default.css">
+<script type="text/javascript" src="../js/jquery.js"></script>
+<script type="text/javascript" src="../js/executeScript.js"></script>
+</head>
+<body>
+<bsh>source(server.props.get("serviceContext").pawHome + "/html/app/auth.bsh");</bsh>
+<h1><img src="../images/greasemonkey.png"> <bsh>translate("add_ons.toolbar.title");</bsh></h1>
+<bsh>translate("add_ons.toolbar.text1");</bsh>
+
+<p><img src="images/greasemonkey_toolbar/user_menu.png">
+<br><br><br>
+</p>
+
+<bsh>translate("add_ons.toolbar.text2");</bsh>
+<p><img src="images/greasemonkey_toolbar/settings.png" style="width: 300px;"></p>
+</p>
+<br><br><br>
+<p>
+<bsh>translate("add_ons.toolbar.text3");</bsh>
+</p>
+
+</p>
+<p><img src="images/greasemonkey_toolbar/toolbar.png"></p>
+
+<bsh>translate("add_ons.toolbar.text4");</bsh>
+<br>
+
+<p><img src="images/greasemonkey_toolbar/web_maps_streetview.png"></p>
+
+<!-- Version History -->
+<hr>
+<h3><bsh>translate("add_ons.toolbar.label.version_history");</bsh></h3>
+<ul>
+<li>0.3:   "Set as Phone Bookmark" button added</li>
+<li>0.2.5: Add toolbar to the beginning of page only if it is the top frame</li>
+<li>0.2:   Google Maps support: Locations and routes are now opened with the Map app on newer Android devices if "Send to Phone" is pressed.</li>
+<li>0.1:   Initial version</li>
+</ul>
+</body>
+</html>

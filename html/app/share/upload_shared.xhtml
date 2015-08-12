@@ -1,0 +1,84 @@
+<bsh>
+import org.paw.util.*;
+import de.fun2code.android.pawserver.AndroidInterface;
+import org.apache.commons.fileupload.*;
+import android.net.Uri;
+import android.content.Intent;
+
+service = server.props.get("serviceContext");
+ 
+outDir = server.props.get("serviceContext").pawHome + "/tmp";
+type = (String) request.headers.get("content-type");
+filename = null;
+outfile = null;
+ext == null;
+ 
+if (type != null &&type.startsWith("multipart/form-data")) {
+ try {
+  // Get the boundary string
+  boundaryIndex = type.indexOf("boundary=");
+  byte[] boundary = (type.substring(boundaryIndex + 9)).getBytes();
+ 
+  // Construct a MultiPartStream with request.in as InputStream
+  MultipartStream multipartStream =  new MultipartStream(request.in, boundary);
+  boolean nextPart = multipartStream.skipPreamble();
+ 
+  // Loop through all parts
+  while(nextPart) {
+    headers = multipartStream.readHeaders();
+ 
+    // If part is a file, save it to disk. Otherwise skip it.
+    if(headers.contains("filename=\"")) {
+       // Get filename
+       filename = headers.substring(headers.indexOf("filename=") + 10);
+       filename = filename.substring(0, filename.indexOf("\""));
+ 
+       // If filename is not empty save content to filesystem
+       if(filename.length() > 0) {
+	   ext = filename.substring(filename.lastIndexOf(".") + 1).toLowerCase();
+	   outfile = "share_" + System.currentTimeMillis() + "." + ext;   
+   multipartStream.readBodyData(new FileOutputStream(outDir + "/" + outfile));
+   break;
+       }
+                     else {
+   multipartStream.discardBodyData();  
+       }
+    }
+    else {
+       multipartStream.discardBodyData();
+    }
+ 
+    nextPart = multipartStream.readBoundary();
+  }
+  
+	if(filename != null && outfile != null) {
+		// Get mimetype
+		mimetype = server.props.get("mime." + ext);
+		if(mimetype == null) {
+		   mimetype = "*/*";
+		}
+
+		action = parameters.get("action");
+		
+		if(action != null && action.equals("uri")) {
+			intent = new Intent();  
+			intent.setAction(android.content.Intent.ACTION_VIEW);  
+			file = new File(outDir + "/" + outfile);  
+			intent.setDataAndType(Uri.fromFile(file), mimetype);  
+			AndroidInterface.sendIntent(intent);
+		}
+		else { // Default action
+			sendIntent = new Intent(Intent.ACTION_SEND);
+			sendIntent.putExtra(Intent.EXTRA_STREAM, Uri.fromFile(new File(outDir + "/" + outfile)));
+			sendIntent.setType(mimetype);
+			service.putActivityIntoForeground();
+			service.getActivity().startActivity(Intent.createChooser(sendIntent, null));
+			openUri("file://" + outDir + "/" + outfile);
+		}
+	}
+ }
+ catch(e) {
+  print(e);
+ }
+}
+</bsh>

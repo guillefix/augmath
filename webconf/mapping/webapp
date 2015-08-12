@@ -1,0 +1,6 @@
+/app/get_app_icon.xhtml=de.fun2code.android.pawserver.external.webapp.graphics.FetchAppIcon
+/app/graphics/contact_photo.xhtml=de.fun2code.android.pawserver.external.webapp.graphics.FetchContactPhoto
+/app/get_scaled_image.xhtml=de.fun2code.android.pawserver.external.webapp.graphics.FetchScaledImage
+/app/graphics/albumart.xhtml=de.fun2code.android.pawserver.external.webapp.graphics.FetchAlbumArt
+/app/graphics/system_load_image.xhtml=de.fun2code.android.pawserver.external.webapp.graphics.DrawLoadImage
+

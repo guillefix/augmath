@@ -1,0 +1,123 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=EmulateIE8" />
+<link type="text/css" href="css/overcast/jquery-ui.css" rel="Stylesheet" />
+<link rel="stylesheet" href="css/default.css">
+
+<bsh>source(server.props.get("serviceContext").pawHome + "/html/app/bsh/i18n.bsh");</bsh>
+
+<title><bsh>translate("login.title");</bsh></title>
+<bsh>
+import android.content.SharedPreferences;
+import android.content.SharedPreferences.Editor;
+import android.app.Service;
+
+service = server.props.get("serviceContext");
+preferences = service.getSharedPreferences("PawServer", 0);
+pawVersion = preferences.getString("Version", "na");
+</bsh>
+
+<script type="text/javascript" src="js/jquery.js"></script>
+<script type="text/javascript" src="js/jquery-ui.js"></script>
+<script type="text/javascript">
+
+	// Load in top frame
+	if (window != top) {
+		top.location.href = location.href;
+	}
+
+
+	$(document).ready(function() {
+		showLoginDialog();
+
+		// Set focus on first text field
+		$("input:text:visible:first").focus();
+
+		setPawVersion();
+		updateStatusbar();
+
+		$("form[name=loginForm]").submit(function() {
+			$("#errorConsole").html("<img src='images/loader.gif' style='width: 32px;'>");
+			$.post("check_login.xhtml", {username: $("[name=username]").val(), password: $("[name=password]").val()},
+		function(data) {
+			if(data.success) {
+				location.href=data.redirect;
+			}
+			else {
+				$("#errorConsole").html(data.message).fadeIn();
+			}
+
+		}, "json");
+		return false;
+		});
+	});
+
+	function showLoginDialog() {
+		var dialogWidth = 460;
+		$("#dialog").dialog({
+			width: dialogWidth,
+			modal: false, position: [$(window).width() / 2 - dialogWidth / 2, 100],
+			beforeclose : function() { return false; } // Do not close dialog
+
+		});
+
+		// Add shadow to login dialog
+		$("[role='dialog']").css("-moz-box-shadow", "0 0 6px #ffffff");
+		$("[role='dialog']").css("-webkit-box-shadow", "0 0 6px #ffffff");
+ 	}
+</script>
+
+<bsh>
+// Set PAW Version
+import android.content.SharedPreferences;
+import android.content.SharedPreferences.Editor;
+import android.app.Service;
+
+service = (Service) server.props.get("serviceContext");
+preferences = service.getSharedPreferences("PawServer", 0);
+pawVersion = preferences.getString("Version", "na");
+
+print("<script type='text/javascript'> function setPawVersion() { $('#pawVersion').html('" + pawVersion + "'); }</script>");
+</bsh>
+
+</head>
+<body id="indexBody">
+<div style="position: absolute; left: 10%; top: -10px; z-index: 100; width: 80%;">
+<bsh>cat(server.props.get("serviceContext").pawHome + "/html/app/statusbar.inc");</bsh>
+</div>
+
+<div id="dialog" title="<bsh>translate("login.dialogtitle");</bsh>" style="font-size: 12px;">
+	<p>
+<form name="loginForm" method="post">
+<center>
+<table>
+<tr><td align="center"><bsh>translate("login.user");</bsh></td><td style="text-align: center;"><input itype="text" name="username"></td></tr>
+<tr><td align="center"><bsh>translate("login.password");</bsh></td style="text-align: center;"><td><input type="password" name="password"></td></tr>
+</table>
+<p></p>
+<span style="font-size: 10px;"><bsh>translate("login.info1");</bsh></span>
+<br>
+<span style="font-size: 10px; color: gray;"><bsh>translate("login.info2");</bsh></span>
+<p></p>
+<input type="submit" value="<bsh>translate("login.button");</bsh>"
+<p></p>
+<div id="errorConsole" style="color: red;"></div>
+</center>
+</form>
+<center>	
+<ul style="list-style-image: url(images/warning.png);">
+	<li><bsh>translate("login.warning");</bsh></li>
+</ul>
+<P></p>
+<ul style="list-style-image: url(images/info.png);">
+	<li><bsh>translate("login.info3");</bsh></li>
+</ul>
+</center>
+</p>
+</div>
+
+<div id="footer"><a href="http://www.fun2code.de/" target="_blank">&copy; Fun2Code.de</a></div>
+</body>
+</html>

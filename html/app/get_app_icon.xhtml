@@ -1,0 +1,34 @@
+<html>
+<body>
+<bsh>source(server.props.get("serviceContext").pawHome + "/html/app/auth.bsh");</bsh>
+<bsh>
+import android.app.Service;
+import android.graphics.*;
+import android.graphics.drawable.*;
+import android.graphics.Bitmap.CompressFormat;
+import android.content.pm.PackageManager;
+
+service = (Service) server.props.get("serviceContext");
+processName = parameters.get("processname");
+
+pkgManager = service.getPackageManager();
+apps = pkgManager.getInstalledApplications(PackageManager.GET_META_DATA);
+
+for (int i=0;i<apps.size();i++) {
+    if(apps.get(i).processName.equals(processName)) {
+        Bitmap bitmap = pkgManager.getApplicationIcon(apps.get(i)).getBitmap();
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        bitmap.compress(CompressFormat.PNG, 0 /*ignored for PNG*/, bos);
+        byte[] bitmapdata = bos.toByteArray();
+        
+        request.sendResponse(bitmapdata, "image/png");
+	request.out.flush();
+	request.out.close();
+        break;
+    }
+}
+
+</bsh>
+</body>
+</html>
+

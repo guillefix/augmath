@@ -1,0 +1,26 @@
+I18N_NAME = "i18n_paw_standard_webapp";
+
+initI18n() {
+	try {
+		addClassPath(server.props.get("serviceContext").pawHome + "/html/app/i18n");
+		bundle = ResourceBundle.getBundle(server.props.get("serviceContext").pawHome + "/html/app/i18n/i18n");
+		serverPut(I18N_NAME, bundle);
+
+	} catch(e) { }
+}
+
+i18n(String name) {
+       bundle = serverGet(I18N_NAME);
+
+       if(bundle == null) {
+	 initI18n(null);
+	 bundle = serverGet(I18N_NAME);
+       }
+
+       try {
+          return bundle != null ? bundle.getString(name) : null;
+       }
+       catch(e) {
+	  return null;
+       }
+}

@@ -1,0 +1,44 @@
+<html>
+<body>
+<bsh>source(server.props.get("serviceContext").pawHome + "/html/app/auth.bsh");</bsh>
+<bsh>
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.graphics.BitmapFactory.Options;
+import android.view.WindowManager;
+import android.view.Display;
+import sunlabs.brazil.util.http.HttpUtil;
+import android.app.Service;
+import android.content.Context;
+
+service = (Service) server.props.get("serviceContext");
+
+fileParam = request.getQueryData().get("file");
+f = fileParam != null ?  new File(fileParam) : null;
+
+if(f != null) {
+	SAMPLE_SIZE = 10;
+	display =  ((WindowManager) service.getSystemService(Context.WINDOW_SERVICE)).getDefaultDisplay(); 
+	IMG_MAX_WIDTH = display.getWidth();
+ 	IMG_MAX_HEIGHT = display.getHeight();
+
+	options=new BitmapFactory.Options();
+	options.inSampleSize = SAMPLE_SIZE;
+	bitmapOrg=BitmapFactory.decodeStream(new FileInputStream(f),null,options);
+
+	if(bitmapOrg == null) {
+		break;
+	}
+
+	width = bitmapOrg.getWidth()  * SAMPLE_SIZE;
+	height = bitmapOrg.getHeight()  * SAMPLE_SIZE;
+
+	options.inSampleSize = ((int) height / IMG_MAX_HEIGHT) > 1 ?  (int) (Math.floor(height / (float)IMG_MAX_HEIGHT)) : 1 ;
+	resizedBitmap=BitmapFactory.decodeStream(new FileInputStream(f),null,options);
+
+	service.getApplicationContext().setWallpaper(resizedBitmap);
+}
+
+</bsh>
+</body>
+</hmtl>

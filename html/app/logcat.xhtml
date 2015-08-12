@@ -1,0 +1,57 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+<bsh>source(server.props.get("serviceContext").pawHome + "/html/app/bsh/i18n.bsh");</bsh>
+
+<title><bsh>translate("logcat.title");</bsh></title>
+<link rel="stylesheet" href="css/default.css">
+</head>
+<body>
+<bsh>source(server.props.get("serviceContext").pawHome + "/html/app/auth.bsh");</bsh>
+<h3><bsh>translate("logcat.title");</bsh></h3>
+<form action="logcat_fetcher.xhtml" method="post" target="logcatOutput">
+<table border="0" style="font-size: 12px;">
+<tr>
+<td><bsh>translate("logcat.label.format");</bsh>: </td>
+<td>
+<select name="format">
+<option>brief</option>
+<option>process</option>
+<option>tag</option>
+<option>thread</option>
+<option>raw</option>
+<option>time</option>
+<option>threadtime</option>
+<option>long</option>
+</select>
+</td>
+</tr>
+
+<tr>
+<td><bsh>translate("logcat.label.tag");</bsh>:</td>
+<td> <input type="text" name="tag" value="*" cols="40"></td>
+</tr>
+
+<td><bsh>translate("logcat.label.priority");</bsh>: </td>
+<td>
+<select name="priority">
+<option value="V">Verbose</option>
+<option value="D">Debug</option>
+<option value="I" selected>Info</option>
+<option value="W">Warn</option>
+<option value="E">Error</option>
+<option value="F">Fatal</option>
+<option value="S">Silent</option>
+</select>
+</td>
+</tr>
+
+</table>
+
+<p>
+<input type="submit" value="<bsh>translate("logcat.button.retrieve_logcat");</bsh>">
+</form>
+<p>
+<iframe name="logcatOutput" width="100%" height="70%"></iframe>
+</body>
+</hmtl>

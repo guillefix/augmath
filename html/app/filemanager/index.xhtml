@@ -1,0 +1,59 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<bsh>source(server.props.get("serviceContext").pawHome + "/html/app/bsh/i18n.bsh");</bsh>
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<bsh>source(server.props.get("serviceContext").pawHome + "/html/app/auth.bsh");</bsh>
+<bsh>
+service = server.props.get("serviceContext");
+</bsh>
+	<head>
+		<meta http-equiv="content-type" content="text/html; charset=utf-8" />
+		<title><title><bsh>translate("filemanager.title");</bsh></title></title>
+		<link rel="stylesheet" type="text/css" href="styles/reset.css" />
+		<link rel="stylesheet" type="text/css" href="scripts/jquery.filetree/jqueryFileTree.css" />
+		<link rel="stylesheet" type="text/css" href="scripts/jquery.contextmenu/jquery.contextMenu.css" />
+		<link rel="stylesheet" type="text/css" href="styles/filemanager.css" />
+		<!--[if IE]>
+		<link rel="stylesheet" type="text/css" href="styles/ie.css" />
+		<![endif]-->	
+	
+	</head>
+	<body>
+		<form id="uploader" method="post">
+			<h1><input id="dirpath" type="text" onKeyPress="return checkSubmit(event)" style="width: 100%;"></h1>
+<bsh> maxUploadSize = Integer.parseInt(service.getPawServer().maxPost) / 1024 / 1024; </bsh>			
+			<div id="uploadresponse"></div>
+			<input id="mode" name="mode" type="hidden" value="add" />
+			<input id="currentpath" name="currentpath" type="hidden" />
+			<input id="newfile" name="newfile" type="file" />
+			<button id="upload" name="upload" type="submit" value="Upload" title="<bsh>$$.print(translateRaw("filemanager.button.upload.tooltip") + ": " + maxUploadSize + " Mbytes");</bsh>"><bsh>translate("filemanager.button.upload");</bsh></button>
+			<button id="newfolder" name="newfolder" type="button" value="New Folder"><bsh>translate("filemanager.button.new_folder");</bsh></button>
+			<button id="grid" class="ON" type="button" title="<bsh>translate("filemanager.button.tooltip.grid_view");</bsh>">&nbsp;</button><button id="list" type="button" title="<bsh>translate("filemanager.button.tooltip.list_view");</bsh>">&nbsp;</button>
+		</form>
+		<div id="splitter">
+			<div id="filetree"></div>
+			<div id="fileinfo"><bsh>translate("filemanager.message", new Object[] {maxUploadSize});</bsh></div>
+		</div>
+
+		<ul id="itemOptions" class="contextMenu">
+			<li class="select"><a href="#select"><bsh>translate("filemanager.button.open");</bsh></a></li>
+			<li class="download"><a href="#download"><bsh>translate("filemanager.button.download");</bsh></a></li>
+			<li class="rename"><a href="#rename"><bsh>translate("filemanager.button.rename");</bsh></a></li>
+			<li class="delete separator"><a href="#delete"><bsh>translate("filemanager.button.delete");</bsh></a></li>
+		</ul>
+
+		<script type="text/javascript" src="scripts/jquery-1.2.6.min.js"></script>
+		<script type="text/javascript" src="scripts/jquery.form.js"></script>
+		<script type="text/javascript" src="scripts/jquery.splitter/jquery.splitter.js"></script>
+		<script type="text/javascript" src="scripts/jquery.filetree/jqueryFileTree.js"></script>
+		<script type="text/javascript" src="scripts/jquery.contextmenu/jquery.contextMenu.js"></script>
+		<script type="text/javascript" src="scripts/jquery.impromptu-1.5.js"></script>
+		<script type="text/javascript" src="scripts/jquery.tablesorter.min.js"></script>
+		<script type="text/javascript" src="scripts/filemanager.config.js"></script>
+		
+
+		<!-- For I18N support the Javascript filemanager.js has been changed to filemanager.xhtml. So BeanShell code will be processed. -->
+		<!-- <script type="text/javascript" src="scripts/filemanager.js"></script> -->
+		<script type="text/javascript" src="scripts/filemanager.xhtml"></script>
+
+	</body>
+</html>

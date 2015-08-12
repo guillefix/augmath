@@ -1,0 +1,68 @@
+#---------------------------------------------------------------#
+# URL Redirector
+#---------------------------------------------------------------# 
+# Syntax is: 
+# Original URL <tab> Replacement URL
+# Perl 5 compatible regular expressions may
+# be used
+#---------------------------------------------------------------#
+#### SEARCH.MSN REDIRECTS ####
+
+## Redirects search.msn.* to www.google.com
+#^http://search\.msn\..*?/results.asp\?.*?q=([^&]*)			http://www.google.com/search?q=$1
+#^http://ie\.search\.msn\.com/migrate.asp\?.*?q=([^&]*)		http://www.google.de/search?q=$1
+
+## Redirects search.msn.* to www.yahoo.com
+#^http://search\.msn\..*?/results.asp\?.*?q=([^&]*)		http://search.yahoo.com/bin/search?p=$1
+
+## Redirects search.msn.* to www.altavista.com
+#^http://search\.msn\..*?/results.asp\?.*?q=([^&]*)		http://www.altavista.com/q?q=$1
+
+## Redirects search.msn.* to www.lycos.com
+#^http://search\.msn\..*?/results.asp\?.*?q=([^&]*)		http://search.lycos.com/default.asp?query=$1
+
+## Redirects search.msn.* to www.fireball.de
+#^http://search\.msn\..*?/results.asp\?.*?q=([^&]*)		http://suche.fireball.de/fcgi/query1.fcg?action=query&q=$1
+
+## Redirects search.msn.* to www.metacrawler.com
+#^http://search\.msn\..*?/results.asp\?.*?q=([^&]*)		http://search.metacrawler.com/crawler?general=$1
+
+#### SEARCH.MSN REDIRECTS -- END -- ####
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

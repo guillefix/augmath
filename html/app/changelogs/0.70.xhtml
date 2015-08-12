@@ -1,0 +1,46 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+<title>Changelog 0.70</title>
+<link rel="stylesheet" href="../css/default.css">
+<script type="text/javascript" src="../js/jquery.js"></script>
+<script type="text/javascript" src="../js/executeScript.js"></script>
+</head>
+<body>
+<bsh>source(server.props.get("serviceContext").pawHome + "/html/app/auth.bsh");</bsh>
+<h1>Changelog - Version 0.70</h1>
+<p>This release includes the German translation of the Web Application and the new Native Mapper.</p>
+
+<h2>Web Application</h2>
+<ul>
+<li>The Web Application has been translated into German. Translations into other languages should be easy. The language specific properties files are located in the <tt>/paw/html/app/i18n</tt> directory.</li>
+</ul>
+<h2>PAW Functions</h2>
+<h3>Native Mapper</h3>The Native Mapper allows to map URLs to native DEXed classes allowing for a much better performance than interpreted BeanShell code.<br />
+To use the Native Mapper, create a DEXed jar file and put it inside the <tt>/sdcard/paw/webconf/dex</tt> directory.<br />
+<br />
+DEXed classes can be created by using the dx command form the Android SDK:<br />
+<tt>./dx --dex --output=out_dex.jar --positions=lines in.jar</tt><br />
+<br />
+The mapping file has the following format and has to be placed in the <tt>/sdcard/paw/webconf/mapping</tt> directory:<br />
+<br />
+<tt>URL=DEX class name</tt><br />
+<br />
+All files present in that directory will be loaded by the Native Mapper.<br />
+<br />
+Here is an example file content from the Web Application:<br />
+<tt>/app/get_app_icon.xhtml=de.fun2code.android.pawserver.external.webapp.graphics.FetchAppIcon<br />
+  /app/graphics/contact_photo.xhtml=de.fun2code.android.pawserver.external.webapp.graphics.FetchContactPhoto<br />
+  /app/get_scaled_image.xhtml=de.fun2code.android.pawserver.external.webapp.graphics.FetchScaledImage<br />
+  /app/graphics/albumart.xhtml=de.fun2code.android.pawserver.external.webapp.graphics.FetchAlbumArt<br />
+  /app/graphics/system_load_image.xhtml=de.fun2code.android.pawserver.external.webapp.graphics.DrawLoadImage<br />
+  </tt>
+<p>
+The class that is called must define a method with the name <tt>response</tt> and the following signature:<br>
+<tt>public void respond(Request request, Server server, Hashtable&lt;String, Object&gt; parameters)</tt>
+<br><br>
+Alle the variables available in BeanShell XHTML files are also passed to this method.
+</p>
+<p></p>
+</body>
+</html>

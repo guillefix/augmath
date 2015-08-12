@@ -1,0 +1,77 @@
+/*
+System load information script
+*/
+
+getSystemLoad() {
+  return getSystemLoad(1); 
+}
+
+getSystemLoad(periodSec) {
+  return getSystemLoad(periodSec, "");
+}
+
+getSystemLoad(periodSec, cpu) {
+  loadRes = new Hashtable();
+
+  line1 = getCpuLine(cpu);
+  Thread.sleep(periodSec * 1000);
+  line2 = getCpuLine(cpu);
+
+  values1 = line1.split("\\s+");
+  user1 = new Double(values1[1]);
+  nice1 = new Double(values1[2]);
+  system1 = new Double(values1[3]);
+  idle1 = new Double(values1[4]);
+  sum1 = user1 + nice1 + system1 + idle1;
+
+  values2 = line2.split("\\s+");
+  user2 = new Double(values2[1]);
+  nice2 = new Double(values2[2]);
+  system2 = new Double(values2[3]);
+  idle2 = new Double(values2[4]);
+  sum2 = user2 + nice2 + system2 + idle2;
+
+  idle = (int) ((idle2 - idle1) / (sum2 - sum1) * 100);
+  loadRes.put("load", 100 - idle);
+  loadRes.put("user", (int) ((user2 - user1) / (sum2 - sum1) * 100));
+  loadRes.put("nice", (int) ((nice2 - nice1) / (sum2 - sum1) * 100));
+  loadRes.put("system", (int) ((system2 - system1) / (sum2 - sum1) * 100));
+  loadRes.put("idle", idle);
+
+  return loadRes;
+}
+
+getCpus() {
+  return getLinesFromStatFile("^cpu[0-9]+.*").size();
+  
+}
+
+getCpuLine() {
+  return getCpuLine("");
+}
+  
+getCpuLine(cpu) {
+  lines = getLinesFromStatFile("^cpu" + cpu + ".*");
+  if(lines.size() > 0) {
+    return lines.get(0);
+  }
+
+  return null;
+}
+  
+getLinesFromStatFile(pattern) {
+  list = new ArrayList();
+  is = new FileInputStream("/proc/stat");
+  din = new DataInputStream(is);
+  
+  while( (line=din.readLine()) != null ) {
+    if(line.matches(pattern)) {
+      list.add(line);
+    }
+  }
+  din.close();
+  is.close();
+  return list;
+}
+
+

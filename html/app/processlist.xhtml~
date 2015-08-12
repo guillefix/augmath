@@ -1,0 +1,61 @@
+<html>
+<head>
+<script type="text/javascript" src="js/jquery.js"></script>
+<script type="text/javascript">
+	function startPackage(packageName) {
+		$.post("start_app.xhtml", {packageName: packageName}, function(data) {});
+		return false;
+	}
+</script>
+<title>Process List</title>
+<link rel="stylesheet" href="css/default.css">
+</head>
+<body>
+<bsh>source(server.props.get("serviceContext").pawHome + "/html/app/auth.bsh");</bsh>
+<h3>Process List</h3>
+<bsh>
+import android.app.Service;
+import android.content.pm.PackageManager;
+import android.app.ActivityManager;
+import android.content.Context;
+import android.app.ActivityManager.RunningAppProcessInfo;
+import android.content.pm.ApplicationInfo;
+import android.os.Process;
+
+service = (Service) server.props.get("serviceContext");
+
+actmgr=(ActivityManager) service.getSystemService
+(Context.ACTIVITY_SERVICE);
+pkgManager = service.getPackageManager();
+
+
+kill = request.getQueryData().get("kill");
+if(kill != null) {
+	actmgr.restartPackage(kill);
+}
+
+apps = pkgManager.getInstalledApplications(PackageManager.GET_META_DATA);
+
+appList = actmgr.getRunningAppProcesses();
+</bsh>
+<form metod="post">
+<input type="submit" value="Refresh List">
+<table border="0">
+<bsh>
+for (int i=0;i<appList.size();i++) {
+        RunningAppProcessInfo appInfo = (RunningAppProcessInfo)appList.get(i);
+
+	for (int j=0;j<apps.size();j++) {
+		//if((apps.get(j).flags & ApplicationInfo.FLAG_SYSTEM) == ApplicationInfo.FLAG_SYSTEM) { continue; }
+    		if(apps.get(j).processName.equals(appInfo.processName)) {
+			print("<tr><td>" + apps.get(j).loadLabel(pkgManager) +"</td><td><a href='#' title='Switch to App' onclick='startPackage(\"" + apps.get(j).processName + "\"); return false'><img width='35' height='35' src='get_app_icon.xhtml?processname=" + apps.get(j).processName + "'></a>&nbsp;<a href='processlist.xhtml?kill=" + apps.get(j).processName + "'><img src='images/stop.png' border='0' alt='Kill' title='Kill Process'></a></td></tr>");
+       			break;
+    		}
+
+	}
+}
+</bsh>
+</table>
+</form>
+</body>
+</html>

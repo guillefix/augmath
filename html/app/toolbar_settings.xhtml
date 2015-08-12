@@ -1,0 +1,94 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+<bsh>source(server.props.get("serviceContext").pawHome + "/html/app/bsh/i18n.bsh");</bsh>
+
+<script type="text/javascript" src="js/jquery.js"></script>
+<script type="text/javascript">
+	$(document).ready(function() {
+
+		$("form[name=changeSettings]").submit(function() {
+			$("#errorSettings").html("<img src='images/loader.gif' style='width: 16px;'>");
+			var battery  = $("[name=battery]:checked").val() != undefined ? "on" : "off";
+			var ringer_volume  = $("[name=ringer_volume]:checked").val() != undefined ? "on" : "off";
+			var memory  = $("[name=memory]:checked").val() != undefined ? "on" : "off";
+			var wifi  = $("[name=wifi]:checked").val() != undefined ? "on" : "off";
+			var load  = $("[name=load]:checked").val() != undefined ? "on" : "off";
+			var message  = $("[name=message]:checked").val() != undefined ? "on" : "off";
+			var media_player  = $("[name=media_player]:checked").val() != undefined ? "on" : "off";
+			var sharing  = $("[name=sharing]:checked").val() != undefined ? "on" : "off";
+
+			$.post("save_toolbar_settings.xhtml", {
+					battery: battery,
+					ringer_volume: ringer_volume,
+					memory: memory,
+					wifi: wifi,
+					load: load,
+					message: message,
+					media_player: media_player,
+					sharing: sharing
+				},
+		function(data) {
+			if(data.success) {
+				$("#errorSettings").html("");
+			}
+			else {
+				$("#errorSettings").html(data.message).fadeIn();
+			}
+
+		}, "json");
+		return false;
+		});
+
+	});
+</script>
+<title><bsh>translate("toolbar_settings.title");</bsh></title>
+<link rel="stylesheet" href="css/default.css">
+</head>
+<body>
+<bsh>source(server.props.get("serviceContext").pawHome + "/html/app/auth.bsh");</bsh>
+<bsh>source(server.props.get("serviceContext").pawHome + "/html/app/bsh/constantsToolbar.bsh");</bsh>
+<bsh>
+service = server.props.get("serviceContext");
+preferences = service.getSharedPreferences("PawServer", 0);
+toolbarSettings = preferences.getInt("toolbarHide", 0);
+</bsh>
+<h3><bsh>translate("toolbar_settings.title");</bsh></h3>
+<fieldset style="width: 50%;">
+<legend><b><bsh>translate("toolbar_settings.label.icons");</bsh></b></legend>
+<form name="changeSettings">
+<table cellpadding="5">
+<tr>
+<td><img src="images/battery-charging-050.png" style="width: 32px; height: 32px;"></td><td><bsh>translate("toolbar_settings.label.battery");</bsh></td><td><input type="checkbox" name="battery" <bsh>$$.print((toolbarSettings & TOOLBAR_HIDE_BATTERY) == TOOLBAR_HIDE_BATTERY ? "" : "checked");</bsh> /></td>
+</tr>
+<tr>
+<td><img src="images/speaker.png" style="width: 32px; height: 32px;"></td><td><bsh>translate("toolbar_settings.label.ringer");</bsh></td><td><input type="checkbox" name="ringer_volume" <bsh>$$.print((toolbarSettings & TOOLBAR_HIDE_RINGER_VOLUME) == TOOLBAR_HIDE_RINGER_VOLUME ? "" : "checked");</bsh> /></td>
+</tr>
+<tr>
+<td><img src="images/memory.png" style="width: 32px; height: 32px;"></td><td><bsh>translate("toolbar_settings.label.memory");</bsh></td><td><input type="checkbox" name="memory" <bsh>$$.print((toolbarSettings & TOOLBAR_HIDE_MEMORY) == TOOLBAR_HIDE_MEMORY ? "" : "checked");</bsh> /></td>
+</tr>
+<tr>
+<td><img src="images/wifi-0.png" style="width: 32px; height: 32px;"></td><td><bsh>translate("toolbar_settings.label.wifi");</bsh></td><td><input type="checkbox" name="wifi" <bsh>$$.print((toolbarSettings & TOOLBAR_HIDE_WIFI) == TOOLBAR_HIDE_WIFI ? "" : "checked");</bsh> /></td>
+</tr>
+<tr>
+<td><img src="graphics/system_load_image.xhtml?width=15&height=15&value=80" style="width: 32px; height: 32px;"></td><td><bsh>translate("toolbar_settings.label.load");</bsh></td><td><input type="checkbox" name="load" <bsh>$$.print((toolbarSettings & TOOLBAR_HIDE_LOAD) == TOOLBAR_HIDE_LOAD ? "" : "checked");</bsh> /></td>
+</tr>
+<tr>
+<td><img src="images/mail.png" style="width: 32px; height: 32px;"></td><td><bsh>translate("toolbar_settings.label.message");</bsh></td><td><input type="checkbox" name="message" <bsh>$$.print((toolbarSettings & TOOLBAR_HIDE_MESSAGE) == TOOLBAR_HIDE_MESSAGE ? "" : "checked");</bsh> /></td>
+</tr>
+<tr>
+<td><img src="images/play.png" style="width: 32px; height: 32px;"></td><td><bsh>translate("toolbar_settings.label.media");</bsh></td><td><input type="checkbox" name="media_player" <bsh>$$.print((toolbarSettings & TOOLBAR_HIDE_MEDIA_PLAYER) == TOOLBAR_HIDE_MEDIA_PLAYER ? "" : "checked");</bsh> /><small><bsh>translate("toolbar_settings.label.media_note");</bsh></smalll></td>
+</tr>
+<tr>
+<td><img src="images/share.png" style="width: 42px; height: 42px;"></td><td><bsh>translate("toolbar_settings.label.sharing");</bsh></td><td><input type="checkbox" name="sharing" <bsh>$$.print((toolbarSettings & TOOLBAR_HIDE_SHARING) == TOOLBAR_HIDE_SHARING ? "" : "checked");</bsh> /></td>
+</tr>
+</table>
+<p>
+<input type="submit" value="<bsh>translate("toolbar_settings.button.save");</bsh>">
+<span id="errorSettings" style="color: red;"></span>
+</p>
+</form>
+</fieldset>
+<p></p>
+</body>
+</html>

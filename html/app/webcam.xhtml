@@ -1,0 +1,329 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+<bsh>source(server.props.get("serviceContext").pawHome + "/html/app/bsh/i18n.bsh");</bsh>
+
+<title><bsh>translate("webcam.title");</bsh></title>
+<link rel="stylesheet" href="css/default.css">
+<link type="text/css" href="css/overcast/jquery-ui.css" rel="Stylesheet" />
+
+<script type="text/javascript" src="js/webcam.js"></script>
+<script type="text/javascript" src="js/jquery.js"></script>
+<script type="text/javascript" src="js/jquery-ui.js"></script>
+<script type="text/javascript" src="js/executeScript.js"></script>
+
+<script type="text/javascript">
+	$(document).ready(function() {
+		var defaultWait = 2;
+
+		executeScript('startWebcam');
+		initWebcamImages('img1', 'img2', 'get_file.xhtml?file=<bsh>$$.print(server.props.get("serviceContext").pawHome)</bsh>/tmp/webcam.jpg');
+		setWaitTime(defaultWait);
+
+		
+
+		$("#size").change(function() {
+ 			splitRes = $("#size").val().split("x");
+			scriptOrg = $("#setSize").val();
+			script = scriptOrg;
+			script = script.replace(/%width%/, splitRes[0]);
+			script = script.replace(/%height%/, splitRes[1]);
+			$("#setSize").val(script);
+			executeScript('setSize');
+			$("#setSize").val(scriptOrg);
+		});
+
+		$("#led").change(function() {
+			scriptOrg = $("#setLED").val();
+			script = scriptOrg;
+			script = script.replace(/%mode%/, $("#led").val());
+			$("#setLED").val(script);
+			executeScript('setLED');
+			$("#setLED").val(scriptOrg);
+		});
+
+		$("#timestamp").change(function() {
+			scriptOrg = $("#setTimestamp").val();
+			script = scriptOrg;
+			script = script.replace(/%value%/, $("#timestamp").val());
+			$("#setTimestamp").val(script);
+			executeScript('setTimestamp');
+			$("#setTimestamp").val(scriptOrg);
+		});
+
+		$("#location").change(function() {
+			scriptOrg = $("#setLocation").val();
+			script = scriptOrg;
+			script = script.replace(/%value%/, $("#location").val());
+			$("#setLocation").val(script);
+			executeScript('setLocation');
+			$("#setLocation").val(scriptOrg);
+		});
+
+		$("#rotation").change(function() {
+			scriptOrg = $("#setRotation").val();
+			script = scriptOrg;
+			script = script.replace(/%value%/, $("#rotation").val());
+			$("#setRotation").val(script);
+			executeScript('setRotation');
+			$("#setRotation").val(scriptOrg);
+		});
+
+		$("#qualitySlider").slider({
+			range: "max",
+			min: 1,
+			max: 100,
+			value: 50,
+			change: function(event, ui) {
+				$("#qualityVal").html("&nbsp;&nbsp;" + $("#qualitySlider").slider("value") + "%");
+
+				scriptOrg = $("#setQuality").val();
+				script = scriptOrg;
+				script = script.replace(/%quality%/, $("#qualitySlider").slider("value"));
+				$("#setQuality").val(script);
+				executeScript('setQuality');
+				$("#setQuality").val(scriptOrg);
+			},
+			slide: function(event, ui) { $("#qualityVal").html("&nbsp;&nbsp;" + $("#qualitySlider").slider("value") + "%"); }
+		});
+		$("#qualityVal").html("&nbsp;&nbsp;" + 50 + "%");
+
+		$("#intervalSlider").slider({
+			range: "max",
+			min: 0,
+			max: 300,
+			value: defaultWait,
+			change: function(event, ui) {
+				$("#intervalVal").html("&nbsp;&nbsp;" + $("#intervalSlider").slider("value") + " <bsh>translate("webcam.label.sec");</bsh>");
+				setWaitTime($("#intervalSlider").slider("value"));
+
+				scriptOrg = $("#setInterval").val();
+				script = scriptOrg;
+				script = script.replace(/%interval%/, $("#intervalSlider").slider("value"));
+				$("#setInterval").val(script);
+				executeScript('setInterval');
+				$("#setInterval").val(scriptOrg);
+			},
+			slide: function(event, ui) { $("#intervalVal").html("&nbsp;&nbsp;" + $("#intervalSlider").slider("value") + " <bsh>translate("webcam.label.sec");</bsh>"); }
+
+		});
+		$("#intervalVal").html("&nbsp;&nbsp;" + defaultWait + " <bsh>translate("webcam.label.sec");</bsh>");
+
+	});
+
+	$(window).bind('unload', function(){ 
+		executeScript('stopWebcam');
+	});
+	
+</script>
+
+</head>
+<body>
+<bsh>source(server.props.get("serviceContext").pawHome + "/html/app/auth.bsh");</bsh>
+<h3><bsh>translate("webcam.title");</bsh></h3>
+<p>
+<bsh>
+if(Integer.parseInt(android.os.Build.VERSION.SDK) >= 8) {
+	print(translateRaw("webcam.info"));
+}
+</bsh>
+</p>
+<table><tr>
+<td>&nbsp;&nbsp;<bsh>translate("webcam.label.size");</bsh>:
+<select id="size">
+<bsh>
+// Should be supported by all devices
+initialWidth = 320;
+initialHeight = 240;
+
+import de.fun2code.android.pawserver.media.*;
+
+ci = CameraPreview.getInstance();
+for(cs : ci.getSupportedSizes()) {
+    print("<option " + (cs.width == initialWidth && cs.height == initialHeight ? "selected" : "") + ">"+ cs.width + "x" + cs.height + "</option>");
+}
+</bsh>
+</select>
+</td>
+
+<td>
+&nbsp;&nbsp;<bsh>translate("webcam.label.timestamp");</bsh>:
+<select id="timestamp">
+<option value="false"><bsh>translate("webcam.choice.off");</bsh></option>
+<option value="true" selected><bsh>translate("webcam.choice.on");</bsh></option>
+</select>
+</td>
+
+<td>
+&nbsp;&nbsp;<bsh>translate("webcam.label.location");</bsh>:
+<select id="location">
+<option value="false" selected><bsh>translate("webcam.choice.off");</bsh></option>
+<option value="true"><bsh>translate("webcam.choice.on");</bsh></option>
+</select>
+</td>
+
+<td>
+<bsh>
+if(Integer.parseInt(android.os.Build.VERSION.SDK) >= 8) {
+print("&nbsp;&nbsp;" + translateRaw("webcam.label.led_flash") + ": <select id='led'>");
+print("<option value='FLASH_MODE_OFF' selected>" + translateRaw("webcam.choice.off") + "</option>");
+print("<option value='FLASH_MODE_TORCH'>" + translateRaw("webcam.choice.on") + "</option>");
+print("</select>");
+}
+</bsh>
+</td>
+
+<td>
+&nbsp;&nbsp;<bsh>translate("webcam.label.rotation");</bsh>:
+<select id="rotation" title="<bsh>translate("webcam.tooltip.rotation");</bsh>">
+<option value="0" selected>0&#176;</option>
+<option value="90">90&#176;</option>
+<option value="180">180&#176;</option>
+<option value="270">270&#176;</option>
+</select>
+</td>
+
+<td>&nbsp;&nbsp;<button onClick="executeScript('stopWebcam');" title="<bsh>translate("webcam.tooltip.force_stop");</bsh>"><bsh>translate("webcam.button.force_stop");</bsh></button></td>
+</tr>
+</table>
+<br><br>
+<table>
+<tr>
+<td>
+&nbsp;&nbsp;<bsh>translate("webcam.label.quality");</bsh>:&nbsp;&nbsp;
+</td>
+<td>
+<div id="qualitySlider" style="width: 150px;"></div>
+</td>
+<td><div id="qualityVal"></div></td>
+<td>
+&nbsp;&nbsp;<bsh>translate("webcam.label.refresh");</bsh>:&nbsp;&nbsp;
+</td>
+<td>
+<div id="intervalSlider" style="width: 150px;"></div>
+</td>
+<td><div id="intervalVal"></div></td>
+</tr>
+</tr>
+</table>
+
+<p>&nbsp;</p>
+
+<div>
+<img id="img1" src="images/transparent.png" onError="onImageLoadError(this)" style="border: 1px dotted white; margin-left: 10%; display: none;"/>
+
+<img id="img2" src="images/transparent.png" onError="onImageLoadError(this)" style="border: 1px dotted white; margin-left: 10%; display: none;"/>
+</div>
+
+<p>&nbsp;</p>
+
+<!-- The scripts -->
+<textarea id="startWebcam" style="display: none;">
+import de.fun2code.android.pawserver.media.*;
+
+// Should be supported by all devices
+initialWidth = 320;
+initialHeight = 240;
+
+ci = CameraPreview.getInstance();
+ci.setSize(initialWidth, initialHeight);
+ci.setFile(new File(server.props.get("serviceContext").pawHome + "/tmp/webcam.jpg"));
+ci.setQuality(50);
+ci.setPrintDate(true, "#ffffff", "#55000000");
+ci.setPrintGeoLocation(false, "#ffffff", "#55000000");
+ci.setInterval(2);
+ci.setRotation(0);
+if(CameraPreview.isCameraIdSupported()) {
+  ci.setCameraId(CameraPreview.getBackCameraId());
+}
+ci.setSurfaceEnabled(true);
+ci.setSurfaceSize(-1, -1);
+ci.start();
+</textarea>
+
+<textarea id="stopWebcam" style="display: none;">
+import de.fun2code.android.pawserver.media.*;
+import android.hardware.Camera;
+
+ci = CameraPreview.getInstance();
+
+// Switch off LED
+camera = ci.getCamera();
+if(Integer.parseInt(android.os.Build.VERSION.SDK) >= 8 && camera != null) {
+	params = camera.getParameters();
+	params.setFlashMode(Camera.Parameters.FLASH_MODE_OFF);
+	camera.setParameters(params);
+}
+
+ci.stop();
+new File(server.props.get("serviceContext").pawHome + "/tmp/webcam.jpg").delete();
+</textarea>
+
+<textarea id="setSize" style="display: none;">
+import de.fun2code.android.pawserver.media.*;
+
+ci = CameraPreview.getInstance();
+ci.setSize(%width%, %height%);
+ci.stop();
+ci.start();
+</textarea>
+
+<textarea id="setQuality" style="display: none;">
+import de.fun2code.android.pawserver.media.*;
+
+ci = CameraPreview.getInstance();
+ci.setQuality(%quality%);
+ci.stop();
+ci.start();
+</textarea>
+
+<textarea id="setInterval" style="display: none;">
+import de.fun2code.android.pawserver.media.*;
+
+ci = CameraPreview.getInstance();
+ci.setInterval(%interval%);
+ci.stop();
+ci.start();
+</textarea>
+
+<textarea id="setTimestamp" style="display: none;">
+import de.fun2code.android.pawserver.media.*;
+
+ci = CameraPreview.getInstance();
+ci.setPrintDate(%value%, "#ffffff", "#55000000");
+ci.stop();
+ci.start();
+</textarea>
+
+<textarea id="setLocation" style="display: none;">
+import de.fun2code.android.pawserver.media.*;
+
+ci = CameraPreview.getInstance();
+ci.setPrintGeoLocation(%value%, "#ffffff", "#55000000");
+ci.stop();
+ci.start();
+</textarea>
+
+<textarea id="setLED" style="display: none;">
+import de.fun2code.android.pawserver.media.*;
+import android.hardware.Camera;
+
+ci = CameraPreview.getInstance();
+camera = ci.getCamera();
+params = camera.getParameters();
+params.setFlashMode(Camera.Parameters.%mode%);
+camera.setParameters(params);
+</textarea>
+
+<textarea id="setRotation" style="display: none;">
+import de.fun2code.android.pawserver.media.*;
+
+ci = CameraPreview.getInstance();
+ci.setRotation(%value%);
+</textarea>
+
+</body>
+</html>
+
+
+

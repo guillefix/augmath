@@ -1,0 +1,144 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+<bsh>source(server.props.get("serviceContext").pawHome + "/html/app/bsh/i18n.bsh");</bsh>
+
+<title><bsh>translate("mediaplayer_control.title");</bsh></title>
+<link rel="stylesheet" href="css/default.css">
+<link type="text/css" href="css/overcast/jquery-ui.css" rel="Stylesheet" />
+<bsh>
+// Get max valume
+import android.media.AudioManager;
+import android.content.Context;
+
+service = server.props.get("serviceContext");
+audioMgr = service.getSystemService(Context.AUDIO_SERVICE);
+maxVolume = audioMgr.getStreamMaxVolume(AudioManager.STREAM_MUSIC);
+volume = audioMgr.getStreamVolume(AudioManager.STREAM_MUSIC);
+</bsh>
+<script type="text/javascript" src="js/jquery.js"></script>
+<script type="text/javascript" src="js/jquery-ui.js"></script>
+<script type="text/javascript" src="js/executeScript.js"></script>
+<script type="text/javascript">
+sliding = false;
+		$(document).ready(function() {
+			$("#volume_slider").slider({
+				range: "max",
+				min: 0,
+				max: <bsh>$$.print(maxVolume); </bsh>,
+				value: <bsh>$$.print(volume); </bsh>,
+				change: function(event, ui) {
+					setVolume();
+				}
+			});
+			update();
+		});
+
+		function update() {
+			runScript("getScript", "getArtistName", "artist");
+			runScript("getScript", "getAlbumName", "album");
+			runScript("getScript", "getTrackName", "track");
+			runScript("getScript", "isPlaying", "isPlaying");
+			runScript("getScript", "position", "position");
+
+			if($("#isPlaying").val() == "true") {
+				$("#play").hide();
+				$("#pause").show();
+			}
+			else {
+				$("#play").show();
+				$("#pause").hide();
+			}
+			
+			
+		}
+
+		function runScript(scriptName, cmd, output) {
+			scriptOrg = $("#" + scriptName).val();
+			script = scriptOrg;
+			script = script.replace(/%cmd%/, cmd);
+			$("#" + scriptName).val(script);
+			executeScript(scriptName, null, output);
+			$("#" + scriptName).val(scriptOrg);
+		}
+
+		function setVolume() {
+			volume = $("#volume_slider").slider("value");
+
+			scriptOrg = $("#volumeScript").val();
+			script = scriptOrg;
+			script = script.replace(/%volume%/, volume);
+			$("#volumeScript").val(script);
+
+			executeScript('volumeScript', null);
+			$("#volumeScript").val(scriptOrg);
+
+		}
+</script>
+
+</head>
+<body>
+<bsh>source(server.props.get("serviceContext").pawHome + "/html/app/auth.bsh");</bsh>
+<center>
+<h1><bsh>translate("mediaplayer_control.title");</bsh></h1>
+<p>
+<table>
+<tr><td>
+<img src="images/speaker.png" width="32" height="32" align="middle">
+</td><td>
+<div id="volume_slider" style="width: 200px;"></div>
+</td>
+</tr>
+</table>
+</p>
+<table>
+<tr><td><bsh>translate("mediaplayer_control.label.artist");</bsh></td><td><input type="text" id="artist" readonly></td>
+<tr><td><bsh>translate("mediaplayer_control.label.album");</bsh></td><td><input type="text" id="album" readonly></td>
+<tr><td><bsh>translate("mediaplayer_control.label.title");</bsh></td><td><input type="text" id="track" readonly></td>
+<tr><td colspan="2">&nbsp;</td></tr>
+<tr><td></td><td align="center">
+	<input type="image" src="images/media-skip-backward.png" onClick="runScript('cmdScript', 'prev');" title="<bsh>translate("mediaplayer_control.tooltip.previous");</bsh>">
+	<input type="image" id="pause" src="images/media-playback-pause.png" onClick="runScript('cmdScript', 'pause');" title="<bsh>translate("mediaplayer_control.tooltip.pause");</bsh>">
+	<input type="image" id="play" src="images/media-playback-start.png" onClick="runScript('cmdScript', 'play');" title="<bsh>translate("mediaplayer_control.tooltip.play");</bsh>">
+	<input type="image" src="images/media-skip-forward.png" onClick="runScript('cmdScript', 'next');"  title="<bsh>translate("mediaplayer_control.tooltip.next");</bsh>">
+</td></tr>
+</table>
+
+
+<input type="hidden" id="position" value="0" onChange="setTimeout('update();', 1000);">
+<input type="hidden" id="isPlaying">
+
+<!-- Script -->
+<textarea id="getScript" style="visibility:hidden; display: none;">
+import de.fun2code.android.pawserver.AndroidInterface;
+ps = AndroidInterface.getMediaPlayerService().getPlayBackService();
+ret = "";
+if(ps != null) {
+	ret = ps.%cmd%();
+}
+$$.print(ret);
+</textarea>
+
+<textarea id="cmdScript" style="visibility:hidden; display: none;">
+import de.fun2code.android.pawserver.AndroidInterface;
+ps = AndroidInterface.getMediaPlayerService().getPlayBackService();
+if(ps != null) {
+	ps.%cmd%();
+}
+</textarea>
+
+
+<textarea id="volumeScript" cols="80" rows="4" id="rescanScript" style="visibility:hidden; display: none;">
+import android.media.AudioManager;
+import android.content.Context;
+
+service = server.props.get("serviceContext");
+audioMgr = service.getSystemService(Context.AUDIO_SERVICE);
+audioMgr.setStreamVolume(AudioManager.STREAM_MUSIC, %volume%, 0);
+
+</textarea>
+
+</body>
+</html>
+
+

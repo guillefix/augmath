@@ -1,0 +1,10 @@
+  <!ELEMENT server (port, log, proxyhost?, proxyport?, admin?)>
+  <!ELEMENT port (#PCDATA)> 
+  <!ELEMENT root (#PCDATA)> 
+  <!ELEMENT log (#PCDATA)> 
+  <!ELEMENT proxyhost (#PCDATA)> 
+  <!ELEMENT proxyport (#PCDATA)> 
+
+  <!ELEMENT admin (port, user, pass)>
+  <!ELEMENT user (#PCDATA)> 
+  <!ELEMENT pass (#PCDATA)> 

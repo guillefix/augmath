@@ -1,0 +1,54 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+<title>Changelog 0.47</title>
+<link rel="stylesheet" href="../css/default.css">
+<script type="text/javascript" src="../js/jquery.js"></script>
+<script type="text/javascript" src="../js/executeScript.js"></script>
+<script type="text/javascript" src="../js/jquery.rotate.js"></script>
+</head>
+<body>
+<bsh>source(server.props.get("serviceContext").pawHome + "/html/app/auth.bsh");</bsh>
+<h1>Changelog - Version 0.47</h1>
+
+<h2>Server</h2>
+<ul>
+<li>Fixed Fource close on exit.</li>
+<li>Fixed hang on server stop when HTTPS is used. Unfortunately this is a <a href="http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=6447412" class="link" target="_blank">Java issue</a>, so the server has to be killed to avoid blocking. This means that the activity is closed when HTTPS is used. When the widget is used behaviour is as before.</li>
+<li>"Reset Config" is now available in the preferences of the activity. So if something does not work you can reset the configuration. After using this option the user/password will be reset and the content will be re-extraced on next startup.</li>
+</ul>
+<p></p>
+
+<h2>Web App</h2>
+<ul>
+<li>Clipboard can now be read from and written to the device.</li>
+<li>When the Media Player icon is displayed in the statusbar it is now possible to click on the icon to open a small Media Player control interface.</li>
+<li>Feedback for now includes device info into the subject of the mail.</li>
+<li>Server location is now displayed in the server statistics.</li>
+</ul>
+
+<h2>Android Functions</h2>
+<h3>Image Filters</h3>
+<p>
+Image filters for grayscale and sepia are available.
+</p>
+The two methods <tt>Graphics.filterBitmapSepia(String)</tt> and <tt>Graphics.filterBitmapGrayScale(String)</tt> in the package <tt>de.fun2code.android.pawserver.util.Graphics</tt> take the filename (as String) and return a <tt>android.graphics.Bitmap</tt> as result.
+
+<h3>Clipboard</h3>
+<p>
+With the methods <tt>String readFromClipboard()</tt> and <tt>writeToClipboard(String)</tt> it is now possible to read from and write to the the clipboard of the device.
+</p>
+The example will write a text to the clipboard of the device and read it afterwards.
+<textarea cols="80" rows="4" id="clipboardScript">
+writeToClipboard("Clipboard Text");
+$$.print(readFromClipboard());
+</textarea><br>
+Result:<br><textarea type="text" id="clipboardScriptResult" cols="40" rows="1"></textarea>
+<p></p>
+<button onClick="executeScript('clipboardScript', 'clipboardScriptLoader', 'clipboardScriptResult');">Execute Script</button>&nbsp;<img id="clipboardScriptLoader" src="../images/loader.gif" style="display: none;" width="16">
+
+<p></p>
+
+
+</body>
+</html>

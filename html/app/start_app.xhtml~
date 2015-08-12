@@ -1,0 +1,22 @@
+<html>
+<body>
+<bsh>source(server.props.get("serviceContext").pawHome + "/html/app/auth.bsh");</bsh>
+<bsh>
+import android.app.Service;
+import android.content.pm.PackageManager;
+import android.content.Intent;
+
+
+if(request.getQueryData().get("packageName") != null) {
+	service = (Service) server.props.get("serviceContext");
+	pkgManager = service.getPackageManager();
+
+	Intent intent = pkgManager.getLaunchIntentForPackage(request.getQueryData().get("packageName"));
+	service.startActivity(intent);
+}
+
+</bsh>
+</table>
+</form>
+</body>
+</html>

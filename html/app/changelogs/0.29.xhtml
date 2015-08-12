@@ -1,0 +1,96 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+<title>Changelog 0.29</title>
+<link rel="stylesheet" href="../css/default.css">
+<script type="text/javascript" src="../js/jquery.js"></script>
+<script type="text/javascript" src="../js/executeScript.js"></script>
+</head>
+<body>
+<bsh>source(server.props.get("serviceContext").pawHome + "/html/app/auth.bsh");</bsh>
+<h1>Changelog - Version 0.29</h1>
+This release includes mainly server enhancements to have a better framework for later web applications.<br>
+Web App users will not find much new things in this release.
+<p></p>
+<h2>Server</h2>
+The BeanShell Handler was completely rewritten. This should make serving the pages snappier.<br>
+Web pages containing BeanShell code now must have the file extension <tt>xhtml</tt> to be processed.
+
+<h2>Scoping</h2>
+The server noch supports two scopes. A Server and a Session scope.<br>
+Objects can be placed inside the scoped with the following commands:
+<pre><tt>
+serverPut(key, object);
+serverGet(key);
+
+sessionPut(key, object);
+sessionGet(key);
+</tt></pre>
+
+<h2>BeanShell</h2>
+BeanShell now has an additional variable <tt>$$</tt> which is an alias for the BeanShell interpreter.<br>
+This can be used to generate output without linebreak by using the <tt>$$.print()</tt> command.
+<p></p>
+To get request parameters the <tt>paramters</tt> <i>Hashtable</i> is provided. The till now uses statement <tt>request.getQueryData()</tt> is deprecated, because there were encoding problems with this function.<br>
+As an example: To get the parameter value of a parameter called <tt>text</tt> you would use: <tt>parameters.get("text");</tt>
+
+<h2>Android Functions</h2>
+In this vesion interacting with Android has been improved.<br>
+For some of these functions it is necessary that the PAW Server activity is active in the foreground.
+The activity is therefore automatically, if needed.
+<p></p>
+Below are examples which demonstrate these commands. To test them yourself you can change the code inside the text fields.
+<p></p>
+
+<h3>Scan Barcode</h3>
+For this functionality to work, the Barcode Scanner application has to be installed.<br>
+If this is not the case, you can press the following button and the Android Market will be opened on your device:
+<button onClick="executeScript('barcodeScannerScript', 'barcodeScannerScriptLoader');">Install Barcode Scanner</button><input id="barcodeScannerScript" type="hidden" value='openUri("market://search?q=pname:com.google.zxing.client.android");'>&nbsp;<img id="barcodeScannerScriptLoader" src="../images/loader.gif" style="display: none;" width="16">
+<p></p>
+<textarea cols="80" rows="1" id="scanScript">
+res = scanBarcode();
+$$.print(res);
+</textarea><br>
+Result:<br><textarea type="text" id="scanScriptResult" cols="40" rows="1"></textarea><p></p>
+<button onClick="executeScript('scanScript', 'scanScriptLoader', 'scanScriptResult');">Execute Script</button>&nbsp;<img id="scanScriptLoader" src="../images/loader.gif" style="display: none;" width="16">
+<p></p>
+<h3>Display Toast Message</h3>
+As duration parameter <tt>"short"</tt> or <tt>"long"</tt> can be used.<p></p>
+<textarea cols="80" rows="1" id="toastScript">
+makeToast("Test Toast message...", "short");
+</textarea><p></p>
+<button onClick="executeScript('toastScript', 'toastScriptLoader');">Execute Script</button>&nbsp;<img id="toastScriptLoader" src="../images/loader.gif" style="display: none;" width="16">
+<p></p>
+
+<h3>Display Alert Dialog</h3>
+<textarea cols="80" rows="1" id="alertScript">
+showAlert("Dialog Title", "The text message.");
+</textarea><p></p>
+<button onClick="executeScript('alertScript', 'alertScriptLoader');">Execute Script</button>&nbsp;<img id="alertScriptLoader" src="../images/loader.gif" style="display: none;" width="16">
+<p></p>
+
+<h3>Display Alert Dialog with Input</h3>
+<textarea cols="80" rows="1" id="dialogInputScript">
+res=showInputAlert("Dialog Title", "Type in some text:");
+$$.print(res);
+</textarea><br>
+Result:<br><textarea type="text" id="dialogInputScriptResult" cols="40" rows="1"></textarea><p></p>
+<p></p>
+<button onClick="executeScript('dialogInputScript', 'dialogInputScriptLoader', 'dialogInputScriptResult');">Execute Script</button>&nbsp;<img id="dialogInputScriptLoader" src="../images/loader.gif" style="display: none;" width="16">
+<p></p>
+
+<h3>Send an Email</h3>
+<textarea cols="80" rows="1" id="mailScript">
+sendMail("android@fun2code.de", "Test Mail from PAW Server", "Hello,\nThis is just a test mail :)");
+</textarea><p></p>
+<button onClick="executeScript('mailScript', 'mailScriptLoader');">Execute Script</button>&nbsp;<img id="mailScriptLoader" src="../images/loader.gif" style="display: none;" width="16">
+<p></p>
+
+<h3>Open an URI</h3>
+<textarea cols="80" rows="1" id="openUriScript">
+openUri("market://search?q=pname:de.fun2code.android.pawserver");
+</textarea><p></p>
+<button onClick="executeScript('openUriScript', 'openUriScriptLoader');">Execute Script</button>&nbsp;<img id="openUriScriptLoader" src="../images/loader.gif" style="display: none;" width="16">
+<p></p>
+</body>
+</html>

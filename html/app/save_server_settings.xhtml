@@ -1,0 +1,65 @@
+<html>
+<body>
+<bsh>source(server.props.get("serviceContext").pawHome + "/html/app/auth.bsh");</bsh>
+<bsh>
+import org.json.*;
+import android.app.Service;
+import de.fun2code.android.pawserver.util.*;
+
+service = (Service) server.props.get("serviceContext");
+
+// server_port: $("[name=serverPort]").val(), http_proxy: httpProxy, https_proxy
+
+jsonLogin = new JSONObject();
+try {
+	serverPort = parameters.get("server_port");
+	httpProxy = parameters.get("http_proxy");
+	httpsProxy = parameters.get("https_proxy");
+	maxPost = parameters.get("maxPost");
+	connectionType = parameters.get("connectionType");
+	hideNotificationIcon = parameters.get("hideNotificationIcon");
+	execAutostartScripts = parameters.get("execAutostartScripts");
+	allowSharing = parameters.get("allowSharing");
+	useWakeLock = parameters.get("useWakeLock");
+	showUrlInNotification = parameters.get("showUrlInNotification");
+	freezeContent = parameters.get("freezeContent");
+    logLevel = parameters.get("logLevel");
+
+	if(serverPort.equals("")) { serverPort = null; }
+	if(maxPost.equals(""))    { maxPost = null; }
+
+	serverXml = ServerConfigUtil.buildServerConfig(service.getPawServer(),
+		serverPort != null ? Integer.parseInt(serverPort) : 8080,
+		httpProxy != null && httpProxy.equals("on") ? true : false,
+		httpsProxy != null && httpsProxy.equals("on") ? true : false,
+		maxPost != null ? Integer.parseInt(maxPost) : service.getPawServer().maxPost,
+		connectionType, logLevel != null ? Integer.parseInt(logLevel) : Integer.parseInt(service.getPawServer().log));
+
+	out = new BufferedWriter(new FileWriter(server.props.get("serviceContext").pawHome + "/conf/server.xml"));
+	out.write(serverXml);
+	out.close();
+
+	// Write service icon setting
+	preferences = service.getSharedPreferences("PawServer", 0);
+	editor = preferences.edit();
+	editor.putBoolean("HideNotificationIcon", (hideNotificationIcon != null && hideNotificationIcon.equals("on")) ? true : false);
+	editor.putBoolean("ExecAutostartScripts", (execAutostartScripts != null && execAutostartScripts.equals("on")) ? true : false);
+	editor.putBoolean("AllowSharing", (allowSharing != null && allowSharing.equals("on")) ? true : false);
+	editor.putBoolean("UseWakeLock", (useWakeLock != null && useWakeLock.equals("on")) ? true : false);
+	editor.putBoolean("ShowUrlInNotification", (showUrlInNotification != null && showUrlInNotification.equals("on")) ? true : false);
+	editor.putBoolean("FreezeContent", (freezeContent != null && freezeContent.equals("on")) ? true : false);
+	editor.commit();
+
+	jsonLogin.put("success", true);
+}
+catch(Exception e) {
+	jsonLogin.put("success", false);
+	jsonLogin.put("message", "Settings could not be saved!");
+}
+
+request.sendResponse(jsonLogin.toString().getBytes(), "text/plain");
+request.out.flush();
+request.out.close();
+</bsh>
+</body>
+</html>

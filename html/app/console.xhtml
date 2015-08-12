@@ -1,0 +1,108 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+<bsh>source(server.props.get("serviceContext").pawHome + "/html/app/bsh/i18n.bsh");</bsh>
+
+<title>BeanShell Console</title>
+<link rel="stylesheet" href="css/default.css">
+<!--
+<link href="css/jquery-linedtextarea.css" type="text/css" rel="stylesheet" />
+-->
+
+<style type="text/css">
+      .CodeMirror-line-numbers {
+        width: 2.2em;
+        color: #aaa;
+        background-color: #eee;
+        text-align: right;
+        padding-right: .3em;
+        font-size: 10pt;
+        font-family: monospace;
+        padding-top: .4em;
+      }
+	  .CodeMirror-wrapping {
+		background: white;
+	  }
+    </style>
+
+<!-- Handle tab key in textarea -->
+<script type="text/javascript" src="js/checkTab.js"></script>
+<script type="text/javascript" src="js/jquery.js"></script>
+<script type="text/javascript" src="js/executeScript.js"></script>
+
+<script src="js/codemirror/js/codemirror.js" type="text/javascript"></script>
+<script src="js/codemirror/js/mirrorframe.js" type="text/javascript"></script>
+
+
+<script type="text/javascript">
+	var editor;
+	$(document).ready(function() {
+		// Setup syntax colouring
+		var textarea = document.getElementById('code');
+		   editor = CodeMirror.fromTextArea('code', {
+			height: "350px",
+			content: textarea.value,
+			parserfile: ["tokenizejavascript.js", "parsejavascript.js"],
+			stylesheet: "js/codemirror/css/jscolors.css",
+			path: "js/codemirror/js/",
+			autoMatchParens: true,
+			lineNumbers: true
+		  });
+		
+		// Draw black border around editor iframe
+		$("iframe").css("border", "1px solid black");
+	
+		// Set focus on first textarea
+		$("textarea:visible:first").focus();
+
+		// Add line numbers
+		//$("#code").linedtextarea();
+ 	});
+
+	function execute() {
+		$("#code2").val(editor.getCode());
+		executeScript('code2', 'loader', 'output');
+	}
+</script>
+
+</head>
+<body>
+<bsh>source(server.props.get("serviceContext").pawHome + "/html/app/auth.bsh");</bsh>
+<h3>BeanShell Console</h3>
+<bsh>translate("general.label.no_translation");</bsh>
+<pre>
+<bsh>
+output = "OS: " + System.getProperty("os.name") +
+		                   " (" + System.getProperty("os.version") + "/" +
+				   System.getProperty("os.arch") + ")\n";
+				   
+  		     output += "Java Version: " +
+		                  System.getProperty("java.version") + " (" + 
+				  System.getProperty("java.vendor") + ")";
+$$.print(output);
+</bsh>
+BeanShell Version: <bsh>printBanner();</bsh></pre>
+
+<bsh>code = parameters.get("code");</bsh>
+
+<h3>BeanShell Code:</h3>
+<textarea id='code' rows='15' style='width: 80%; font-size: 12px;'>
+// Enter code here...
+
+</textarea>
+
+<br><button onClick="execute();">Execute</button>&nbsp;<img id="loader" src="images/loader.gif" style="display: none;" width="16">
+
+
+<br>
+
+<h3>Output:</h3>
+<textarea id="output" rows="15" style="background: black; color:white; width: 80%; border: 2px solid white;">
+</textarea>
+
+<!-- Hidden text area to which the code is copied before submission -->
+<textarea id="code2" style="display: none;"></textarea>
+
+</body>
+</body>
+</html>

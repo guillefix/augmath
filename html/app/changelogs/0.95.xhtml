@@ -1,0 +1,39 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+<title>Changelog 0.95</title>
+<link rel="stylesheet" href="../css/default.css">
+<script type="text/javascript" src="../js/jquery.js"></script>
+<script type="text/javascript" src="../js/executeScript.js"></script>
+</head>
+<body>
+<bsh>source(server.props.get("serviceContext").pawHome + "/html/app/auth.bsh");</bsh>
+<h1>Changelog - Version 0.95</h1>
+<p>This release contains:
+<ul>
+    <li>Fixed TTS bug: Voice output did not work after server restart</li>
+    <li>Added advanced setting: Restart on IP Change</li>
+    <li>Web Interface: End call button in dial number page</li>
+    <li>New PAW Function: <tt>endCall()</tt></li>
+    <li>WakeLock and WifiLock bug fixes</li>
+</ul>
+</p>
+
+<h2>Server</h2>
+The option <b><i>Restart on IP Change</i></b> has been added to the <b><i>Advanced Settings</i></b> menu.<br />
+This option restarts the server each time the IP address changes.
+
+<h2>PAW Functions</h2>
+<h3>Ending a Phone Call</h3>
+The BeanShell command <tt>endCall()</tt> ends a phone call.<br/>
+<b>Note:</b> This uses unofficial API calls!
+<br><br>
+<textarea cols="80" rows="4" id="endCallScript">
+endCall();
+</textarea><br>
+<button onClick="executeScript('endCallScript', 'endCallScriptLoader');">Execute Script</button>&nbsp;<img id="endCallScriptLoader" src="../images/loader.gif" style="display: none;" width="16">
+<p></p>
+
+<p></p>
+</body>
+</html>

@@ -1,0 +1,87 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+<bsh>source(server.props.get("serviceContext").pawHome + "/html/app/bsh/i18n.bsh");</bsh>
+
+<title>Code Snippets and Demos</title>
+<link rel="stylesheet" href="css/default.css">
+<script type="text/javascript" src="js/jquery.js"></script>
+<script type="text/javascript">
+$(document).ready(function() {	
+	loadChangelog();
+
+	$("#changelogs").change( function() {
+  		loadChangelog();
+	});
+
+	function loadChangelog() {
+		$('#changelogContent').attr("src", "code_snippets/" + $("#changelogs").val());
+	}
+
+});
+</script>
+</head>
+<body style="overflow: hidden;">
+<bsh>source(server.props.get("serviceContext").pawHome + "/html/app/auth.bsh");</bsh>
+<h2>Code Snippets and Demos</h2>
+<bsh>translate("general.label.no_translation");</bsh>
+<p>
+Here you'll find some snippets and demos that could be useful.<br>
+Code snippets are BeanShell code that can be directly included into a xhml. Just surround the code with <tt>&lt;bsh&gt;...&lt;/bsh&gt;</tt> tags.
+</p>
+<b>Select Snippet:</b>&nbsp;
+<bsh>
+String[] files = new File(server.props.get("serviceContext").pawHome + "/html/app/code_snippets").list();
+
+Arrays.sort(files);
+
+print("<select id='changelogs'>");
+
+for(i=0; i<files.length; i++) {
+   if(!files[i].endsWith(".xhtml")) { continue; } //Skip if it does not end with xhtml
+   // Change "_" in the filename to " "
+   print("<option value='" + files[i]  + "'>" + files[i].replaceAll("_", " ").replaceAll("(.*)\\..*$", "$1") + "</option>");
+}
+print("</select>");
+</bsh>
+<p></p>
+<hr style="width: 100%;">
+<p></p>
+<!--
+<iframe id="changelogContent" src=""></iframe>
+-->
+<!-- To make iframe hight: 100% work in Firefox and IE -->
+
+<style type="text/css"> 
+   html, body, div, iframe { margin:0; padding:0; height:92%; } 
+   iframe { display:block; width:99%; border: 0; } 
+  </style> 
+<div id="xcontentDiv" style="overflow: auto; float: left; width: 99%; height: 90%; margin-bottom: 10px; background: white; border: 4px solid white;">
+<iframe id="changelogContent"  width="100%" height="100%" frameborder="0" style="width: 100%; height: 100%; overflow: auto; margin: 0; border: 0; display: block;"></iframe>
+</div>
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

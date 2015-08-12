@@ -1,0 +1,42 @@
+<html>
+<body>
+<bsh>source(server.props.get("serviceContext").pawHome + "/html/app/auth.bsh");</bsh>
+<bsh>
+import android.graphics.Bitmap;
+import android.graphics.Bitmap.CompressFormat;
+import android.graphics.BitmapFactory;
+import android.graphics.BitmapFactory.Options;
+
+f = new File(request.getQueryData().get("file"));
+w = request.getQueryData().get("width");
+
+if(f != null && w != null) {
+	SAMPLE_SIZE = 10;
+	IMG_MAX_WIDTH = Integer.parseInt(w);
+
+	options=new BitmapFactory.Options();
+	options.inSampleSize = SAMPLE_SIZE;
+	bitmapOrg=BitmapFactory.decodeStream(new FileInputStream(f),null,options);
+
+	if(bitmapOrg == null) {
+		break;
+	}
+
+	width = bitmapOrg.getWidth()  * SAMPLE_SIZE;
+	height = bitmapOrg.getHeight()  * SAMPLE_SIZE;
+
+	options.inSampleSize = ((int) width / IMG_MAX_WIDTH) > 1 ?  (int) (Math.floor(width / (float)IMG_MAX_WIDTH)) : 1 ;
+	resizedBitmap=BitmapFactory.decodeStream(new FileInputStream(f),null,options);
+
+	bos = new ByteArrayOutputStream();
+        resizedBitmap.compress(CompressFormat.PNG, 0 /*ignored for PNG*/, bos);
+        byte[] bitmapdata = bos.toByteArray();
+
+
+	request.sendResponse(bitmapdata, "image/png");
+	request.out.flush();
+	request.out.close();
+}
+</bsh>
+</body>
+</hmtl>

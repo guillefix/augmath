@@ -1,0 +1,131 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+<bsh>source(server.props.get("serviceContext").pawHome + "/html/app/bsh/i18n.bsh");</bsh>
+<bsh>
+import android.app.Service;
+import android.database.Cursor;
+import android.net.Uri;
+import java.text.DateFormat;
+import android.provider.Contacts.People;
+import android.content.ContentValues;
+
+title = parameters.get("title");
+threadId = parameters.get("threadId");
+contactId = parameters.get("contactId");
+delete = parameters.get("delete");
+address = parameters.get("address");
+
+thisUrl = "show_thread.xhtml?title=" + Uri.encode(title, null) + "&threadId=" + threadId + "&contactId=" + contactId +"&address=" + Uri.encode(address, null);
+
+print("<title>" + title + "</title>");
+</bsh>
+
+<link rel="stylesheet" href="../css/default.css">
+</head>
+<body>
+<bsh>
+NAME_DELIMITER = "@DEL@";
+
+source(server.props.get("serviceContext").pawHome + "/html/app/auth.bsh");
+</bsh>
+<div style="float: right;"><a href="sms_threads.xhtml"><img src="../images/back.png" title="<bsh>translate("messages.button.back_to_overview");</bsh>" style="width: 48px;"></a></div>
+<bsh>
+print("<h3 style='font-style: italic;'><img src='../graphics/contact_photo.xhtml?contactId=" + contactId + "' align='middle' style='border: 1px solid black;'> " + title + "</h3>");
+
+print("<button onCLick=\"document.location.href='sms.xhtml?compose=" + Uri.encode(address + NAME_DELIMITER + title, null) + "&contactId=" + contactId + "&back=" + Uri.encode(thisUrl, null) + "'\">" + translateRaw("messages.button.new_message") + "</button>");
+</bsh>
+
+<p></p>
+<div>
+<table border="0" cellpadding="4" cellspacing="0" style="width: 100%; font-size: 12px; border: 1px solid black;">
+<tr><th style="text-align: left;"><bsh>translate("messages.table.number");</bsh></th><th style="text-align: left;"><bsh>translate("messages.table.date");</bsh></th><th style="text-align: left;"><bsh>translate("messages.table.message");</bsh></th><th>&nbsp;</th><th>&nbsp;</th></tr>
+
+<bsh>
+STATUS_NONE = -1;
+STATUS_COMPLETE = 0;
+STATUS_PENDING = 64;
+STATUS_FAILED = 128;
+</bsh>
+
+<bsh>
+service = (Service) server.props.get("serviceContext");
+SMS_CONTENT_URI = Uri.parse("content://sms");
+</bsh>
+
+<bsh>
+// Mark all read
+values = new ContentValues(1);
+values.put("read", Integer.valueOf(1));
+service.getContentResolver().update(SMS_CONTENT_URI, values, "thread_id=" + threadId, null);
+</bsh>
+
+<bsh>
+// Delete
+if(delete != null) {
+	service.getContentResolver().delete(SMS_CONTENT_URI, "_id=" + delete, null);
+}
+</bsh>
+
+<bsh>
+unreadOnly = false;
+ignoreThreadId = 0;
+
+SMS_READ_COLUMN = "read";
+WHERE_CONDITION = unreadOnly ? SMS_READ_COLUMN + " = 0" : null;
+SORT_ORDER = "date DESC";
+
+if (ignoreThreadId > 0) {
+	WHERE_CONDITION += " AND thread_id != " + ignoreThreadId;
+}
+
+WHERE_CONDITION = WHERE_CONDITION == null ? "thread_id = " + threadId : WHERE_CONDITION + " AND thread_id = " + threadId;
+
+cursor = service.getContentResolver().query(
+	SMS_CONTENT_URI,
+	new String[] { "_id", "thread_id", "address", "person", "date", "body", "status"},
+	WHERE_CONDITION,
+	null,
+	SORT_ORDER);
+
+if (cursor != null) {
+	try {
+		colour = "#eaeaea";
+		count = cursor.getCount();
+
+		if (cursor.moveToFirst()) {
+			do {
+				colour = colour.equals("#eaeaea") ? "white" : "#eaeaea";
+
+				messageId = cursor.getLong(0);
+		                threadId = cursor.getLong(1);
+		                number = cursor.getString(2);
+		                long timestamp = cursor.getLong(4);
+
+				body = cursor.getString(5);
+
+				status = cursor.getInt(6);
+				
+				// Add links to URLs
+				body = body.replaceAll("(http://[^\\s]*)", "<a href=\"$1\" target=\"_blank\" class='link'>$1</a>");
+				statusImage = (status == STATUS_FAILED || status == STATUS_PENDING) ? "<img src='../images/warning.png' title='Not sent' style='width: 24px;'>" : "";
+
+				print("<tr style='background: " + colour + ";'><td>" + number  + "</td><td style='color: black;'>" + DateFormat.getDateTimeInstance(
+            DateFormat.MEDIUM, DateFormat.MEDIUM).format(new Date(timestamp))  + "</td><td style='color: black;'>" + body + "</td>");
+print("<td>" + statusImage + "</td>");
+print("<td><a href='show_thread.xhtml?title=" + title + "&threadId=" + threadId + "&contactId=" + contactId + "&delete=" + messageId + "'><img src='../images/stop.png' title='" + translateRaw("messages.tooltip.delete_message") + "'></a></td></tr>");
+
+			} while(cursor.moveToNext());
+		}
+	}
+	finally {
+		cursor.close();
+	}
+}
+
+</bsh>
+</table>
+</div>
+
+</body>
+</html>
