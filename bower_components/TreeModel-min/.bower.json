@@ -1,0 +1,12 @@
+{
+  "name": "TreeModel-min",
+  "_cacheHeaders": {
+    "Last-Modified": "Sun, 01 Mar 2015 16:54:35 GMT",
+    "Content-Length": "6821",
+    "Content-Type": "application/javascript; charset=utf-8"
+  },
+  "main": "index.js",
+  "_source": "http://jnuno.com/tree-model-js/vendor/jnuno/TreeModel-min.js",
+  "_target": "*",
+  "_originalSource": "http://jnuno.com/tree-model-js/vendor/jnuno/TreeModel-min.js"
+}

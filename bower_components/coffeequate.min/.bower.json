@@ -1,0 +1,12 @@
+{
+  "name": "coffeequate.min",
+  "_cacheHeaders": {
+    "Last-Modified": "Thu, 09 Jul 2015 15:53:16 GMT",
+    "Content-Length": "63406",
+    "Content-Type": "application/javascript; charset=utf-8"
+  },
+  "main": "index.js",
+  "_source": "http://matthewja.com/Coffeequate/coffeequate.min.js",
+  "_target": "*",
+  "_originalSource": "http://matthewja.com/Coffeequate/coffeequate.min.js"
+}

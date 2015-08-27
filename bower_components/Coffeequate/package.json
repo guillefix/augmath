@@ -1,0 +1,22 @@
+{
+  "name": "coffeequate",
+  "description": "A computer algebra system for JavaScript",
+  "version": "1.2.2",
+  "license": "MIT",
+  "author": "MatthewJA <hello.i.am.matthewja@gmail.com> (http://matthewja.com)",
+  "main": "coffeequate.min.js",
+  "scripts": {
+    "prepublish": "cake all"
+  },
+  "files": ["coffeequate.min.js"],
+  "devDependencies": {
+    "coffee-script": "^1.9.2",
+    "requirejs": "^2.1.17",
+    "almond": "^0.3.1"
+  },
+
+  "repository":{
+    "type":"git",
+    "url":"https://github.com/MatthewJA/Coffeequate.git"
+  }
+}

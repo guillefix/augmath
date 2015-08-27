@@ -1,0 +1,4 @@
+tests/*
+doc/*
+.codoopts
+*.tar.gz

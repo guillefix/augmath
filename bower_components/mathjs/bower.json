@@ -1,0 +1,20 @@
+{
+  "name": "mathjs",
+  "version": "1.7.1",
+  "main": "./dist/math.min.js",
+  "license": "Apache-2.0",
+  "ignore": [
+    "coverage",
+    "img",
+    "misc",
+    "node_modules",
+    "test",
+    "tools",
+    ".gitignore",
+    ".npmignore",
+    ".travis.yml",
+    "gulpfile.js",
+    "component.json",
+    "package.json"
+  ]
+}

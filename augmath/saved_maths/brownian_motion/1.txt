@@ -1,0 +1,8 @@
+selected_nodes_id_rec
+[[],["0/1"],[],["0/3/2/1"],[],["0/3/2/2"],[],["0/3/2/1"],[],["0/3/2/2"],[],[],["0/3/2/2"],[],["0/3/2/1","0/3/2/3"],["0/3/1"],["0/3/1"],["0/4"],["0/4/1"],["0/1/1"],[]]
+
+math_str_rec
+["\\text{distance travelled}=a(\\text{steps to the right}-\\text{steps to the left})",["x=a(\\text{steps to the right}-\\text{steps to the left})"],["x=a(\\text{steps to the right}-\\text{steps to the left})"],["x=a(\\text{successes}-\\text{steps to the left})"],["x=a(\\text{successes}-\\text{steps to the left})"],["x=a(\\text{successes}-\\text{failures})"],["x=a(\\text{successes}-\\text{failures})"],["x=a(s-\\text{failures})"],["x=a(s-\\text{failures})"],["x=a(s-(n-s))"],["x=a(s-(n-s))"],["x=a(s-(n-s))"],["x=a(s-n+s)"],["x=a(s-n+s)"],["x=a(2  s-n)"],["\\frac{x}{a}=(2s-n)"],["\\frac{x}{a}=2s-n"],["\\frac{x}{a}+n=2s"],["\\frac{\\frac{x}{a}+n}{2}=s"],["\\frac{n}{2}+\\frac{x}{2  a}=s"],["s=\\frac{n}{2}+\\frac{x}{2  a}"]]
+manipulation_rec
+
+[{},{"manipulation":10,"arg":"x"},{"manipulation":10,"arg":"\\text{successes}"},{"manipulation":10,"arg":"-\\text{failures}"},{"manipulation":10,"arg":"s"},{"manipulation":10,"arg":"-(n-s)"},{"manipulation":10,"arg":"-(n-s)"},{"manipulation":10,"arg":"-n+s"},{"manipulation":3},{"manipulation":1},{"manipulation":9},{"manipulation":1},{"manipulation":1},{"manipulation":3},{"manipulation":14}]

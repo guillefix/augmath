@@ -1,0 +1,49 @@
+#math, .base .mbin, .base .mord, .base .mrel, .base .minner, .base .mopen, .base .mclose, .base .vlist {
+	position: relative;
+}
+
+#math {
+	top:55px !important;
+}
+
+.mrel {
+	color: blue;
+	font-weight: bold;
+}
+
+.selected {
+	color: red;
+	border-color: red;
+}
+
+.base {
+	cursor: default;
+}
+
+.math, .manip, .basic_ops, .more_ops, #MathInput {
+	text-align: center;
+}
+
+.math {
+	height: 150px;
+}
+
+.note {
+	font-size:0.5em;
+}
+
+#depth {
+	width: 45px;
+}
+
+.bottom-buffer {
+	margin-bottom:20px;
+}
+
+.eq_buttons, .his_buttons {
+	display: none;
+}
+
+#history_list * {
+	color: black;
+}

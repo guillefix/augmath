@@ -1,0 +1,9 @@
+### Builds ###
+lib/*
+dist/*
+
+### Libraries ###
+src/vendor/**/*.js
+
+### Node ###
+/node_modules
