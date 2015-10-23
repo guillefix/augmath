@@ -1,0 +1,8 @@
+node_modules/
+
+conf/
+etc/
+html/
+logs/
+tmp/
+webconf/

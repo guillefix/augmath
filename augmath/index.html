@@ -12,6 +12,7 @@
 <link rel="stylesheet" href="bower_components/jquery-ui/themes/smoothness/jquery-ui.css">
 <link rel="stylesheet" href="bower_components/bootstrap/dist/css/bootstrap.css">
 <link rel="stylesheet" href="bower_components/katex/dist/katex.min.css">
+<link rel="stylesheet" type="text/css" href="bower_components/mathquill.css/index.css">
 <link rel="stylesheet" href="style.css">
 
 </head>
@@ -59,6 +60,8 @@
 						<option value="denominator">Denominator</option>
 						<option value="available">Available (binom)</option>
 						<option value="chosen">Chosen (binom)</option>
+						<option value="sup">Superscript</option>
+						<option value="sub">Subscript</option>
 					</select>
 				</span>
 				</li>
@@ -119,8 +122,11 @@
 				<button type="button" class="list-group-item" id="eval">
 					Evaluate/Simplify
 				</button>
+				<button type="button" class="list-group-item" id="operate">
+					Operate
+				</button>
 				<li class="list-group-item">
-					<label>Append to both sides: <input id="add_both_sides" size="20" placeholder="Type LaTeX here" onchange="	add_both_sides(this.value)" /></label>
+					<label>Append to both sides: <input id="add_both_sides" size="20" placeholder="Type LaTeX here" /></label>
 				</li>
 				<li class="list-group-item">
 					<label>Replace selection with: <input id="replace" size="20" placeholder="Type LaTeX here" onchange="replace(this.	value)" /></label>
@@ -195,10 +201,14 @@
 				<button type="button" class="btn btn-default " id="tb-eval">
 					Evaluate/Simplify
 				</button>
+				<button type="button" class="btn btn-default" id="tb-operate">
+					Operate
+				</button>
 			</div>
 		</div>
 		<div class="row">
-			<p id="MathInput">Input some algebraic equation: <input size="50" onchange="prepare(this.value)"/>
+			<p id="MathInput">Input some equation (<a id="show_latex">show LaTeX</a>): <span id="MathQuill" class="mathquill-editable">...</span>
+			<input size="50"/>
 			<button type="button" class="btn btn-default" id="keep">
 					Keep
 			</button>
@@ -223,7 +233,7 @@
  		<div id="history">
  			<div id="history_list" class="list-group">
 			</div>
- 		 </div>
+ 		</div>
 	</div>
 </div>
 </div>
@@ -245,6 +255,10 @@
 <script src="bower_components/coffeequate.min/index.js"></script>
 <script src="bower_components/TreeModel-min/index.js"></script>
 <script src="bower_components/jquery-ui/jquery-ui.js"></script>
+<script src="bower_components/gsap/src/minified/TweenMax.min.js"></script>
+<script src="bower_components/gsap/src/minified/plugins/CSSPlugin.min.js"></script>
+<script src="bower_components/gsap/src/minified/easing/EasePack.min.js"></script>
+<script src="bower_components/mathquill.js/index.js"></script>
 <script type="text/javascript">
 	$(function() {
     	$( "#tools" ).accordion({
@@ -252,12 +266,12 @@
     	  heightStyle: "content"
     	});
   	});
-	</script>
-	<script>
- 		$(function() {
- 		  $( "#tabs" ).tabs();
- 		});
-	</script>
+</script>
+<script>
+ 	$(function() {
+ 	  $( "#tabs" ).tabs();
+ 	});
+</script>
 <!-- the library -->
 <script src="script.js"></script>
 

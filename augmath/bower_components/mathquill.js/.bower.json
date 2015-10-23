@@ -1,0 +1,12 @@
+{
+  "name": "mathquill.js",
+  "_cacheHeaders": {
+    "Last-Modified": "Fri, 03 Jul 2015 19:56:28 GMT",
+    "Content-Length": "51437",
+    "Content-Type": "application/javascript; charset=utf-8"
+  },
+  "main": "index.js",
+  "_source": "http://mathquill.github.com/mathquill/mathquill.min.js",
+  "_target": "*",
+  "_originalSource": "http://mathquill.github.com/mathquill/mathquill.min.js"
+}

@@ -24,7 +24,9 @@
     "jquery": "~2.1.4",
     "jquery-ui": "~1.11.4",
     "TreeModel-min": "http://jnuno.com/tree-model-js/vendor/jnuno/TreeModel-min.js",
-    "coffeequate.min": "http://matthewja.com/Coffeequate/coffeequate.min.js"
+    "coffeequate.min": "http://matthewja.com/Coffeequate/coffeequate.min.js", 
+    "mathquill.css": "http://mathquill.github.com/mathquill/mathquill.css", 
+    "mathquill.js": "http://mathquill.github.com/mathquill/mathquill.min.js"
   },
   "private": true
 }
