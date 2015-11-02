@@ -1532,6 +1532,7 @@ function split() {
 		}
 	}
 	if (selected_nodes[0].type === "factor" && same_type && same_parents && grouped.length === 1) { //distribute in
+		console.log("HI");
 		var factors_text = "";
 		var grouped_node = grouped[0];
 		$selected.animate({"font-size": 0, opacity: 0}, step_duration) //IMPROVE ANIMATION (FOR EXAMPLE CLONE)
