@@ -170,9 +170,8 @@ $(document).on( "keyup", function (e) { //up
     }
 });
 
-$(document).on( "keyup", function (e) { //left
+$(document).on( "keyup", function (e) { //ctrl+m for multiselect
     if (e.keyCode == 77 && e.ctrlKey) {
-      console.log("hi");
       $("#multi_select").prop("checked", !multi_select);
       multi_select = document.getElementById("multi_select").checked;
     }
