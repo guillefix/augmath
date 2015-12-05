@@ -1,0 +1,466 @@
+{
+  "slides": [
+    {
+      "components": [
+        {
+          "TextBox": {},
+          "x": 188,
+          "y": 61,
+          "scale": {
+            "x": 1,
+            "y": 1
+          },
+          "type": "TextBox",
+          "text": "<div style=\"text-align: center;\">A simple model of</div><font><div style=\"text-align: center;\">Brownian movement</div></font>",
+          "size": 72,
+          "selected": false
+        },
+        {
+          "TextBox": {},
+          "x": 271,
+          "y": 627,
+          "scale": {
+            "x": 1,
+            "y": 1
+          },
+          "type": "TextBox",
+          "size": 24,
+          "text": "<div style=\"text-align: center;\">Based on the treatment in the book</div><font><div style=\"text-align: center;\">\"Synergetics: An Introduction\" by H. Haken</div></font>",
+          "selected": false
+        }
+      ],
+      "z": 0,
+      "impScale": 3,
+      "rotateX": 0,
+      "rotateY": 0,
+      "rotateZ": 0,
+      "index": 0,
+      "selected": false,
+      "active": false
+    },
+    {
+      "components": [
+        {
+          "TextBox": {},
+          "x": 63,
+          "y": 64,
+          "scale": {
+            "x": 1,
+            "y": 1
+          },
+          "type": "TextBox",
+          "size": 27,
+          "text": "<font>When a small particle is submerged in a liquid, one observes,<br>under a microscope, that the particle moves in a zig-zag kind of motion<br>In reality this is due to more molecules hitting the particle in one direction&nbsp;<br>than in the opposite, at a certain time, and by chance.&nbsp;<br></font>",
+          "selected": false
+        },
+        {
+          "TextBox": {},
+          "x": 79,
+          "y": 597,
+          "scale": {
+            "x": 1,
+            "y": 1
+          },
+          "type": "TextBox",
+          "size": 24,
+          "text": "<font>However, we will just think about a simpler model, that still captures the behavior<br>of \"a particle moving in random directions\".&nbsp;</font>",
+          "selected": false
+        },
+        {
+          "src": "https://upload.wikimedia.org/wikipedia/commons/c/c2/Brownian_motion_large.gif",
+          "type": "Image",
+          "x": 399,
+          "y": 253,
+          "scale": {
+            "x": 1,
+            "y": 1
+          },
+          "imageType": "GIF",
+          "selected": false
+        }
+      ],
+      "z": 0,
+      "impScale": 3,
+      "rotateX": 0,
+      "rotateY": 0,
+      "rotateZ": 0,
+      "index": 1,
+      "selected": false,
+      "active": false
+    },
+    {
+      "components": [
+        {
+          "TextBox": {},
+          "x": 67,
+          "y": 104,
+          "scale": {
+            "x": 1,
+            "y": 1
+          },
+          "type": "TextBox",
+          "size": 36,
+          "text": "<font>We will think about a one-dimensional chain, with sites&nbsp;<br>separated by a certain distance, and a particle which may<br>be at any site.<br>This particle will hop at regular intervals, either to the left<br>or to the right, <i>with equal probability</i>.<br></font>",
+          "selected": false
+        },
+        {
+          "src": "https://raw.githubusercontent.com/guillefix/guillefix.github.io/master/output_n15riD.gif",
+          "type": "Image",
+          "x": 37,
+          "y": 407,
+          "scale": {
+            "x": 1,
+            "y": 1
+          },
+          "imageType": "GIF",
+          "selected": false
+        }
+      ],
+      "z": 0,
+      "impScale": 3,
+      "rotateX": 0,
+      "rotateY": 0,
+      "rotateZ": 0,
+      "index": 2,
+      "selected": false,
+      "active": false
+    },
+    {
+      "components": [
+        {
+          "TextBox": {},
+          "x": 148,
+          "y": 71,
+          "scale": {
+            "x": 1,
+            "y": 1
+          },
+          "type": "TextBox",
+          "size": 36,
+          "text": "We then ask:<br>What is the probability that the particle reaches<br>a certain distance x from the point it started,<br>after n steps.<br>",
+          "selected": false
+        },
+        {
+          "TextBox": {},
+          "x": 106,
+          "y": 401,
+          "scale": {
+            "x": 1,
+            "y": 1
+          },
+          "type": "TextBox",
+          "size": 36,
+          "text": "<font>We can answer this, by analogy to the success/failure<br>set-up that gives a Binomial ditribution<br></font>",
+          "selected": false
+        }
+      ],
+      "z": 0,
+      "impScale": 3,
+      "rotateX": 0,
+      "rotateY": 0,
+      "rotateZ": 0,
+      "index": 3,
+      "selected": false,
+      "active": false
+    },
+    {
+      "components": [
+        {
+          "TextBox": {},
+          "x": 157,
+          "y": 69,
+          "scale": {
+            "x": 1,
+            "y": 1
+          },
+          "type": "TextBox",
+          "size": 36,
+          "text": "<font>We can call a jump to the right, a \"success\",&nbsp;<br>and a jump to the left, a \"failure\".<br></font>",
+          "selected": false
+        },
+        {
+          "TextBox": {},
+          "x": 91,
+          "y": 207,
+          "scale": {
+            "x": 1,
+            "y": 1
+          },
+          "type": "TextBox",
+          "size": 36,
+          "text": "<font>After n steps, we have a number of successes. Label it <i>s</i>.<br>The rest must have been failures, so we have <i>(n-s)</i> failures<br></font>",
+          "selected": false
+        },
+        {
+          "TextBox": {},
+          "x": 143,
+          "y": 353,
+          "scale": {
+            "x": 1,
+            "y": 1
+          },
+          "type": "TextBox",
+          "size": 24,
+          "text": "<font>If the distance for each elementary step is a, the number of successes may be<br>expressed in terms of the distance, x, and the number of steps, n:<br></font>",
+          "selected": false
+        },
+        {
+          "TextBox": {},
+          "x": 441,
+          "y": 527,
+          "scale": {
+            "x": 1,
+            "y": 1
+          },
+          "type": "TextBox",
+          "size": 24,
+          "text": "<font>MATHS HERE</font>",
+          "selected": false
+        }
+      ],
+      "z": 0,
+      "impScale": 3,
+      "rotateX": 0,
+      "rotateY": 0,
+      "rotateZ": 0,
+      "index": 4,
+      "selected": false,
+      "active": false
+    },
+    {
+      "components": [
+        {
+          "TextBox": {},
+          "x": 78,
+          "y": 333,
+          "scale": {
+            "x": 1,
+            "y": 1
+          },
+          "type": "TextBox",
+          "size": 24,
+          "text": "<font>We call the time that each step takes, \\tau. Then the time passed after n steps, t, is:</font>",
+          "selected": false
+        },
+        {
+          "TextBox": {},
+          "x": 415,
+          "y": 402,
+          "scale": {
+            "x": 1,
+            "y": 1
+          },
+          "type": "TextBox",
+          "size": 24,
+          "text": "<font>MATHS HERE</font>",
+          "selected": false
+        },
+        {
+          "TextBox": {},
+          "x": 61,
+          "y": 38,
+          "scale": {
+            "x": 1,
+            "y": 1
+          },
+          "type": "TextBox",
+          "text": "<font>The probability to get <i>s</i>&nbsp;successes out of n trials (steps)<br>is (from the Binomial distribution):<br></font>",
+          "size": 36,
+          "selected": false
+        },
+        {
+          "TextBox": {},
+          "x": 412,
+          "y": 216,
+          "scale": {
+            "x": 1,
+            "y": 1
+          },
+          "type": "TextBox",
+          "size": 24,
+          "text": "<font>MATHS HERE</font>",
+          "selected": false
+        },
+        {
+          "TextBox": {},
+          "x": 71,
+          "y": 490,
+          "scale": {
+            "x": 1,
+            "y": 1
+          },
+          "type": "TextBox",
+          "size": 24,
+          "text": "<font>Then, we can interpret the probability for s successes in n steps, as a probability for<br>being at a distance x, after time t, using equations (blah) and (bleh):<br></font>",
+          "selected": false
+        },
+        {
+          "TextBox": {},
+          "x": 425,
+          "y": 597,
+          "scale": {
+            "x": 1,
+            "y": 1
+          },
+          "type": "TextBox",
+          "size": 24,
+          "text": "<font>MATHS HERE</font>",
+          "selected": false
+        }
+      ],
+      "z": 0,
+      "impScale": 3,
+      "rotateX": 0,
+      "rotateY": 0,
+      "rotateZ": 0,
+      "index": 5,
+      "selected": false,
+      "active": false
+    },
+    {
+      "components": [
+        {
+          "TextBox": {},
+          "x": 87,
+          "y": 46,
+          "scale": {
+            "x": 1,
+            "y": 1
+          },
+          "type": "TextBox",
+          "size": 24,
+          "text": "<font>But this equation is rather tedious to use in many computations, specially those<br>involving calculus. However, a simpler form may be found in the limiting case, where<br>the time passed, t, and the distance traveled, x, are large, so that n, and s are large enough<br>that the Stirling approximation applies. We can then do:<br></font>",
+          "selected": false
+        },
+        {
+          "TextBox": {},
+          "x": 419,
+          "y": 239,
+          "scale": {
+            "x": 1,
+            "y": 1
+          },
+          "type": "TextBox",
+          "size": 24,
+          "text": "<font>MATHS HERE</font>",
+          "selected": false
+        }
+      ],
+      "z": 0,
+      "impScale": 3,
+      "rotateX": 0,
+      "rotateY": 0,
+      "rotateZ": 0,
+      "index": 6,
+      "selected": false,
+      "active": false
+    },
+    {
+      "components": [
+        {
+          "TextBox": {},
+          "x": 411,
+          "y": 110,
+          "scale": {
+            "x": 1,
+            "y": 1
+          },
+          "type": "TextBox",
+          "size": 36,
+          "text": "Sumation stuff<br>",
+          "selected": false
+        },
+        {
+          "TextBox": {},
+          "x": 468,
+          "y": 368,
+          "scale": {
+            "x": 1,
+            "y": 1
+          },
+          "type": "TextBox",
+          "size": 24,
+          "text": "<font>MATHS HERE</font>",
+          "selected": false
+        },
+        {
+          "TextBox": {},
+          "x": 506,
+          "y": 563,
+          "scale": {
+            "x": 1,
+            "y": 1
+          },
+          "type": "TextBox",
+          "size": 24,
+          "text": "GRAPH HERE<br>",
+          "selected": true
+        }
+      ],
+      "z": 0,
+      "impScale": 3,
+      "rotateX": 0,
+      "rotateY": 0,
+      "rotateZ": 0,
+      "index": 7,
+      "selected": true,
+      "active": true
+    }
+  ],
+  "activeSlide": {
+    "components": [
+      {
+        "TextBox": {},
+        "x": 411,
+        "y": 110,
+        "scale": {
+          "x": 1,
+          "y": 1
+        },
+        "type": "TextBox",
+        "size": 36,
+        "text": "Sumation stuff<br>",
+        "selected": false
+      },
+      {
+        "TextBox": {},
+        "x": 468,
+        "y": 368,
+        "scale": {
+          "x": 1,
+          "y": 1
+        },
+        "type": "TextBox",
+        "size": 24,
+        "text": "<font>MATHS HERE</font>",
+        "selected": false
+      },
+      {
+        "TextBox": {},
+        "x": 506,
+        "y": 563,
+        "scale": {
+          "x": 1,
+          "y": 1
+        },
+        "type": "TextBox",
+        "size": 24,
+        "text": "GRAPH HERE<br>",
+        "selected": true
+      }
+    ],
+    "z": 0,
+    "impScale": 3,
+    "rotateX": 0,
+    "rotateY": 0,
+    "rotateZ": 0,
+    "index": 7,
+    "selected": true,
+    "active": true
+  },
+  "fileName": "brownian_motion",
+  "deckVersion": "1.0",
+  "customBackgrounds": {
+    "bgs": []
+  }
+}
