@@ -4,6 +4,7 @@
 	<link rel="stylesheet" href="css/bootstrap/bootstrap.css">
 	<link rel="stylesheet" href="css/katex/katex.min.css">
 	<link rel="stylesheet" href="css/mathquill.css">
+  <link rel="stylesheet" href="css/qunit-1.20.0.css">
 
 	 <style type="text/css">
 	.sortable-placeholder {
@@ -41,13 +42,14 @@
   </div><!-- /.container-fluid -->
 </nav>
 
+<!--container-->
 <div class="container-fluid">
-	<div class="col-md-3 toolbar">
+	<div class="col-md-3 toolbar"> <!--TOOLBAR PANEL-->
 		<ul id="tools" class="list-group text-center">
 			<h4>Selection</h4> <!--fix this -->
 			<div>
 				<li class="list-group-item">
-					<span>Manipulative: 
+					<span>Manipulative:
 					<select class="traverse" id="manip">
 						<option value="term" selected>Term</option>
 						<option value="factor">Factor</option>
@@ -68,7 +70,7 @@
 					<span>Select variable <input type="checkbox" name="multi_select" id="var_select"/></span>
 				</li>
 				<li class="list-group-item">
-					<span> Depth: 
+					<span> Depth:
 						<input type="number" min="1" step="1" value="1" class="traverse" id="depth">
 					</span>
 				</li>
@@ -155,9 +157,10 @@
 				</button>
 			</div>
 		</ul>
-	</div> <!-- toolbar -->
+	</div> <!--end of TOOLBAR PANEL-->
 
-	<div class="col-md-6">
+<!--<div id="qunit-fixture"> div for qunit testing the DOM-->
+	<div class="col-md-6"> <!--MAIN PANEL-->
 		<div class="row">
 			<div class="bottom-buffer btn-toolbar" role="toolbar">
     			  <div class="btn-group">
@@ -170,7 +173,7 @@
 				<button type="button" class="btn btn-default " id="tb-change_side">
 					Change side
 				</button>
-			
+
 				<div class="btn-group ">
 					<button type="button" class="btn btn-default" id="tb-move_up">
 							<span class="glyphicon glyphicon-arrow-up"></span>
@@ -185,7 +188,7 @@
 							<span class="glyphicon glyphicon-arrow-down"></span>
 					</button>
 				</div>
-			
+
 				<div class="btn-group ">
 					<button type="button" class="btn btn-default" id="tb-split">
 						Split
@@ -194,7 +197,7 @@
 						Merge
 					</button>
 				</div>
-			
+
 				<button type="button" class="btn btn-default " id="tb-eval">
 					Evaluate/Simplify
 				</button>
@@ -214,9 +217,10 @@
 				<p id="math">...</p>
 			</div>
 		</div>
-	</div>
+	</div> <!--end of MAIN PANEL-->
+<!--</div> end of div for qunit testing the DOM-->
 
-<div class="col-md-3">
+<div class="col-md-3"> <!--EQATIONS PANEL-->
 	<div id="tabs">
 		<ul>
 			<li><a href="#equations">Equations</a></li>
@@ -232,7 +236,13 @@
 			</div>
  		</div>
 	</div>
-</div>
+</div><!--end of EQATIONS PANEL-->
+
+</div> <!--end of container-->
+
+<!--testing-->
+<div class="container-fluid">
+  <div id="qunit"></div>
 </div>
 
 <script src="js/symbols.js"></script>
@@ -243,5 +253,8 @@
 <script src="js/TreeModel.js"></script>
 <script src="js/jquery-ui.js"></script>
 <script src="js/mathquill.js"></script>
-<script type="text/javascript" src="js/script.js"></script>
+<script src="js/qunit-1.20.0.js"></script>
+<script type="text/javascript" src="js/script.js"></script> <!--augmath-->
+<script type="text/javascript" src="js/tests.js"></script> <!--tests-->
+
 </body>
