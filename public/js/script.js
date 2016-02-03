@@ -71,10 +71,8 @@ math_str_el.hide();
 $("#show_latex").on("click", function () {math_str_el.toggle(); math_str_el.is(":visible") ? $("#show_latex").text("Hide LaTeX") : $("#show_latex").text("Show LaTeX")});
 math_str_el.keyup(function (e) {
     if (e.keyCode == 13) {
-      console.log("HI");
         console.log(math_str_el.get()[0].value)
         prepare(math_str_el.get()[0].value);
-        console.log("HO");
         console.log(math_str_el.get()[0].value)
     }
 });
@@ -900,8 +898,9 @@ function parse_poly(root, poly, parent_id, is_container) {
         } else if (factor.text === "+") {
           factor.type2 = "op";
           factor.text = "+";}
+        factor_text = factor.text;
+        // console.log(factor.text);
       }
-      factor_text = factor.text;
       term.addChild(factor);
       term_obj = term_obj.add(thing);
       factor_cnt++;
@@ -1049,7 +1048,7 @@ function parse_poly(root, poly, parent_id, is_container) {
       factor_text = factor.text;
     }
     for (symbol in symbols.math) {
-        if (factor_text === symbols.math[symbol].replace) {
+        if (factor_text === symbols.math[symbol].replace && factor_text !== "k") { //k is a special case. there is a special symbol in latex, but user will often not mean that..
           factor.text = symbol + " ";
           factor_text = factor.text;
         }
@@ -1797,10 +1796,13 @@ function split() {
 document.getElementById("merge").onclick = merge;
 document.getElementById("tb-merge").onclick = merge;
 function merge() {
-  var same_parents = true, same_type = true, same_type2 = true, same_text = true, same_factors = true,
+  var same_parents = true, same_grandparents = true, same_type = true, same_type2 = true, same_text = true, same_factors = true,
   single_factor = true, are_fracs = true, same_term = true;
   for (var i=0; i<selected_nodes.length-1; i++) {//making sure all elemnts are of the same parent
     if (selected_nodes[i].parent !== selected_nodes[i+1].parent) {same_parents = false}
+  }
+  for (var i=0; i<selected_nodes.length-1; i++) {//making sure all elemnts are of the same grandparent
+    if (selected_nodes[i].parent.parent !== selected_nodes[i+1].parent.parent) {same_grandparents = false}
   }
   for (var i=0; i<selected_nodes.length-1; i++) {//making sure all elemnts are of the same type
     if (selected_nodes[i].type !== selected_nodes[i+1].type) {same_type = false}
@@ -1813,24 +1815,29 @@ function merge() {
   }
 
   //Factors
+if (selected_nodes[0].type==="factor" && same_type) {
+    var factor_texts = [], term_ids = [];
+    var j=0;
+    factor_texts[j] = selected_nodes[0].text;
+    if (selected_nodes[0].parent.parent.type==="denominator") {
 
-  var factor_texts = [], term_ids = [];
-  var j=0;
-  factor_texts[j] = selected_nodes[0].text;
-  term_ids.push(selected_nodes[0].parent.model.id);
-  for (var i=0; i<selected_nodes.length-1; i++) {
-    if (selected_nodes[i].parent === selected_nodes[i+1].parent) {
-      factor_texts[j] += selected_nodes[i+1].text;
     } else {
-      j++;
-      factor_texts[j] = selected_nodes[i+1].text;
-      term_ids.push(selected_nodes[i+1].parent.model.id);
+      term_ids.push(selected_nodes[0].parent.model.id);
+      for (var i=0; i<selected_nodes.length-1; i++) {
+        if (selected_nodes[i].parent === selected_nodes[i+1].parent) {
+          factor_texts[j] += selected_nodes[i+1].text;
+        } else {
+          j++; //next factor
+          factor_texts[j] = selected_nodes[i+1].text;
+          term_ids.push(selected_nodes[i+1].parent.model.id);
+        }
+      }
     }
+    for (var i=0; i<factor_texts.length-1; i++) { //checking if all factors are the same
+      if (factor_texts[i] !== factor_texts[i+1]) {same_factors = false}
+    }
+    console.log(factor_texts);
   }
-  for (var i=0; i<factor_texts.length-1; i++) { //checking if all factors are the same
-    if (factor_texts[i] !== factor_texts[i+1]) {same_factors = false}
-  }
-  console.log(factor_texts);
 
   //
 
@@ -1860,7 +1867,8 @@ function merge() {
     }
     if (term_text1 !== term_text2) {same_term = false}
   }
-  if (selected_nodes[0].type === "factor" && same_type && same_factors && selected_nodes.length > 1) { //factor out
+  if (selected_nodes[0].type === "factor" && same_type && same_grandparents && same_factors && selected_nodes.length > 1) { //factor out
+    console.log("factor out");
     $selected.animate({"font-size": 0, opacity: 0}, step_duration) //AS USUAL, IMPROVE ANIMATION
       .css('overflow', 'visible')
       .promise()
@@ -1870,29 +1878,31 @@ function merge() {
         new_math_str = replace_in_mtstr(selected_nodes, "");
         var new_text = "";
       playing = true;
-        prepare(new_math_str);
+        prepare(new_math_str); //I SHOULD CREATE A FUNCTION THAT PARSES A LATEX STRING INTO A MATH_ROOT IDEALLY...
         playing = false;
         for (var k=0; k<term_ids.length; k++) {
           var term = math_root.first(function (node) {
-            return node.model.id === term_ids[k];
+            return node.model.id === term_ids[k]; //They will have the same id, because we have only removed children of them.
           });
           new_text += term.text;
           selected_terms.push(term);
         }
         new_text = "+" + selected_text + "(" + new_text + ")";
-        console.log(term_ids);
-        console.log(new_text);
-        console.log(selected_terms);
+        // console.log(term_ids);
+        // console.log(new_text);
+        // console.log(selected_terms);
         new_math_str = replace_in_mtstr(selected_terms, new_text);
         current_index++;
       prepare(new_math_str);
       });
   } else if (selected_nodes[0].type === "factor" && same_parents && same_type && same_text) { //merge equal factors into exp
+    console.log("merge equal factors into exp");
     //ANIMATION??
     new_math_str = replace_in_mtstr(selected_nodes, selected_nodes[0].text + "^{" + selected_nodes.length.toString() + "}");
     current_index++;
     prepare(new_math_str);
   } else if (selected_nodes[0].type === "term" && same_type && same_term && selected_nodes.length > 1) { //merge equal terms into term
+    console.log("merge equal terms into term");
     var term_text;
     if (selected_nodes[0].children[0].type === "op") {
       term_text = selected_nodes[i].text.slice(1, -1);
@@ -1901,6 +1911,7 @@ function merge() {
     current_index++;
     prepare(new_math_str);
   } else if (selected_nodes[0].type === "term" && same_type && single_factor && are_fracs && selected_nodes.length > 1) { //merge terms into fraction
+    console.log("merge terms into fraction");
     for (var i=0; i<selected_nodes.length-1; i++) {//making sure all elemnts have the same denominator
       if (selected_nodes[i].children[selected_nodes[i].children.length-1].children[1].text !== selected_nodes[i+1].children[selected_nodes[i+1].children.length-1].children[1].text) {
         return;
@@ -1922,6 +1933,7 @@ function merge() {
     current_index++;
     prepare(new_math_str);
   } else if (selected_nodes[0].type2 === "frac" && same_parents && same_type && same_type2) { //merge factors into fraction
+    console.log("merge factors into fraction");
     //ANIMATION??
     var numerator_text = "", denominator_text = "";
     for (var i=0; i<selected_nodes.length; i++) {
@@ -1934,6 +1946,7 @@ function merge() {
     prepare(new_math_str);
   } else if ((selected_nodes[0].type2 === "exp" || selected_nodes[0].type2 === "group_exp")
   && same_parents && same_type && same_type2) { //merge exponentials
+    console.log("merge exponentials");
     var same_base = true, same_power = true;
     for (var i=0; i<selected_nodes.length-1; i++) {//making sure all elemnts are of the same base
       if (selected_nodes[i].children[0].text !== selected_nodes[i+1].children[0].text) {same_base = false}
@@ -1942,6 +1955,7 @@ function merge() {
       if (selected_nodes[i].children[1].text !== selected_nodes[i+1].children[1].text) {same_power = false}
     }
     if (same_base && !same_power) {//with common base
+      console.log("merge exponentials with common base");
       //ANIMATION??
       var power_text = "", base_text="";
       if (selected_nodes[0].children[0].length === 1) {
@@ -1958,6 +1972,7 @@ function merge() {
       current_index++;
       prepare(new_math_str);
     } else if (same_power && !same_base) { //with common power
+      console.log("merge exponentials with common power");
       //ANIMATION??
       var power_text = selected_nodes[0].children[1].text, base_text="";
       for (var i=0; i<selected_nodes.length; i++) {
@@ -1973,6 +1988,7 @@ function merge() {
       prepare(new_math_str);
     }
   } else if (selected_nodes[0].type2 === "sqrt" && same_parents && same_type2) { //merge square roots into square root
+    console.log("merge square roots into square root");
     //ANIMATION??
     var new_text = "\\sqrt{"
     for (var i=0; i<selected_nodes.length; i++) {//making sure all elemnts are fracs (for single elements)

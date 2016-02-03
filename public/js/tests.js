@@ -58,4 +58,35 @@ $( document ).ready(function() {
     assert.equal(math_str_el.val(), "\\frac{c^{-1}ex^{2}}{abd\\sqrt{33}}+bx+c=1+1-bx");
   });
 
+  QUnit.test("manipulations.merge", function( assert ) {
+    //BASIC FACTOR OUT
+    prepare("ax+ay");
+    multi_select=true;
+    node=math_root.children[0].children[0];
+    select_node(node);
+    node=math_root.children[1].children[1];
+    select_node(node);
+    console.log(selected_nodes);
+    step_duration=0;
+    merge();
+    multi_select=false;
+    assert.equal(math_str_el.val(), "a(x+y)");
+
+    //FACTOR OUT with containing terms not being directly their parents. NEED TO CODE THIS IN
+
+    // prepare("\\frac{c(a+k-1)}{a+c}p-\\frac{c(a+k)}{a+c}p");
+    // multi_select=true;
+    // node=math_root.children[0].children[0].children[0].children[0].children[0];
+    // select_node(node);
+    // node=math_root.children[1].children[1].children[0].children[0].children[0];
+    // select_node(node);
+    // console.log(selected_nodes);
+    // step_duration=0;
+    // merge();
+    // multi_select=false;
+    // assert.equal(math_str_el.val(), "c(\\frac{(a+k-1)}{a+c}p-\\frac{(a+k)}{a+c}p)");
+
+    //FACTOR OUT with more than one factor per term.
+  });
+
 });
