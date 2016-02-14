@@ -576,6 +576,8 @@ function tot_width(obj, bool, include_op) {
   return width;
 }
 
+//__Mathematical and notational functions__
+
 //change sign of some nodes
 function change_sign(nodes) {
   var text="";
@@ -592,28 +594,57 @@ function change_sign(nodes) {
 }
 
 //change sign of exponent of some nodes
-function change_exp_sign(nodes) {
+function exponentiate(nodes, overall, power) {
   var new_text="";
   for (var i=0; i<nodes.length; i++) {
+    if (nodes[i].type !== "factor") { throw "Called exponentiate with something that isn't a factor" }
     switch (nodes[i].type2) {
       case "exp":
-        new_text+=nodes[i].children[0].text + "^{" + "-" + nodes[i].children[1].text + "}";
+        new_text+=nodes[i].children[0].text + (overall ? "" : "^{" + power.slice(0,1) + nodes[i].children[1].text + "}");
         break;
       case "group_exp":
-        new_text+="(" + nodes[i].children[0].text + ")" + "^{" + "-" + nodes[i].children[1].text + "}";
+        new_text+= (overall ? nodes[i].text : add_brackets(nodes[i].children[0].text) + "^{" + power.slice(0,1) + nodes[i].children[1].text + "}");
         break;
       case "frac":
-        new_text+="(" + nodes[i].text + ")" + "^{-1}";
+        new_text+= (overall ? nodes[i].text : add_brackets(nodes[i].text) + "^{power}");
         break;
       case "sqrt":
-        new_text+=nodes[i].text.slice(6, -1) + "^{-\\frac{1}{2}}";
+        new_text+=nodes[i].text.slice(6, -1) + (overall ? "" : "^{" + power + "\\frac{1}{2}}");
         break;
       default:
-        new_text+=nodes[i].text + "^{-1}";
+        new_text+=nodes[i].text + (overall ? "" : "^{" + power + "}");
     }
   }
-  return new_text;
+  return overall ? add_brackets(new_text) + "^{" + power + "}" : new_text;
 }
+
+//TODO: Use exponentiate to extend features of changin side for power
+
+//flip fraction
+function flip_fraction(node) {
+  if (node.children[0].text === "1") {
+    return node.children[1].text;
+  } else {
+    return "\\frac{" + selected_nodes[0].children[0].children[0].children[1].text + "}{" + selected_nodes[0].children[0].children[0].children[0].text + "}";
+  }
+}
+
+function add_brackets(str) {
+  if (str.charAt(0) === "(" && str.charAt(str.length-1) === ")") {
+    if (str.slice(1,-1).indexOf(")") > str.slice(1,-1).indexOf("(")) {
+        return str
+    }
+  } else {
+    return "(" + str + ")";
+  }
+}
+
+
+//_____
+
+// function equiv_nodes(node1, node2) {
+//
+// }
 
 //get previous node
 function get_prev(nodes) {
@@ -1063,12 +1094,13 @@ function prepare(math) {
 
 
   math = math.replace(/\\frac{}/g, "\\frac{1}")
+        // .replace(/ /g, "") some operators require the space, for exampl a \cdot b
         .replace(/\(\+/g, "(")
         .replace(/^\+/, "")
         .replace(/=$/, "=0")
         .replace(/=+/, "=")
         .replace(/0\+/g, "")
-        .replace(/0-/g, "")
+        .replace(/0-/g, "-")
         .replace(/^=/, "0=")
         .replace(/\^{}/g, "")
         .replace(/\+/g, '--').replace(/(--)+-/g, '-').replace(/--/g, '+');
@@ -1134,7 +1166,11 @@ function prepare(math) {
 
 //initial render
 var initial_math_str = "ax^{2}+bx+c=0";
-$(document).ready(function() {prepare(initial_math_str);});
+$(document).ready(() =>prepare(initial_math_str));
+
+let toplel = (x) => x*x
+
+console.log(toplel(2))
 
 //MANIPULATIONS
 
@@ -1152,7 +1188,11 @@ function change_side() {
   for (var i=0; i<selected_nodes.length-1; i++) {//making sure all elemnts are of the same parent
     if (selected_nodes[i].parent !== selected_nodes[i+1].parent) {return;}
   }
-  if (selected_nodes[0].parent === math_root) { //terms
+
+  //terms
+  if (selected_nodes[0].parent === math_root)
+  {
+    console.log("changing term of side");
     var selected_width = tot_width($selected, true, true);
     if ($selected.prevAll(".mrel").length === 0) { //before eq sign
       offset = (end_of_equation.left-selected_position.left);
@@ -1180,13 +1220,18 @@ function change_side() {
         prepare(new_math_str);
       });
     }
-  } else if (selected_nodes[0].parent.parent === math_root
+  }
+  //operator (sign) should check it's actually a sign, by checking "text"
+  else if (selected_nodes[0].parent.parent === math_root
     && selected_nodes[0].type2 === "op"
     && selected_nodes.length === 1
+    //and it comes from a top leve term, plus there is only one term on the side of the selected sign:
     && (($selected.prevAll(".mrel").length !== 0
-      && get_prev([math_root.children[math_root.children.length-1]]).children[0].type === "rel")
-        || ($selected.prevAll(".mrel").length === 0
-      && get_next([math_root.children[0]]).children[0].type === "rel"))) { //operator (sign) should check it's actually a sign.
+        && get_prev([math_root.children[math_root.children.length-1]]).children[0].type === "rel")
+      || ($selected.prevAll(".mrel").length === 0
+        && get_next([math_root.children[0]]).children[0].type === "rel")))
+  {
+    console.log("changing sign of side");
     var selected_width = tot_width($selected, true, true);
     if ($selected.prevAll(".mrel").length === 0) { //before eq sign
       offset = (equals_position.left-selected_position.left) + tot_width(equals_node.model.obj, true, true);
@@ -1212,13 +1257,18 @@ function change_side() {
         prepare(new_math_str);
       });
     }
-  } else if ((selected_nodes[0].parent.type === "numerator"
+  }
+  //factors
+  else if ((selected_nodes[0].parent.type === "numerator"
     || selected_nodes[0].type === "factor"
     || selected_nodes[0].type === "numerator")
+    //and it comes from a top level term, plus there is only one term on the side of the selected sign:
     && (($selected.prevAll(".mrel").length !== 0
         && get_prev([math_root.children[math_root.children.length-1]]).children[0].type === "rel")
       || ($selected.prevAll(".mrel").length === 0
-        && get_next([math_root.children[0]]).children[0].type === "rel"))) { //factors
+        && get_next([math_root.children[0]]).children[0].type === "rel")))
+  {
+    console.log("changing factor of side");
     if (selected_nodes[0].model.id.split("/")[1] < equals_node.model.id.split("/")[1]) { //before eq sign
       RHS_width = tot_width($equals.nextAll(), false, false);
       var after_eq = false, after_eq_nodes=[];
@@ -1272,7 +1322,11 @@ function change_side() {
         prepare(new_math_str);
       });
     }
-  } else if (selected_nodes[0].parent.type == "denominator" || selected_nodes[0].type === "denominator") {
+  }
+  //denominator
+  else if (selected_nodes[0].parent.type == "denominator" || selected_nodes[0].type === "denominator")
+  {
+    console.log("changing denominator of side");
     if (selected_nodes[0].model.id.split("/")[1] < equals_node.model.id.split("/")[1]) { //before eq sign
       RHS_width = tot_width($equals.nextAll(), false, false);
       var after_eq = false, after_eq_nodes=[];
@@ -1334,35 +1388,55 @@ function change_side() {
         prepare(new_math_str);
       });
     }
-  } else if (selected_nodes[0].type === "power") {
+  }
+  //power.
+  //NEED TO ADD option for selecting factor or term within power, just like for fractions..
+  else if (selected_nodes[0].type === "power"
+    && selected_nodes.length === 1
+    //and it comes from a top level term, plus there is only one term on the side of the selected sign:
+    && (($selected.prevAll(".mrel").length !== 0
+        && get_prev([math_root.children[math_root.children.length-1]]).children[0].type === "rel")
+      || ($selected.prevAll(".mrel").length === 0
+        && get_next([math_root.children[0]]).children[0].type === "rel")))
+  {
+    console.log("changing power of side");
     if ($selected.parent().prevAll(".mrel").length === 0) { //before eq sign
-    var offset = end_of_equation.left - equals_position.left;
-    $selected.animate({left:offset}, step_duration).promise().done(function() {
-      new_math_str = replace_in_mtstr(selected_nodes, "");
-      math_HS = new_math_str.split("="); //HS=hand sides
-      if (selected_nodes[0].text === "2") {
-        new_math_str = math_HS[0] + "=" + "\\sqrt{" + math_HS[1] + "}";
-      } else {
-        new_math_str = math_HS[0] + "=" + "(" + math_HS[1] + ")" + "^{" + "\\frac{1}{" + selected_text + "}}"; //ad brackets
-      }
-      current_index++;
-      prepare(new_math_str);
-    });
-    } else {
-    var offset = end_of_equation.left - equals_position.left;
-    $selected.animate({left:-offset}, step_duration).promise().done(function() {
-      new_math_str = replace_in_mtstr(selected_nodes, "");
-      math_HS = new_math_str.split("="); //HS=hand sides
-      if (selected_nodes[0].text === "2") {
-        new_math_str = "\\sqrt{" + math_HS[0] + "}" + "=" + math_HS[1];
-      } else {
-        new_math_str = "(" + math_HS[0] + ")" + "^{" + "\\frac{1}{" + selected_text + "}}" + "=" + math_HS[1]; //ad brackets
-      }
-      current_index++;
-      prepare(new_math_str);
-    });
+      var offset = end_of_equation.left - equals_position.left;
+      $selected.animate({left:offset}, step_duration).promise().done(function() {
+        new_math_str = replace_in_mtstr(selected_nodes, "");
+        math_HS = new_math_str.split("="); //HS=hand sides
+        if (selected_nodes[0].text === "2") {
+          new_math_str = math_HS[0] + "=" + "\\sqrt{" + math_HS[1] + "}";
+        } else {
+          if (selected_nodes[0].children.length === 1 && selected_nodes[0].children[0].children.length ===1 && selected_nodes[0].children[0].children[0].type2 === "frac") {
+            new_math_str = math_HS[0] + "=" + add_brackets(math_HS[1]) + "^{" + flip_fraction(selected_nodes[0].children[0].children[0]) + "}";
+          } else {
+            new_math_str = math_HS[0] + "=" + add_brackets(math_HS[1]) + "^{" + "\\frac{1}{" + selected_text + "}}"; //add brackets
+          }
+        }
+        current_index++;
+        prepare(new_math_str);
+      });
+    } else if ($selected.parent().nextAll(".mrel").length === 0) { //after eq sign
+      var offset = end_of_equation.left - equals_position.left;
+      $selected.animate({left:-offset}, step_duration).promise().done(function() {
+        new_math_str = replace_in_mtstr(selected_nodes, "");
+        math_HS = new_math_str.split("="); //HS=hand sides
+        if (selected_nodes[0].text === "2") {
+          new_math_str = "\\sqrt{" + math_HS[0] + "}" + "=" + math_HS[1];
+        } else {
+          if (selected_nodes[0].children.length === 1 && selected_nodes[0].children[0].children.length ===1 && selected_nodes[0].children[0].children[0].type2 === "frac") {
+            new_math_str = add_brackets(math_HS[0]) + "^{" + flip_fraction(selected_nodes[0].children[0].children[0]) + "}" + "=" + math_HS[1];
+          } else {
+            new_math_str = add_brackets(math_HS[0]) + "^{" + "\\frac{1}{" + selected_text + "}}" + "=" + math_HS[1]; //add brackets
+          }
+        }
+        current_index++;
+        prepare(new_math_str);
+      });
+    }
   }
-  }
+
   if (recording || playing) {recording_index++;}
   if (recording) {add_to_manip_rec(1);}
 };
@@ -1449,7 +1523,7 @@ function move_up() {
     && selected_nodes[0].parent.parent.parent.type2 === "frac"
     && selected_nodes[0].parent.parent.children.length === 1) {
     var numerator = selected_nodes[0].parent.parent.parent.children[0];
-    var new_nom_text = change_exp_sign(selected_nodes);
+    var new_nom_text = exponentiate(selected_nodes, false, "-1");
     if (numerator.children.length === 1) {
       new_nom_text+=numerator.text;
     } else {
@@ -1462,7 +1536,7 @@ function move_up() {
   && selected_nodes[0].parent.children.length === 1) {
     console.log("hi");
     var numerator = selected_nodes[0].parent.parent.children[0];
-    var new_nom_text = change_exp_sign(selected_nodes[0].children);
+    var new_nom_text = exponentiate(selected_nodes[0].children, false, "-1");
     if (numerator.children.length === 1) {
       new_nom_text+=numerator.text;
     } else {
@@ -1477,7 +1551,7 @@ function move_up() {
     var numerator = selected_nodes[0].parent.children[0];
     var new_nom_text = "";
     if (selected_nodes[0].children.length === 1) {
-      new_nom_text = change_exp_sign(selected_nodes[0].children[0].children);
+      new_nom_text = exponentiate(selected_nodes[0].children[0].children, false, "-1");
     } else {
       new_nom_text="("+selected_nodes[0]+")^{-1}";
     }
@@ -1536,7 +1610,7 @@ function move_down() {
     && selected_nodes[0].parent.parent.parent
     && selected_nodes[0].parent.parent.parent.type2 === "frac"
     && selected_nodes[0].parent.parent.children.length === 1) { //selected factor
-      new_denom_text = change_exp_sign(selected_nodes);
+      new_denom_text = exponentiate(selected_nodes, false, "-1");
       var denominator = selected_nodes[0].parent.parent.parent.children[1];
       move_down_frac(denominator)
     } else if (selected_nodes[0].type === "term"
@@ -1547,7 +1621,7 @@ function move_down() {
       if (selected_nodes[0].children.length === 1) {
         new_denom_text = selected_nodes[0].text + "^{-1}";
       } else {
-        new_denom_text = change_exp_sign(selected_nodes[0].children);
+        new_denom_text = exponentiate(selected_nodes[0].children, false, "-1");
       }
       var denominator = selected_nodes[0].parent.parent.children[1];
       move_down_frac(denominator)
@@ -1559,7 +1633,7 @@ function move_down() {
       if (selected_nodes[0].children.length === 1) {
         new_denom_text = selected_nodes[0].text + "^{-1}";
       } else {
-        new_denom_text = change_exp_sign(selected_nodes[0].children[0].children);
+        new_denom_text = exponentiate(selected_nodes[0].children[0].children, false, "-1");
       }
       var denominator = selected_nodes[0].parent.children[1];
       move_down_frac(denominator)
@@ -1572,7 +1646,7 @@ function move_down() {
       $selected.first().prevAll().animate({left:-extra_selected_width/2}, step_duration);
       $selected.animate({left:-h_offset, top:v_offset}, step_duration).promise().done(function() {
         new_nom_text = "";
-        new_denom_text = change_exp_sign(selected_nodes);
+        new_denom_text = exponentiate(selected_nodes, false, "-1");
         var begin_i = (selected_nodes[0].parent.children[0].type2 === "op") ? 1 : 0;
         for (var i = begin_i; i <selected_nodes[0].parent.children.length; i++) {
           for (var k = selected_nodes.length - 1; k >= 0; k--) {
@@ -1632,7 +1706,10 @@ function split() {
       factors_text+=selected_nodes[i].text;
     }
   }
-  if (selected_nodes[0].type === "factor" && same_type && same_parents && grouped.length === 1) { //distribute in
+
+  //distribute in
+  if (selected_nodes[0].type === "factor" && same_type && same_parents && grouped.length === 1)
+  {
     var factors_text = "";
       for (var i=0; i<selected_nodes.length; i++) {
         if(selected_nodes[i].type2 === "group") {
@@ -1651,15 +1728,25 @@ function split() {
         for (var i=0; i<grouped_node.children.length; i++) {
           if (grouped_node.children[i].text.search(/[+-]/) === 0) {
             text += grouped_node.children[i].text.slice(0, 1) + factors_text + grouped_node.children[i].text.slice(1, grouped_node.children[i].text.length);
+          } else if (grouped_node.children[i].text === "1") {
+            text += factors_text;
           } else {
             text += factors_text + grouped_node.children[i].text;
           }
         }
-        new_math_str = replace_in_mtstr(selected_nodes, "(" + text + ")");
+        if (selected_nodes[0].parent.children.length > selected_nodes.length) {
+          var new_text = "(" + text + ")"
+        } else {
+          var new_text = text
+        }
+        new_math_str = replace_in_mtstr(selected_nodes, new_text);
         current_index++;
       prepare(new_math_str);
       });
-  } else if (selected_nodes[0].type2 === "frac" && same_type2) { //split fractions into terms when selecting factors
+  }
+  //split fractions into terms when selecting factors
+  else if (selected_nodes[0].type2 === "frac" && same_type2)
+  {
     console.log("THIEHTIHE");
     //ANIMATION? SHOULD CLONE THE denominator AND MOVE TO THE RIGHT PLACES
     var new_terms = [];
@@ -1677,9 +1764,12 @@ function split() {
     new_math_str = replace_in_mtstr(selected_nodes, new_terms);
     prepare(new_math_str);
     current_index++;
-  } else if (selected_nodes[0].type === "term" && selected_nodes.length === 1 //because I'm not checking the subsequent stuff for a multiselection
+  }
+  //split fraction into terms when selecting terms
+  else if (selected_nodes[0].type === "term" && selected_nodes.length === 1 //because I'm not checking the subsequent stuff for a multiselection
     && ((selected_nodes[0].children.length === 1 && selected_nodes[0].children[0].type2 === "frac")
-        || (selected_nodes[0].children.length === 2 && selected_nodes[0].children[1].type2 === "frac" && selected_nodes[0].children[0].type2 === "op"))) { //split fraction into terms when selecting terms
+        || (selected_nodes[0].children.length === 2 && selected_nodes[0].children[1].type2 === "frac" && selected_nodes[0].children[0].type2 === "op")))
+  {
       //ANIMATION? SHOULD CLONE THE denominator AND MOVE TO THE RIGHT PLACES
     var new_terms = [];
     var index = 0;
@@ -1698,7 +1788,10 @@ function split() {
     new_math_str = replace_in_mtstr(selected_nodes, new_terms);
     prepare(new_math_str);
     current_index++;
-  } else if (selected_nodes[0].type2 === "sqrt" && selected_nodes[0].children.length === 1) { //split square root. Need to make it work with fractions
+  }
+  //split square root. Need to make it work with fractions
+  else if (selected_nodes[0].type2 === "sqrt" && selected_nodes[0].children.length === 1)
+  {
     //ANIMATION??
     var factors = selected_nodes[0].children[0].children;
     var text = "";
@@ -1708,8 +1801,11 @@ function split() {
     new_math_str = replace_in_mtstr(selected_nodes, text);
     current_index++;
     prepare(new_math_str);
-  } else if (selected_nodes[0].children[0] !== undefined && selected_nodes.length === 1  && selected_nodes[0].children[0].children.length === 1
-    && (selected_nodes[0].type2 === "exp" || selected_nodes[0].type2 === "group_exp")) { //distribute power in
+  }
+  //distribute power in
+  else if (selected_nodes[0].children[0] !== undefined && selected_nodes.length === 1  && selected_nodes[0].children[0].children.length === 1
+    && (selected_nodes[0].type2 === "exp" || selected_nodes[0].type2 === "group_exp"))
+  {
     //ANIMATION?
     var power_text = selected_nodes[0].children[1].text;
     var text = ""
@@ -1720,8 +1816,11 @@ function split() {
     new_math_str = replace_in_mtstr(selected_nodes, text);
     current_index++;
     prepare(new_math_str);
-  } else if (selected_nodes.length === 1  && selected_nodes[0].children.length > 1
-    && selected_nodes[0].type === "power") { //merge exponentials into exponential
+  }
+  //merge exponentials into exponential
+  else if (selected_nodes.length === 1  && selected_nodes[0].children.length > 1
+    && selected_nodes[0].type === "power")
+  {
     //ANIMATION?
     var base_text;
     if (selected_nodes[0].parent.children[0].children.length === 1 && selected_nodes[0].parent.children[0].children[0].children.length === 1) {
@@ -1737,7 +1836,10 @@ function split() {
     new_math_str = replace_in_mtstr([selected_nodes[0].parent], text);
     current_index++;
     prepare(new_math_str);
-  } else if (selected_nodes[0].type === "factor" && same_type && same_ggparents) { //split factors out of a fraction
+  }
+  //split factors out of a fraction
+  else if (selected_nodes[0].type === "factor" && same_type && same_ggparents)
+  {
     if (selected_nodes[0].parent.parent.parent !== undefined) {
       if (!(selected_nodes[0].parent.parent.parent.type2 === "frac"
     && selected_nodes[0].parent.parent.parent.children[0].children.length === 1)) {
@@ -1815,36 +1917,61 @@ function merge() {
   }
 
   //Factors
-if (selected_nodes[0].type==="factor" && same_type) {
-    var factor_texts = [], term_ids = [];
+
+  function create_fact_subs(term, fact_cnt) {
+    //just defining this function because it's called twice below
+    //TODO: NEED TO FIX IT IN CASE THE PARENT TERM HAS OPERATOR
+    console.log("factor_texts", factor_texts)
+    if (term.children.length > fact_cnt) {
+      for (var k=0; k<fact_cnt; k++) {
+        fact_subs.push("");
+      }
+    } else if (term.children.length === fact_cnt) {
+      fact_subs.push("1");
+      for (var k=1; k<fact_cnt; k++) {
+        fact_subs.push("");
+      }
+    }
+    else {throw "Error in the loop that creates factors. Somehow there were more factors selected inside a term, than there are in the term..."}
+  }
+  if (selected_nodes[0].type==="factor" && same_type) {
+    var factor_texts = [], term_ids = [], fact_subs=[], fact_cnt=[]; //term_subs is to know what I should replace the factors I will be removing with.
     var j=0;
     factor_texts[j] = selected_nodes[0].text;
+    fact_cnt[j]=1;
     if (selected_nodes[0].parent.parent.type==="denominator") {
 
     } else {
+      console.log("selected nodes", selected_nodes);
       term_ids.push(selected_nodes[0].parent.model.id);
       for (var i=0; i<selected_nodes.length-1; i++) {
         if (selected_nodes[i].parent === selected_nodes[i+1].parent) {
           factor_texts[j] += selected_nodes[i+1].text;
+          fact_cnt[j]++;
         } else {
+          create_fact_subs(selected_nodes[i].parent, fact_cnt[j]);
           j++; //next factor
           factor_texts[j] = selected_nodes[i+1].text;
+          fact_cnt[j]=1;
           term_ids.push(selected_nodes[i+1].parent.model.id);
         }
+        create_fact_subs(selected_nodes[i+1].parent, fact_cnt[j]);
+        console.log("fact_subs", fact_subs);
       }
     }
     for (var i=0; i<factor_texts.length-1; i++) { //checking if all factors are the same
       if (factor_texts[i] !== factor_texts[i+1]) {same_factors = false}
     }
-    console.log(factor_texts);
+    console.log("factors_text", factor_texts);
   }
 
   //
 
+
   for (var i=0; i<selected_nodes.length; i++) {//making sure all elemnts have one factor
     var child_cnt = 1;
     if (selected_nodes[i].children[0] !== undefined) {
-      if (selected_nodes[i].children[0].type === "op") {
+      if (selected_nodes[i].children[0].type2 === "op") {
         child_cnt++;
       }
     }
@@ -1857,17 +1984,21 @@ if (selected_nodes[0].type==="factor" && same_type) {
   }
   for (var i=0; i<selected_nodes.length-1; i++) {//making sure all terms are the same
     var term_text1, term_text2;
-    if (selected_nodes[i].children[0] !== undefined) {
-      if (selected_nodes[i].children[0].type === "op") {
-        term_text1 = selected_nodes[i].text.slice(1, -1);
+    if (selected_nodes[i].children[0] !== undefined && selected_nodes[i].type === "term" && selected_nodes[i+1].children[0] !== undefined && selected_nodes[i+1].type === "term") {
+      if (selected_nodes[i].children[0].type2 === "op") {
+        term_text1 = selected_nodes[i].text.slice(1);
       }
-      if (selected_nodes[i+1].children[0].type === "op") {
-        term_text2 = selected_nodes[i+1].text.slice(1, -1);
+      if (selected_nodes[i+1].children[0].type2 === "op") {
+        term_text2 = selected_nodes[i+1].text.slice(1);
       }
     }
+
     if (term_text1 !== term_text2) {same_term = false}
   }
-  if (selected_nodes[0].type === "factor" && same_type && same_grandparents && same_factors && selected_nodes.length > 1) { //factor out
+
+  //factor out
+  if (selected_nodes[0].type === "factor" && same_type && same_grandparents && same_factors && factor_texts.length > 1)
+  {
     console.log("factor out");
     $selected.animate({"font-size": 0, opacity: 0}, step_duration) //AS USUAL, IMPROVE ANIMATION
       .css('overflow', 'visible')
@@ -1875,9 +2006,9 @@ if (selected_nodes[0].type==="factor" && same_type) {
       .done(function() {
         var selected_terms = [];
         var selected_text = factor_texts[0];
-        new_math_str = replace_in_mtstr(selected_nodes, "");
+        new_math_str = replace_in_mtstr(selected_nodes, fact_subs);
         var new_text = "";
-      playing = true;
+        playing = true; //so that it doesn't go into history..
         prepare(new_math_str); //I SHOULD CREATE A FUNCTION THAT PARSES A LATEX STRING INTO A MATH_ROOT IDEALLY...
         playing = false;
         for (var k=0; k<term_ids.length; k++) {
@@ -1888,31 +2019,39 @@ if (selected_nodes[0].type==="factor" && same_type) {
           selected_terms.push(term);
         }
         new_text = "+" + selected_text + "(" + new_text + ")";
-        // console.log(term_ids);
-        // console.log(new_text);
-        // console.log(selected_terms);
         new_math_str = replace_in_mtstr(selected_terms, new_text);
         current_index++;
       prepare(new_math_str);
       });
-  } else if (selected_nodes[0].type === "factor" && same_parents && same_type && same_text) { //merge equal factors into exp
+  }
+  //merge equal factors into exp
+  else if (selected_nodes[0].type === "factor" && same_parents && same_type && same_text)
+  {
     console.log("merge equal factors into exp");
     //ANIMATION??
-    new_math_str = replace_in_mtstr(selected_nodes, selected_nodes[0].text + "^{" + selected_nodes.length.toString() + "}");
+    new_math_str = replace_in_mtstr(selected_nodes, eval_expression(selected_text));
+    // new_math_str = replace_in_mtstr(selected_nodes, selected_nodes[0].text + "^{" + selected_nodes.length.toString() + "}");
     current_index++;
     prepare(new_math_str);
-  } else if (selected_nodes[0].type === "term" && same_type && same_term && selected_nodes.length > 1) { //merge equal terms into term
+  }
+  //merge equal terms into term
+  else if (selected_nodes[0].type === "term" && same_type && same_term && selected_nodes.length > 1)
+  {
     console.log("merge equal terms into term");
-    var term_text;
-    if (selected_nodes[0].children[0].type === "op") {
-      term_text = selected_nodes[i].text.slice(1, -1);
+    var term_text = selected_nodes[0].text;
+    if (selected_nodes[0].children[0].type2 === "op") {
+      term_text = selected_nodes[0].text.slice(1);
     }
     new_math_str = replace_in_mtstr(selected_nodes, "+" + selected_nodes.length.toString() + term_text);
+
     current_index++;
     prepare(new_math_str);
-  } else if (selected_nodes[0].type === "term" && same_type && single_factor && are_fracs && selected_nodes.length > 1) { //merge terms into fraction
+  }
+  //merge terms into fraction
+  else if (selected_nodes[0].type === "term" && same_type && single_factor && are_fracs && selected_nodes.length > 1)
+  {
     console.log("merge terms into fraction");
-    for (var i=0; i<selected_nodes.length-1; i++) {//making sure all elemnts have the same denominator
+    for (var i=0; i<selected_nodes.length-1; i++) {//making sure all elements have the same denominator
       if (selected_nodes[i].children[selected_nodes[i].children.length-1].children[1].text !== selected_nodes[i+1].children[selected_nodes[i+1].children.length-1].children[1].text) {
         return;
       }
@@ -1928,11 +2067,14 @@ if (selected_nodes[0].type==="factor" && same_type) {
         numerator_text+=selected_nodes[i].children[selected_nodes[i].children.length-1].children[0].text;
       }
     }
-    var new_text = "\\frac{" + numerator_text + "}{" + denominator_text + "}";
+    var new_text = "+\\frac{" + numerator_text + "}{" + denominator_text + "}";
     new_math_str = replace_in_mtstr(selected_nodes, new_text);
     current_index++;
     prepare(new_math_str);
-  } else if (selected_nodes[0].type2 === "frac" && same_parents && same_type && same_type2) { //merge factors into fraction
+  }
+  //merge factors into fraction
+  else if (selected_nodes[0].type2 === "frac" && same_parents && same_type && same_type2)
+  {
     console.log("merge factors into fraction");
     //ANIMATION??
     var numerator_text = "", denominator_text = "";
@@ -1944,8 +2086,11 @@ if (selected_nodes[0].type==="factor" && same_type) {
     new_math_str = replace_in_mtstr(selected_nodes, new_text);
     current_index++;
     prepare(new_math_str);
-  } else if ((selected_nodes[0].type2 === "exp" || selected_nodes[0].type2 === "group_exp")
-  && same_parents && same_type && same_type2) { //merge exponentials
+  }
+  //merge exponentials
+  else if ((selected_nodes[0].type2 === "exp" || selected_nodes[0].type2 === "group_exp")
+  && same_parents && same_type)
+  {
     console.log("merge exponentials");
     var same_base = true, same_power = true;
     for (var i=0; i<selected_nodes.length-1; i++) {//making sure all elemnts are of the same base
@@ -1958,10 +2103,10 @@ if (selected_nodes[0].type==="factor" && same_type) {
       console.log("merge exponentials with common base");
       //ANIMATION??
       var power_text = "", base_text="";
-      if (selected_nodes[0].children[0].length === 1) {
+      if (selected_nodes[0].children[0].children.length === 1) {
         base_text = selected_nodes[0].children[0].text;
       } else {
-        base_text = "(" + selected_nodes[0].children[0].text + ")";
+        base_text = add_brackets(selected_nodes[0].children[0].text);
       }
       for (var i=0; i<selected_nodes.length; i++) {
         if (i > 0) {power_text+="+";}
@@ -1976,10 +2121,10 @@ if (selected_nodes[0].type==="factor" && same_type) {
       //ANIMATION??
       var power_text = selected_nodes[0].children[1].text, base_text="";
       for (var i=0; i<selected_nodes.length; i++) {
-        if (selected_nodes[i].children[0].children.length === 0) {
+        if (selected_nodes[i].children[0].children.length === 1) {
           base_text+=selected_nodes[i].children[0].text;
         } else {
-          base_text+="(" + selected_nodes[i].children[0].text + ")";
+          base_text+=add_brackets(selected_nodes[i].children[0].text);
         }
       }
       var new_text = "(" + base_text + ")" + "^{" + power_text + "}";
@@ -1987,7 +2132,10 @@ if (selected_nodes[0].type==="factor" && same_type) {
       current_index++;
       prepare(new_math_str);
     }
-  } else if (selected_nodes[0].type2 === "sqrt" && same_parents && same_type2) { //merge square roots into square root
+  }
+  //merge square roots into square root
+  else if (selected_nodes[0].type2 === "sqrt" && same_parents && same_type2)
+  {
     console.log("merge square roots into square root");
     //ANIMATION??
     var new_text = "\\sqrt{"
@@ -2007,6 +2155,7 @@ if (selected_nodes[0].type==="factor" && same_type) {
     current_index++;
     prepare(new_math_str);
   }
+
   if (recording || playing) {recording_index++;}
   if (recording) {add_to_manip_rec(13);}
 }
