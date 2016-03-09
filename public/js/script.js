@@ -1922,11 +1922,16 @@ function merge() {
     //just defining this function because it's called twice below
     //TODO: NEED TO FIX IT IN CASE THE PARENT TERM HAS OPERATOR
     console.log("factor_texts", factor_texts)
-    if (term.children.length > fact_cnt) {
+    let op_shift = 0;
+    if (term.children[0].type2 === "op") {
+      op_shift = 1;
+    }
+    let term_factors = term.children.length - op_shift;
+    if (term_factors > fact_cnt) {
       for (var k=0; k<fact_cnt; k++) {
         fact_subs.push("");
       }
-    } else if (term.children.length === fact_cnt) {
+    } else if (term_factors === fact_cnt) {
       fact_subs.push("1");
       for (var k=1; k<fact_cnt; k++) {
         fact_subs.push("");
@@ -1944,7 +1949,7 @@ function merge() {
     } else {
       console.log("selected nodes", selected_nodes);
       term_ids.push(selected_nodes[0].parent.model.id);
-      for (var i=0; i<selected_nodes.length-1; i++) {
+      for (i=0; i<selected_nodes.length-1; i++) {
         if (selected_nodes[i].parent === selected_nodes[i+1].parent) {
           factor_texts[j] += selected_nodes[i+1].text;
           fact_cnt[j]++;
@@ -1955,9 +1960,11 @@ function merge() {
           fact_cnt[j]=1;
           term_ids.push(selected_nodes[i+1].parent.model.id);
         }
-        create_fact_subs(selected_nodes[i+1].parent, fact_cnt[j]);
         console.log("fact_subs", fact_subs);
+        last_node_in_loop = selected_nodes[i+1];
       }
+      create_fact_subs(last_node_in_loop.parent, fact_cnt[j]);
+      //the above could be made more pretty I think..
     }
     for (var i=0; i<factor_texts.length-1; i++) { //checking if all factors are the same
       if (factor_texts[i] !== factor_texts[i+1]) {same_factors = false}

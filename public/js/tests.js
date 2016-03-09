@@ -114,6 +114,9 @@ $( document ).ready(function() {
     //FACTOR OUT with one one-factor term
     test_manip(assert, merge, "p+\\frac{ac}{a+c}p=1", "p(1+\\frac{ac}{a+c})=1",  ["0/1/1", "0/2/3"]);
 
+    //FACTOR OUT with one one-factor term AGAIN
+    test_manip(assert, merge, "-\\omega^{2} B e^{i\\phi} + i \\beta \\omega B e^{i\\phi} + B e^{i\\phi} = \\Gamma", "Be^{i\\phi }(-\\omega ^{2}+i\\beta \\omega +1)=\\Gamma ",  ["0/1/3", "0/1/4", "0/2/5", "0/2/6", "0/3/2", "0/3/3"]);
+
     //FACTOR OUT with containing terms not being directly their parents. TODO: NEED TO CODE THIS IN
     // test_manip(assert, merge, "\\frac{c(a+k-1)}{a+c}p-\\frac{c(a+k)}{a+c}p", "c(\\frac{(a+k-1)}{a+c}p-\\frac{(a+k)}{a+c}p)",  ["0/1/1/1/1/1", "0/2/2/1/1/1"]);
 
