@@ -53,20 +53,26 @@ var h_eq_shift=0,
 })(jQuery);
 
 //MATH INPUT
+
+console.log(window.MathQuill);
+
+var MQ = MathQuill.getInterface(2);
+mathquill = MQ.MathField($('#mathquill')[0]);
+
 var math_str_el = $("#MathInput input");
-$("#MathQuill").keyup(function (e) {
+$("#mathquill").keyup(function (e) {
     if (e.keyCode == 13) {
-        prepare($("#MathQuill").mathquill('latex').replace(/[^\x00-\x7F]/g, "")
+        prepare(mathquill.latex().replace(/[^\x00-\x7F]/g, "")
           .replace(/\^([a-z0-9])/g, "^{$1}")
           .replace(/\\left/g, "")
           .replace(/\\right/g, ""));
     }
 });
-$("#MathQuill").on("focusout", function () {math_str_el.val($("#MathQuill").mathquill('latex').replace(/[^\x00-\x7F]/g, "")
+$("#mathquill").on("focusout", function () {math_str_el.val(mathquill.latex().replace(/[^\x00-\x7F]/g, "")
   .replace(/\^([a-z0-9])/g, "^{$1}")
   .replace(/\\left/g, "")
     .replace(/\\right/g, ""))});
-math_str_el.on("change", function () {$("#MathQuill").mathquill('latex', math_str_el.get()[0].value)});
+math_str_el.on("change", function () {mathquill.latex(math_str_el.get()[0].value)});
 math_str_el.hide();
 $("#show_latex").on("click", function () {math_str_el.toggle(); math_str_el.is(":visible") ? $("#show_latex").text("Hide LaTeX") : $("#show_latex").text("Show LaTeX")});
 math_str_el.keyup(function (e) {
@@ -1108,7 +1114,7 @@ function prepare(math) {
   var math_el = document.getElementById("math");
   katex.render(math, math_el, { displayMode: true });
   math_str_el.val(math);
-  $("#MathQuill").mathquill('latex', math);
+  mathquill.latex(math);
 
   var root_poly = $("#math .base");
 

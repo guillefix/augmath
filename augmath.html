@@ -9,7 +9,6 @@
   <script src="js/jquery.js"></script>
   <script src="js/jquery-ui.js"></script>
   <script src="js/qunit-1.20.0.js"></script>
-  <script src="js/mathquill.js"></script>
   <script src="js/katex.min.js"></script>
   <script src="js/symbols.js"></script>
   <script src="js/math.js"></script>
@@ -217,7 +216,7 @@
 			</div>
 		</div>
 		<div class="row">
-			<p id="MathInput">Input some equation (<a id="show_latex">show LaTeX</a>): <span id="MathQuill" class="mathquill-editable">...</span>
+			<p id="MathInput">Input some equation (<a id="show_latex">show LaTeX</a>): <span id="mathquill" >...</span>
 			<input size="50"/>
 			<button type="button" class="btn btn-default" id="keep">
 					Keep
@@ -251,10 +250,12 @@
 </div> <!--end of container-->
 
 <!--testing-->
-<div class="container-fluid">
+<!-- <div class="container-fluid">
   <div id="qunit"></div>
 </div>
-<script type="text/javascript" src="js/tests.js"></script>
+<script type="text/javascript" src="js/tests.js"></script> -->
+
+<script src="js/mathquill.min.js"></script>
 
 <script type="text/javascript" src="js/script.js"></script>
 
