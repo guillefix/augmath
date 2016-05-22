@@ -15,7 +15,7 @@ There's another powerful aspect that will come from the necessary bringing toget
 ##Usage
 As this is still being built, and the UI will surely change a lot, here's a quick demo of most of the current manipulations:
 </br>
-<img src="quadratic.gif" width="400" alt="Proof of Quadratic Formula">
+<img src="quadratic.gif" width="700" alt="Proof of Quadratic Formula">
 </br>(Created using [ScreenToGif](https://screentogif.codeplex.com/))
 
 Note: the meteor hosting has stopped working for now, I will find a new hosting method soon.
