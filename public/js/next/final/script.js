@@ -1172,11 +1172,13 @@ function prepare(math) {
 
 //initial render
 var initial_math_str = "ax^{2}+bx+c=0";
-$(document).ready(() =>prepare(initial_math_str));
+// $(document).ready(() =>prepare(initial_math_str));
 
-let toplel = (x) => x*x
+$(document).ready(prepare(initial_math_str));
 
-console.log(toplel(2))
+// let toplel = (x) => x*x
+//
+// console.log(toplel(2))
 
 //MANIPULATIONS
 
@@ -1928,11 +1930,11 @@ function merge() {
     //just defining this function because it's called twice below
     //TODO: NEED TO FIX IT IN CASE THE PARENT TERM HAS OPERATOR
     console.log("factor_texts", factor_texts)
-    let op_shift = 0;
+    var op_shift = 0;
     if (term.children[0].type2 === "op") {
       op_shift = 1;
     }
-    let term_factors = term.children.length - op_shift;
+    var term_factors = term.children.length - op_shift;
     if (term_factors > fact_cnt) {
       for (var k=0; k<fact_cnt; k++) {
         fact_subs.push("");

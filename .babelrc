@@ -1,0 +1,1 @@
+echo '{ "presets": ["es2015"] }' > .babelrc

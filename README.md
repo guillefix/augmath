@@ -15,14 +15,16 @@ There's another powerful aspect that will come from the necessary bringing toget
 ##Usage
 As this is still being built, and the UI will surely change a lot, here's a quick demo of most of the current manipulations:
 </br>
-<img src="proving_quad_formula.gif" width="400" alt="Proof of Quadratic Formula">
+<img src="quadratic.gif" width="400" alt="Proof of Quadratic Formula">
 </br>(Created using [ScreenToGif](https://screentogif.codeplex.com/))
+
+Note: the meteor hosting has stopped working for now, I will find a new hosting method soon.
 
 ## Development
 
 Node.js is required for development. You can download it [here](http://nodejs.org).
 
-Install bower, the frontend dependency manager, gloabally with the following command
+Install bower, the frontend dependency manager, globally with the following command
 
 ```bash
 npm install -g bower
@@ -39,7 +41,7 @@ The acutal script is in 'script.js', the others are older versions.
 
 AugMath uses [KaTeX](https://khan.github.io/KaTeX/) for math rendering, [Coffeequate](http://coffeequate.readthedocs.org/en/latest/), for some algebraic operations and [Math.js](http://mathjs.org/) for some math operations, and jQuery for animations and stuff.
 
-Here is a [Worflowy list](https://workflowy.com/s/BlNaX36nRR) I made to organize the stuff that goes into AugMath. 
+Here is a [Worflowy list](https://workflowy.com/s/BlNaX36nRR) I made to organize the stuff that goes into AugMath.
 
 Here is a [Codepen](http://codepen.io/guillefix/full/xGWQPJ/) to test it live.
 
@@ -65,4 +67,3 @@ Here are some things that one can work on:
 * Add drag and drop capabilities, so that moving-based manipulations can be done that way. While you are dragging, visual feedback should be offered of the places you can drop it.
 
 * Allow to make selections with keyboard arrow keys (up and down for changing depth) to traverse the tree.
-
