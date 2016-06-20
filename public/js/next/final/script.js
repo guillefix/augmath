@@ -131,9 +131,9 @@ $(document).on( "keyup", function (e) { //right
         var new_node = selected_nodes[0].parent.children[index] || undefined;
         if (new_node) {
           if (new_node.type !== selected_nodes[0].type) {
+            remove_events(manip, depth);
             manip = new_node.type;
             manip_el.val(manip);
-            remove_events(manip, depth);
             create_events(manip, depth);
           }
           select_node(new_node);
@@ -147,9 +147,9 @@ $(document).on( "keyup", function (e) { //left
           var new_node = selected_nodes[0].parent.children[index] || undefined;
           if (new_node) {
             if (new_node.type !== selected_nodes[0].type) {
+              remove_events(manip, depth);
               manip = new_node.type;
               manip_el.val(manip);
-              remove_events(manip, depth);
               create_events(manip, depth);
             }
             select_node(new_node);
@@ -161,12 +161,12 @@ $(document).on( "keyup", function (e) { //down
     if (e.keyCode == 40) {
       if (selected_nodes) {
         if (selected_nodes[0].children.length > 0) {
+          remove_events(manip, depth);
           var new_node = selected_nodes[0].children[0];
-            manip = new_node.type;
+          manip = new_node.type;
           manip_el.val(manip);
           depth++;
           depth_el.val(depth);
-          remove_events(manip, depth);
           create_events(manip, depth);
           select_node(new_node);
         }
@@ -178,11 +178,11 @@ $(document).on( "keyup", function (e) { //up
       if (selected_nodes) {
         if (selected_nodes[0].parent !== math_root) {
           var new_node = selected_nodes[0].parent;
-            manip = new_node.type;
+          remove_events(manip, depth);
+          manip = new_node.type;
           manip_el.val(manip);
           depth--;
           depth_el.val(depth);
-          remove_events(manip, depth);
         create_events(manip, depth);
           select_node(new_node);
         }
@@ -541,8 +541,9 @@ function latex_to_ascii(str) {
     .replace(/\*?\)\*?/g, ")")
     .replace(/\*?\/\*?/g, "/")
     .replace(/\(\+/g, "(")
-    .replace(/\*\^\*\{\*([0-9]+)\)/g, "**$1")
-    .replace(/\^\*\{\*([0-9]+)\)/g, "**$1");
+    .replace(/\*\^\*\{\*(\-?[0-9]+)\)/g, "**($1)")
+    .replace(/\^\*\{\*(\-?[0-9]+)\)/g, "**($1)")
+    .replace(/\*\^\*\{(\-?[0-9]+)\)/g, "**($1)");
   return str;
 }
 
@@ -596,23 +597,42 @@ function change_sign(nodes) {
       text += "-" + nodes[i].text;
     }
   }
-  return text;
+  return text.replace(/^\+/, "");
 }
 
 //change sign of exponent of some nodes
-function exponentiate(nodes, overall, power) {
+function exponentiate(nodes, overall, power, distInFrac) {
+  console.log("exponentiating")
+  if (typeof distInFrac === 'undefined') { distInFrac = false; }
   var new_text="";
   for (var i=0; i<nodes.length; i++) {
     if (nodes[i].type !== "factor") { throw "Called exponentiate with something that isn't a factor" }
     switch (nodes[i].type2) {
       case "exp":
-        new_text+=nodes[i].children[0].text + (overall ? "" : "^{" + power.slice(0,1) + nodes[i].children[1].text + "}");
+        var new_pow;
+        if (power === "-1") {
+          new_pow = change_sign(nodes[i].children[1].children);
+        }
+        else {
+          new_pow = math.eval(power + "*" + nodes[i].children[1]);
+        }
+        if (new_pow === "1") {
+          new_pow = "";
+        }
+        new_text+=nodes[i].children[0].text + (overall ? "" : "^{" + new_pow + "}");
         break;
       case "group_exp":
         new_text+= (overall ? nodes[i].text : add_brackets(nodes[i].children[0].text) + "^{" + power.slice(0,1) + nodes[i].children[1].text + "}");
         break;
       case "frac":
-        new_text+= (overall ? nodes[i].text : add_brackets(nodes[i].text) + "^{power}");
+        var new_frac_text;
+        if (distInFrac) {
+          new_frac_text = "\\frac{"+exponentiate(nodes[i].children[0].children[0].children, false, power)+"}{"+exponentiate(nodes[i].children[1].children[0].children, false, power)+"}";
+        }
+        else {
+          new_frac_text = add_brackets(nodes[i].text) + "^{"+power+"}";
+        }
+        new_text+= (overall ? nodes[i].text : new_frac_text);
         break;
       case "sqrt":
         new_text+=nodes[i].text.slice(6, -1) + (overall ? "" : "^{" + power + "\\frac{1}{2}}");
@@ -1229,7 +1249,7 @@ function change_side() {
       });
     }
   }
-  //operator (sign) should check it's actually a sign, by checking "text"
+  //operator (sign) TODO:should check it's actually a sign, by checking "text"
   else if (selected_nodes[0].parent.parent === math_root
     && selected_nodes[0].type2 === "op"
     && selected_nodes.length === 1
@@ -1524,12 +1544,15 @@ function move_up() {
   for (var i=0; i<selected_nodes.length-1; i++) {//making sure all elemnts are of the same parent
     if (selected_nodes[i].parent !== selected_nodes[i+1].parent) {same_parents = false}
   }
+  // factors in single term in denominator
   if ($selected.prev().filter(".mrel").length === 0
     && selected_nodes[0].type === "factor"
     && same_type
     && same_parents
     && selected_nodes[0].parent.parent.parent.type2 === "frac"
-    && selected_nodes[0].parent.parent.children.length === 1) {
+    && selected_nodes[0].parent.parent.children.length === 1)
+  {
+    console.log("moving up factor");
     var numerator = selected_nodes[0].parent.parent.parent.children[0];
     var new_nom_text = exponentiate(selected_nodes, false, "-1");
     if (numerator.children.length === 1) {
@@ -1537,12 +1560,15 @@ function move_up() {
     } else {
       new_nom_text+="(" + numerator.text + ")";
     }
-  } else if ($selected.prev().filter(".mrel").length === 0
+  }
+  //single term in denominator
+  else if ($selected.prev().filter(".mrel").length === 0
   && selected_nodes[0].type === "term"
   && selected_nodes.length === 1
   && selected_nodes[0].parent.parent.type2 === "frac"
-  && selected_nodes[0].parent.children.length === 1) {
-    console.log("hi");
+  && selected_nodes[0].parent.children.length === 1)
+  {
+    console.log("moving up term");
     var numerator = selected_nodes[0].parent.parent.children[0];
     var new_nom_text = exponentiate(selected_nodes[0].children, false, "-1");
     if (numerator.children.length === 1) {
@@ -1550,12 +1576,15 @@ function move_up() {
     } else {
       new_nom_text+="(" + numerator.text + ")";
     }
-  } else if ($selected.prev().filter(".mrel").length === 0
+  }
+  //selecting denominator directly
+  else if ($selected.prev().filter(".mrel").length === 0
   && selected_nodes[0].type === "denominator"
   && selected_nodes.length === 1
   && selected_nodes[0].parent.type2 === "frac"
-  && selected_nodes[0].children.length === 1) {
-    console.log("hi");
+  && selected_nodes[0].children.length === 1)
+  {
+    console.log("moving up denominator");
     var numerator = selected_nodes[0].parent.children[0];
     var new_nom_text = "";
     if (selected_nodes[0].children.length === 1) {
@@ -1814,21 +1843,20 @@ function split() {
   else if (selected_nodes[0].children[0] !== undefined && selected_nodes.length === 1  && selected_nodes[0].children[0].children.length === 1
     && (selected_nodes[0].type2 === "exp" || selected_nodes[0].type2 === "group_exp"))
   {
+    console.log("distributing power in");
     //ANIMATION?
     var power_text = selected_nodes[0].children[1].text;
-    var text = ""
     var base_factors = selected_nodes[0].children[0].children[0].children;
-    for (var i=0; i<base_factors.length; i++) {
-      text+=base_factors[i].text + "^{" + power_text + "}";
-    }
+    var text = exponentiate(base_factors, false, power_text,true);
     new_math_str = replace_in_mtstr(selected_nodes, text);
     current_index++;
     prepare(new_math_str);
   }
-  //merge exponentials into exponential
+  //split exponential with terms into exponentials
   else if (selected_nodes.length === 1  && selected_nodes[0].children.length > 1
     && selected_nodes[0].type === "power")
   {
+    console.log("split exponential with terms into exponentials");
     //ANIMATION?
     var base_text;
     if (selected_nodes[0].parent.children[0].children.length === 1 && selected_nodes[0].parent.children[0].children[0].children.length === 1) {
