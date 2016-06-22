@@ -95,6 +95,12 @@ $( document ).ready(function() {
 
   QUnit.test("manipulations.move_right", function( assert ) {
     test_manip(assert, move_right, "ax^{2}+bx+c=0", "bx+ax^{2}+c=0",  ["0/1"]);
+    test_manip(assert, move_right, "33 \\cdot 44z = 1", "44\\cdot 33z=1",  ["0/1/1"]);
+  });
+
+  QUnit.only("manipulations.move_left", function( assert ) {
+    test_manip(assert, move_left, "bx+ax^{2}+c=0", "ax^{2}+bx+c=0",  ["0/2"]);
+    test_manip(assert, move_left, "44\\cdot 33z=1", "33\\cdot 44z=1",  ["0/1/3"]);
   });
 
   QUnit.test("manipulations.move_down", function( assert ) {
@@ -152,7 +158,7 @@ $( document ).ready(function() {
 
   });
 
-  QUnit.only("manipulations.split", function( assert ) {
+  QUnit.test("manipulations.split", function( assert ) {
     //BASIC DISTRIBUTE IN
     test_manip(assert, split, "a(x+y)", "ax+ay",  ["0/1/1", "0/1/2"]);
 

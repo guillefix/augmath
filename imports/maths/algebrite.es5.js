@@ -4,6 +4,7 @@
     slice = [].slice;
 
   // bigInt = require('big-integer');
+  import {bigInt} from 'big-integer';
 
   SELFTEST = 1;
 

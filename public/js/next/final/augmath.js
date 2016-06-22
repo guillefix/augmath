@@ -674,6 +674,7 @@ function add_brackets(str) {
 
 //get previous node
 function get_prev(nodes) {
+  if (!Array.isArray(nodes)) {nodes = [nodes];}
   var node = nodes[0];
   var array = node.model.id.split("/");
   array[array.length-1] = (parseInt(array[array.length-1])-1).toString();
@@ -687,6 +688,7 @@ function get_prev(nodes) {
 
 //get next node
 function get_next(nodes) {
+  if (!Array.isArray(nodes)) {nodes = [nodes];}
   var node = nodes[nodes.length-1];
   var array = node.model.id.split("/");
   array[array.length-1] = (parseInt(array[array.length-1])+1).toString();
@@ -905,8 +907,9 @@ function parse_poly(root, poly, parent_id, is_container) {
     factor_obj = thing;
     factor_id = parent_id.toString() + "/" + (term_cnt+1).toString() + "/" + (factor_cnt+1).toString();
     term_id = parent_id.toString() + "/" + (term_cnt+1).toString();
-    //deal with elements grouped by brackets
-    if (thing.is(".mopen")) {
+    //deal with elements GROUPED by brackets
+    if (thing.is(".mopen"))
+    {
       do {
         factor_obj = factor_obj.add(factor_obj.next());
       } while (!(factor_obj.filter(".mopen").length-factor_obj.filter(".mclose").length === 0));
@@ -925,7 +928,9 @@ function parse_poly(root, poly, parent_id, is_container) {
       factor_text = factor.text;
     }
     //if not grouped, deal with individual element
-    if (/^\d$/.test(thing.text())) { //if number, group numbers into factor
+    //if number, group numbers into factor
+    if (/^\d$/.test(thing.text()))
+    {
       factor_text = "";
       asd=0;
       factor_text+=factor_obj.text();
@@ -943,16 +948,22 @@ function parse_poly(root, poly, parent_id, is_container) {
       factor_cnt++;
       i += factor_obj.length;
     }
-    if (!(/^\d$/.test(thing.text())) && (!thing.is(".mbin, .mopen, .mclose, .mrel") || thing.text() === "!")) {
+    //normal factor
+    if (!(/^\d$/.test(thing.text())) && (!thing.is(".mbin, .mopen, .mclose, .mrel") || thing.text() === "!"))
+    {
       factor = tree.parse({id: factor_id, obj: factor_obj});
       factor.type = "factor";
       factor.type2 = "normal";
-      if (!thing.is(":has(*)")) {
+      if (!thing.is(":has(*)"))
+      {
         factor.text = thing.text();
-        if (factor.text === "−") {
+        if (factor.text === "−")
+        {
           factor.type2 = "op";
           factor.text = "-";
-        } else if (factor.text === "+") {
+        }
+        else if (factor.text === "+")
+        {
           factor.type2 = "op";
           factor.text = "+";}
         factor_text = factor.text;
@@ -962,7 +973,10 @@ function parse_poly(root, poly, parent_id, is_container) {
       term_obj = term_obj.add(thing);
       factor_cnt++;
       i++;
-    } else if (thing.is(".mbin, .mrel")) { //begin new term
+    }
+    //operators that begin new term
+    else if (thing.is(".mbin, .mrel") && (thing.text() === "+" || thing.text() === "−" || thing.text() === "="))
+    {
       term.model.obj = term_obj;
       poly_str+=term.text;
       term_cnt++;
@@ -976,7 +990,8 @@ function parse_poly(root, poly, parent_id, is_container) {
       term.text = "";
       factor_text = "";
       term.type = "term";
-      if (thing.is(".mbin")) {
+      if (thing.is(".mbin"))
+      {
         term.addChild(op);
         op.type = "factor";
         op.type2 = "op";
@@ -984,7 +999,9 @@ function parse_poly(root, poly, parent_id, is_container) {
         term_obj = term_obj.add(thing);
         term.text+=op.text;
         factor_cnt++;
-      } else if (thing.is(".mrel")) {
+      }
+      else if (thing.is(".mrel"))
+      {
         term.type = "rel";
         term.model.obj = thing;
         term.addChild(op);
@@ -1004,8 +1021,21 @@ function parse_poly(root, poly, parent_id, is_container) {
       }
       i++;
     }
+    //other operators
+    else if (thing.is(".mbin, .mrel") && (thing.text() === "⋅"))
+    {
+      factor = tree.parse({id: factor_id, obj: factor_obj});
+      factor.type = "factor";
+      factor.type2 = "op";
+      factor.optype = "mult";
+      factor.text = "\\cdot ";
+      term.addChild(factor);
+      term_obj = term_obj.add(thing);
+      factor_cnt++;
+      i++;
+    }
 
-    //deal with things with children, recursivelly.
+    //PARSING CHILDREN: deal with things with children, recursivelly.
     if (factor_obj.is(":has(*)")) {
       if (thing.children(".mfrac").length !== 0 && thing.children(".mfrac").children(".vlist").children().length === 4) {//fractions. it had 'thing.is(".minner") ||''  in it but not sure why
         if (thing.text().search(/^\\frac\{d\}\{d[a-z]\}$/) === 1) {
@@ -1252,6 +1282,7 @@ function change_side() {
   //operator (sign) TODO:should check it's actually a sign, by checking "text"
   else if (selected_nodes[0].parent.parent === math_root
     && selected_nodes[0].type2 === "op"
+    && (selected_nodes[0].text === "+" || selected_nodes[0].text === "-")
     && selected_nodes.length === 1
     //and it comes from a top leve term, plus there is only one term on the side of the selected sign:
     && (($selected.prevAll(".mrel").length !== 0
@@ -1473,7 +1504,8 @@ function change_side() {
 document.getElementById("move_right").onclick = move_right;
 document.getElementById("tb-move_right").onclick = move_right;
 function move_right(){
-  if ($selected.next().filter(".mrel").length === 0) {
+  if ($selected.next().filter(".mrel").length === 0)
+  {
     var include_op;
     if (selected_nodes[0].type === "factor") {
       include_op = false;
@@ -1487,6 +1519,15 @@ function move_right(){
     var next_node = get_next(selected_nodes);
     var $selected_next = next_node.model.obj;
     var selected_next_width = tot_width($selected_next, true, include_op);
+    //check if it's a multiplication operator, and if so, get next thing
+    if (next_node.type2 === "op" && next_node.optype === "mult") {
+      next_node = get_next(next_node)
+      var width_diff = selected_next_width - selected_width;
+      var $selected_next = next_node.model.obj;
+      var selected_next_width = tot_width($selected_next.add($selected_next.prev()), true, include_op);
+      var selected_width = selected_width + tot_width($selected_next.prev(), true, include_op);
+      $selected_next.first().prev().animate({left:width_diff}, step_duration)
+    }
     $selected_next.animate({left:-selected_width}, step_duration); //animation should take into account possibly missing operator
     $selected.animate({left:selected_next_width}, step_duration).promise().done(function() {
       if (!has_op($selected) && selected_nodes[0].type === "term") {selected_text_str = "+" + selected_text;} else {selected_text_str = selected_text;}
@@ -1504,7 +1545,8 @@ function move_right(){
 document.getElementById("move_left").onclick = move_left;
 document.getElementById("tb-move_left").onclick = move_left;
 function move_left() {
-  if ($selected.prev().filter(".mrel").length === 0) {
+  if ($selected.prev().filter(".mrel").length === 0)
+  {
     var include_op;
     if (selected_nodes[0].type === "factor") {
       include_op = false;
@@ -1518,12 +1560,21 @@ function move_left() {
     var prev_node = get_prev(selected_nodes);
     var $selected_prev = prev_node.model.obj;
     var selected_prev_width = tot_width($selected_prev, true, include_op);
+    //check if it's a multiplication operator, and if so, get prev thing
+    if (prev_node.type2 === "op" && prev_node.optype === "mult") {
+      prev_node = get_prev(prev_node)
+      var $selected_prev = prev_node.model.obj;
+      var width_diff = selected_prev_width - selected_width;
+      var selected_prev_width = tot_width($selected_prev.add($selected_prev.next()), true, include_op);
+      var selected_width = selected_width + tot_width($selected_prev.next(), true, include_op);
+      $selected_prev.last().next().animate({left:-width_diff}, step_duration)
+
+    }
     $selected_prev.animate({left:selected_width}, step_duration);
     $selected.animate({left:-selected_prev_width}, step_duration).promise().done(function() {
       if (!has_op($selected) && selected_nodes[0].type === "term") {selected_text_str = "+" + selected_text;} else {selected_text_str = selected_text;}
       prev_text = prev_node.text;
-      console.log(prev_text);
-      if (!has_op($selected_prev) && selected_nodes[0].type === "term") {console.log("HI"); prev_text_str = "+" + prev_text;} else {prev_text_str = prev_text;}
+      if (!has_op($selected_prev) && selected_nodes[0].type === "term") { prev_text_str = "+" + prev_text;} else {prev_text_str = prev_text;}
       new_math_str = replace_in_mtstr([prev_node].concat(selected_nodes), [selected_text_str, prev_text_str]);
       current_index++;
       prepare(new_math_str);
