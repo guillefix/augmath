@@ -94,23 +94,41 @@ $( document ).ready(function() {
   });
 
   QUnit.test("manipulations.move_right", function( assert ) {
+    //Move term right
     test_manip(assert, move_right, "ax^{2}+bx+c=0", "bx+ax^{2}+c=0",  ["0/1"]);
+    //Move normal factor right
+    test_manip(assert, move_right, "ax^{2}+bx+c=0", "x^{2}a+bx+c=0",  ["0/1/1"]);
+    //Move numerical factor right
     test_manip(assert, move_right, "33 \\cdot 44z = 1", "44\\cdot 33z=1",  ["0/1/1"]);
+    //Move numerical factor in fraction right
+    test_manip(assert, move_right, "\\frac{33\\cdot 44}{z}=1",  "\\frac{44\\cdot 33}{z}=1", ["0/1/1/1/1/1"]);
   });
 
-  QUnit.only("manipulations.move_left", function( assert ) {
+  QUnit.test("manipulations.move_left", function( assert ) {
+    //Move term left
     test_manip(assert, move_left, "bx+ax^{2}+c=0", "ax^{2}+bx+c=0",  ["0/2"]);
+    //Move normal factor left
+    test_manip(assert, move_left, "ax^{2}+bx+c=0", "x^{2}a+bx+c=0",  ["0/1/2"]);
+    //Move numerical factor left
     test_manip(assert, move_left, "44\\cdot 33z=1", "33\\cdot 44z=1",  ["0/1/3"]);
+    //Move numerical factor in fraction left
+    test_manip(assert, move_left, "\\frac{44\\cdot 33}{z}=1", "\\frac{33\\cdot 44}{z}=1",  ["0/1/1/1/1/3"]);
   });
 
-  QUnit.test("manipulations.move_down", function( assert ) {
-    test_manip(assert, move_down, "\\frac{ex^{2}}{abcd\\sqrt{32}}+bx+c=1+1-bx", "\\frac{ex^{2}}{abcd\\sqrt{32}}+\\frac{x}{b^{-1}}+c=1+1-bx",  ["0/2/2"]);
-  });
-
-  //move up fraction
+  //move up in fraction
   QUnit.test("manipulations.move_up", function( assert ) {
+    //Move factors in single term in denominator up
     test_manip(assert, move_up, "\\frac{ex^{2}}{abcd\\sqrt{33}}+bx+c=1+1-bx", "\\frac{c^{-1}ex^{2}}{abd\\sqrt{33}}+bx+c=1+1-bx",  ["0/1/1/2/1/3"]);
+    //Move all factors in single term in denominator up
     test_manip(assert, move_up, "1=\\frac{x}{\\frac{2}{3}\\frac{5}{4}}", "1=(\\frac{2}{3})^{-1}(\\frac{5}{4})^{-1}x",  ["0/3/1/2/1/1","0/3/1/2/1/2"]);
+    //Move single term in denominator
+    test_manip(assert, move_up, "\\frac{xa}{aax(lel)^{2}}=\\tau", "a^{-1}a^{-1}x^{-1}(lel)^{-2}xa=\\tau ", ["0/1/1/2/1"])
+  });
+
+  //move down in fraction
+  QUnit.test("manipulations.move_down", function( assert ) {
+    //Move factor down
+    test_manip(assert, move_down, "\\frac{ex^{2}}{abcd\\sqrt{32}}+bx+c=1+1-bx", "\\frac{ex^{2}}{abcd\\sqrt{32}}+\\frac{x}{b^{-1}}+c=1+1-bx",  ["0/2/2"]);
   });
 
   QUnit.test("manipulations.merge", function( assert ) {
@@ -177,6 +195,11 @@ $( document ).ready(function() {
     //distribute power in fraction
     test_manip(assert, split, "1=(\\frac{2}{3})^{-1}(\\frac{5}{4})^{-1}x", "1=\\frac{2^{-1}}{3^{-1}}(\\frac{5}{4})^{-1}x", ["0/3/1"]);
 
+  });
+
+  QUnit.test("manipulations.eval", function( assert ) {
+    //merge two exponentials
+    test_manip(assert, eval, "a^{-1}a^{-1}", "a^{-2}",  ["0/1/1", "0/1/2"]);
   });
 
 });

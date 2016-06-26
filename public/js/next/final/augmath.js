@@ -54,8 +54,6 @@ var h_eq_shift=0,
 
 //MATH INPUT
 
-console.log(window.MathQuill);
-
 var MQ = MathQuill.getInterface(2);
 mathquill = MQ.MathField($('#mathquill')[0]);
 
@@ -528,9 +526,9 @@ function cleanIndices(arr, str) {
   return arr;
 }
 
-//convert a string from LaTeX to the format used by CoffeeEquate
+//convert a string from LaTeX to the format used by Algebrite. TODO: THIS SHOULD BE IMPROVED A LOT. OR JUST STORE AN ASCIIMATH COPY OF MATH_STR...
 function latex_to_ascii(str) {
-  str = str.replace(/\\sqrt\{([a-z0-9]+)\}/g, "($1)**0.5");
+  str.replace(/\\sqrt\{([-a-z0-9]+)\}/g, "sqrt($1)");
   str = str.replace(/\}\{/g, ")/(").replace(/\\frac{/g, "(").replace(/\}/g, ")");
   str = str.split("").join("*");
   str = str.replace(/\*?\+\*?/g, "+")
@@ -541,28 +539,32 @@ function latex_to_ascii(str) {
     .replace(/\*?\)\*?/g, ")")
     .replace(/\*?\/\*?/g, "/")
     .replace(/\(\+/g, "(")
-    .replace(/\*\^\*\{\*(\-?[0-9]+)\)/g, "**($1)")
-    .replace(/\^\*\{\*(\-?[0-9]+)\)/g, "**($1)")
-    .replace(/\*\^\*\{(\-?[0-9]+)\)/g, "**($1)");
+    .replace(/\*\^\*\{\*(\-?[0-9]+)\)/g, "^($1)")
+    .replace(/\^\*\{\*(\-?[0-9]+)\)/g, "^($1)")
+    .replace(/\*\^\*\{(\-?[0-9]+)\)/g, "^($1)");
   return str;
 }
 
 //evaluate an expression with Coffeeequate
 function eval_expression(expression) {
   var new_term;
-  expression = latex_to_ascii(expression)
-  if (expression.search(/[a-z\(\)]/) > -1) { //doesn't work with some expressions, as usual
-    try {
-      new_term = CQ(expression).simplify().toLaTeX().replace("\\cdot", ""); //removing cdot format
-    }
-    catch(err) {
-      console.log("Error (from CQ): " + err);
-      console.log("Expression is : " + expression);
-      new_term = CQ(expression).simplify().toString().replace(/\*{2}(\d+)/, "^{$1}").replace(/\*/g, "")
-                              .replace(/([a-z0-9]+)\/([a-z0-9]+)/, "\\frac{$1}{$2}");
-    }
-    finally {
-    }
+  expression = latex_to_ascii(expression) //doesn't work with some expressions, as usual
+  if (expression.search(/[a-z\(\)]/) > -1) {
+    var new_str = Algebrite.simplify(expression).toString();
+    var new_exp = new algebra.Expression(new_str);
+    new_term = new_exp.toTex().replace(/\^([a-z0-9])/g, "^{$1}").replace(/\^\(([-a-z0-9]+)\)/g, "^{$1}");
+    // try {
+    //   new_term = CQ(expression).simplify().toLaTeX().replace("\\cdot", ""); //removing cdot format
+    // }
+    // catch(err) {
+    //   console.log("Error (from CQ): " + err);
+    //   console.log("Expression is : " + expression);
+    //   new_term = CQ(expression).simplify().toString().replace(/\*{2}(\d+)/, "^{$1}").replace(/\*/g, "")
+    //                           .replace(/([a-z0-9]+)\/([a-z0-9]+)/, "\\frac{$1}{$2}");
+    // }
+    // finally {
+    // }
+
   } else {
     new_term = math.eval(expression).toString();
   }
@@ -609,8 +611,9 @@ function exponentiate(nodes, overall, power, distInFrac) {
     if (nodes[i].type !== "factor") { throw "Called exponentiate with something that isn't a factor" }
     switch (nodes[i].type2) {
       case "exp":
+      case "group_exp":
         var new_pow;
-        if (power === "-1") {
+        if (power === "-1") { //if power is -1 then change sign of power
           new_pow = change_sign(nodes[i].children[1].children);
         }
         else {
@@ -619,10 +622,11 @@ function exponentiate(nodes, overall, power, distInFrac) {
         if (new_pow === "1") {
           new_pow = "";
         }
-        new_text+=nodes[i].children[0].text + (overall ? "" : "^{" + new_pow + "}");
-        break;
-      case "group_exp":
-        new_text+= (overall ? nodes[i].text : add_brackets(nodes[i].children[0].text) + "^{" + power.slice(0,1) + nodes[i].children[1].text + "}");
+        if (nodes[i].type2 === "exp") {
+          new_text+= (overall ? nodes[i].text : nodes[i].children[0].text + "^{" + new_pow + "}");
+        } else if (nodes[i].type2 === "group_exp") {
+          new_text+= (overall ? nodes[i].text : add_brackets(nodes[i].children[0].text) + "^{" + new_pow + "}");
+        }
         break;
       case "frac":
         var new_frac_text;
@@ -1504,6 +1508,7 @@ function change_side() {
 document.getElementById("move_right").onclick = move_right;
 document.getElementById("tb-move_right").onclick = move_right;
 function move_right(){
+  //moving factor or term
   if ($selected.next().filter(".mrel").length === 0)
   {
     var include_op;
@@ -1545,12 +1550,15 @@ function move_right(){
 document.getElementById("move_left").onclick = move_left;
 document.getElementById("tb-move_left").onclick = move_left;
 function move_left() {
+  //moving factor or term
   if ($selected.prev().filter(".mrel").length === 0)
   {
     var include_op;
     if (selected_nodes[0].type === "factor") {
+      // console.log("moving factor left")
       include_op = false;
     } else if (selected_nodes[0].type === "term") {
+      // console.log("moving term right")
       include_op = true;
     } else {
       return;
@@ -2193,7 +2201,8 @@ function merge() {
     for (var i=0; i<selected_nodes.length-1; i++) {//making sure all elemnts are of the same base
       if (selected_nodes[i].children[1].text !== selected_nodes[i+1].children[1].text) {same_power = false}
     }
-    if (same_base && !same_power) {//with common base
+    if (same_base && !same_power) //with common base
+    {
       console.log("merge exponentials with common base");
       //ANIMATION??
       var power_text = "", base_text="";
@@ -2210,7 +2219,9 @@ function merge() {
       new_math_str = replace_in_mtstr(selected_nodes, new_text);
       current_index++;
       prepare(new_math_str);
-    } else if (same_power && !same_base) { //with common power
+    }
+    else if (same_power && !same_base)  //with common power
+    {
       console.log("merge exponentials with common power");
       //ANIMATION??
       var power_text = selected_nodes[0].children[1].text, base_text="";

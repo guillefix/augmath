@@ -10,7 +10,7 @@
     "type": "git",
     "url": "git+https://github.com/guillefix/augmath.git"
   },
-  "author": "",
+  "author": "guillermo valle",
   "license": "ISC",
   "bugs": {
     "url": "https://github.com/guillefix/augmath/issues"
@@ -20,6 +20,13 @@
     "big-integer": "^1.6.15",
     "jquery": "^3.0.0",
     "jquery-ui": "^1.10.5",
+    "meteor-node-stubs": "^0.2.3",
     "qunit": "^0.9.1"
-  }
+  },
+  "devDependencies": {},
+  "keywords": [
+    "maths",
+    "interactive",
+    "animation"
+  ]
 }
