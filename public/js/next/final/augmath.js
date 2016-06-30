@@ -705,41 +705,54 @@ function add_brackets(str) {
 
 //Check properties
 
-//check if all nodes are fracs (for single elements)
-function are_of_type(nodes, type, check_single_children) {
+//check if all nodes are of a given type or type 2 (if two=1)
+function are_of_type(nodes, type, two) {
+  var two = two || 0;
   var result = true;
-  if (!check_single_children) {
     for (var i=0; i<nodes.length; i++) {
-      if (nodes[i].type !== type) {result = false}
+      if (Bro(nodes[i]).iCanHaz("type"+"2".repeat(two)) !== type) {result = false}
     }
-  } else { //useful for some things.
-    for (var i=0; i<nodes.length; i++) {
-      if (nodes[i].children[nodes[i].children.length-1] !== undefined) {
-        if (nodes[i].children[nodes[i].children.length-1].type2 !== type) {result = false}
-      }
-    }
-  }
   return result;
 }
 
-function any_of_type(nodes,type, check_single_children) {
+function any_of_type(nodes,type) {
   var result = false;
-  if (!check_single_children) {
     for (var i=0; i<nodes.length; i++) {
-      if (nodes[i].type === type) {result = true}
+      if (Bro(nodes[i]).iCanHaz("type") === type) {result = true}
     }
-  } else { //useful for some things.
-    for (var i=0; i<nodes.length; i++) {
-      if (nodes[i].children[nodes[i].children.length-1] !== undefined) {
-        if (nodes[i].children[nodes[i].children.length-1].type2 === type) {result = true}
-      }
-    }
+  return result;
+}
+
+//check if all nodes share some ancestor
+function have_same_ancestors(nodes, depth) {
+  var result = true;
+  var ancestor = "parent"+".parent".repeat(depth-1);
+  for (var i=0; i<nodes.length-1; i++) {
+    if (Bro(nodes[i]).iCanHaz(ancestor) !== Bro(nodes[i+1]).iCanHaz(ancestor)) {result = false}
   }
   return result;
 }
 
-//
+//check if all nodes are of same type or type 2 (if two=1)
+function have_same_type(nodes, two) {
+  var two = two || 0;
+  var type = "type"+"2".repeat(two);
+  var result=true;
+  for (var i=0; i<nodes.length-1; i++) {//making sure all elemnts are of the same type
+    if (Bro(nodes[i]).iCanHaz(type) !== Bro(nodes[i+1]).iCanHaz(type)) {result = false}
+  }
+  return result;
+}
 
+function have_same_text(nodes) {
+  var result = true;
+  for (var i=0; i<nodes.length-1; i++) {//making sure all elemnts have the same text
+    if (nodes[i].text !== nodes[i+1].text) {result = false}
+  }
+  return result;
+}
+
+//check if terms have single factor
 function have_single_factor(nodes) {
   var result = true;
   for (var i=0; i<nodes.length; i++) {//making sure all elemnts have one factor
@@ -756,16 +769,38 @@ function have_single_factor(nodes) {
 
 //check if all term nodes have the same denominator
 function have_same_denom(nodes) {
-  if (!are_of_type(nodes, "frac", true)) {throw "Called have_same_denom with something that isn't fracs"}
   var result = true;
   for (var i=0; i<nodes.length-1; i++) {
-    if (nodes[i].children[nodes[i].children.length-1] !== undefined) {
-      if (nodes[i].children[nodes[i].children.length-1].children[1].text !== nodes[i+1].children[nodes[i+1].children.length-1].children[1].text) {result = false;}
+    var index1 = nodes[i].children.length-1;
+    var index2 = nodes[i+1].children.length-1;
+    var facttype1 = Bro(nodes[i]).iCanHaz("children."+index1.toString()+".type2");
+    var facttype2 = Bro(nodes[i+1]).iCanHaz("children."+index2.toString()+".type2");
+    if (facttype1 === "frac" && facttype1 === "frac") {
+      if (nodes[i].children[index1].children[1].text !== nodes[i+1].children[index2].children[1].text) {result = false;}
     }
+  }
+  return result && have_single_factor(nodes);
+}
+
+//check if all terms are the same (ignoring whether sign is present)
+function are_same_terms(nodes) {
+  var result = true;
+  for (var i=0; i<nodes.length-1; i++) {
+    var term_text1 = selected_nodes[i].text,
+        term_text2 = selected_nodes[i+1].text;
+    if (nodes[i].type === "term" && nodes[i+1].type === "term") {
+      if (Bro(nodes[i]).iCanHaz("children.0.type2") === "op") {
+        term_text1 = term_text1.slice(1);
+      }
+      if (Bro(nodes[i+1]).iCanHaz("children.0.type2") === "op") {
+        term_text2 = term_text2.slice(1);
+      }
+    }
+
+    if (term_text1 !== term_text2) {result = false}
   }
   return result;
 }
-
 //
 
 // function equiv_nodes(node1, node2) {
@@ -1695,13 +1730,8 @@ function move_left() {
 document.getElementById("move_up").onclick = move_up;
 document.getElementById("tb-move_up").onclick = move_up;
 function move_up() {
-  var same_parents = true, same_type = true;
-  for (var i=0; i<selected_nodes.length-1; i++) {//making sure all elemnts are of the same type2
-    if (selected_nodes[i].type !== selected_nodes[i+1].type) {same_type = false}
-  }
-  for (var i=0; i<selected_nodes.length-1; i++) {//making sure all elemnts are of the same parent
-    if (selected_nodes[i].parent !== selected_nodes[i+1].parent) {same_parents = false}
-  }
+  var same_parents = have_same_ancestors(selected_nodes, 1), same_type = have_same_type(selected_nodes);
+
   // factors in single term in denominator
   if ($selected.prev().filter(".mrel").length === 0
     && selected_nodes[0].type === "factor"
@@ -1776,10 +1806,8 @@ document.getElementById("move_down").onclick = move_down;
 document.getElementById("tb-move_down").onclick = move_down;
 function move_down() {
 
-  var same_parents = true;
-  for (var i=0; i<selected_nodes.length-1; i++) {//making sure all elemnts are of the same parent
-    if (selected_nodes[i].parent !== selected_nodes[i+1].parent) {same_parents = false}
-  }
+  var same_parents = have_same_ancestors(selected_nodes, 1);
+
   if (same_parents) {
     var new_denom_text = "";
     function move_down_frac(denominator) {
@@ -1866,10 +1894,14 @@ function move_down() {
 document.getElementById("split").onclick = split;
 document.getElementById("tb-split").onclick = split;
 function split() {
-  var same_factor = true, same_grandparents = true, same_type2 = true,
-    same_parents = true, same_type = true, same_ggparents = true;
+  var same_factor = true,
+    same_parents = have_same_ancestors(selected_nodes, 1),
+    same_grandparents = have_same_ancestors(selected_nodes, 2),
+    same_ggparents = have_same_ancestors(selected_nodes, 3),
+    same_type = have_same_type(selected_nodes),
+    same_type2 = have_same_type(selected_nodes,1);
   var factor_text = [], bool = false, j = 0;
-  for (var i=0; i<selected_nodes.length-1; i++) {//making sure all factos are the same
+  for (var i=0; i<selected_nodes.length-1; i++) {//making sure all factors are the same
     if (bool) {
       if (selected_nodes[i].text !== factor_text[j]) {same_factor = false}
       j++;
@@ -1878,21 +1910,7 @@ function split() {
     }
     if (selected_nodes[i].parent !== selected_nodes[i+1].parent) {bool = true; j = 0;}
   }
-  for (var i=0; i<selected_nodes.length-1; i++) {//making sure all elemnts are of the same grandparent
-    if (selected_nodes[i].parent.parent !== selected_nodes[i+1].parent.parent) {same_grandparents = false}
-  }
-  for (var i=0; i<selected_nodes.length-1; i++) {//making sure all elemnts are of the same greatgrandparent
-    if (selected_nodes[i].parent.parent.parent !== selected_nodes[i+1].parent.parent.parent) {same_ggparents = false}
-  }
-  for (var i=0; i<selected_nodes.length-1; i++) {//making sure all elemnts are of the same type2
-    if (selected_nodes[i].type2 !== selected_nodes[i+1].type2) {same_type2 = false}
-  }
-  for (var i=0; i<selected_nodes.length-1; i++) {//making sure all elemnts are of the same parent
-    if (selected_nodes[i].parent !== selected_nodes[i+1].parent) {same_parents = false}
-  }
-  for (var i=0; i<selected_nodes.length-1; i++) {//making sure all elemnts are of the same type
-    if (selected_nodes[i].type !== selected_nodes[i+1].type) {same_type = false}
-  }
+
   var grouped = [];
   for (var i=0; i<selected_nodes.length; i++) {//identifying grouped element
     if (selected_nodes[i].type2 === "group") {
@@ -2093,23 +2111,15 @@ function split() {
 document.getElementById("merge").onclick = merge;
 document.getElementById("tb-merge").onclick = merge;
 function merge() {
-  var same_parents = true, same_grandparents = true, same_type = true, same_type2 = true, same_text = true, same_factors = true,
-  single_factor = have_single_factor(selected_nodes), are_fracs = are_of_type(selected_nodes, "frac", true), same_term = true;
-  for (var i=0; i<selected_nodes.length-1; i++) {//making sure all elemnts are of the same parent
-    if (selected_nodes[i].parent !== selected_nodes[i+1].parent) {same_parents = false}
-  }
-  for (var i=0; i<selected_nodes.length-1; i++) {//making sure all elemnts are of the same grandparent
-    if (selected_nodes[i].parent.parent !== selected_nodes[i+1].parent.parent) {same_grandparents = false}
-  }
-  for (var i=0; i<selected_nodes.length-1; i++) {//making sure all elemnts are of the same type
-    if (selected_nodes[i].type !== selected_nodes[i+1].type) {same_type = false}
-  }
-  for (var i=0; i<selected_nodes.length-1; i++) {//making sure all elemnts are of the same type2
-    if (selected_nodes[i].type2 !== selected_nodes[i+1].type2) {same_type2 = false}
-  }
-  for (var i=0; i<selected_nodes.length-1; i++) {//making sure all elemnts have the same text
-    if (selected_nodes[i].text !== selected_nodes[i+1].text) {same_text = false}
-  }
+  var same_parents = have_same_ancestors(selected_nodes, 1),
+  same_grandparents = have_same_ancestors(selected_nodes, 2),
+  same_type = have_same_type(selected_nodes),
+  same_type2 = have_same_type(selected_nodes,1),
+  same_text = have_same_text(selected_nodes),
+  single_factor = have_single_factor(selected_nodes),
+  are_fracs = are_of_type(selected_nodes.map(function(x) {var index = x.children.length-1; return Bro(x).iCanHaz("children."+index.toString())}), "frac",1),
+  same_term = are_same_terms(selected_nodes),
+  same_factors = true;
 
   //Factors
 
@@ -2134,8 +2144,8 @@ function merge() {
     }
     else {throw "Error in the loop that creates factors. Somehow there were more factors selected inside a term, than there are in the term..."}
   }
+  var factor_texts = [], term_ids = [], fact_subs=[], fact_cnt=[]; //fact_subs is to know what I should replace the factors I will be removing with. See uses below..
   if (selected_nodes[0].type==="factor" && same_type) {
-    var factor_texts = [], term_ids = [], fact_subs=[], fact_cnt=[]; //term_subs is to know what I should replace the factors I will be removing with.
     var j=0;
     factor_texts[j] = selected_nodes[0].text;
     fact_cnt[j]=1;
@@ -2168,20 +2178,6 @@ function merge() {
   }
 
   //
-
-  for (var i=0; i<selected_nodes.length-1; i++) {//making sure all terms are the same
-    var term_text1, term_text2;
-    if (selected_nodes[i].children[0] !== undefined && selected_nodes[i].type === "term" && selected_nodes[i+1].children[0] !== undefined && selected_nodes[i+1].type === "term") {
-      if (selected_nodes[i].children[0].type2 === "op") {
-        term_text1 = selected_nodes[i].text.slice(1);
-      }
-      if (selected_nodes[i+1].children[0].type2 === "op") {
-        term_text2 = selected_nodes[i+1].text.slice(1);
-      }
-    }
-
-    if (term_text1 !== term_text2) {same_term = false}
-  }
 
   //factor out
   if (selected_nodes[0].type === "factor" && same_type && same_grandparents && same_factors && factor_texts.length > 1)
