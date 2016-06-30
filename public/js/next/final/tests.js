@@ -81,6 +81,8 @@ $( document ).ready(function() {
     test_manip(assert, change_side, "\\frac{ax^{2}+33e}{(k+bx+c)}=\\sqrt{2}", "ax^{2}+33e=(k+bx+c)\\sqrt{2}",  ["0/1/1/2"]);
     //change denominator of side from RHS
     test_manip(assert, change_side, "\\sqrt{2}=\\frac{ax^{2}+33e}{(k+bx+c)}", "\\sqrt{2}(k+bx+c)=ax^{2}+33e",  ["0/3/1/2"]);
+    //change factor (in denominator) of side
+    test_manip(assert, change_side, "\\frac{2^{2}\\pi ^{2}}{T^{2}}=\\frac{GM}{r^{3}}", "2^{2}\\pi ^{2}=\\frac{GMT^{2}}{r^{3}}",  ["0/1/1/2/1/1"]);
 
     //change power of side
     test_manip(assert, change_side, "(ax^{2}(k+bx+c))^{33}=\\sqrt{2}", "(ax^{2}(k+bx+c))=(\\sqrt{2})^{\\frac{1}{33}}",  ["0/1/1/2"]);
@@ -156,11 +158,11 @@ $( document ).ready(function() {
     //Merge equal terms into term
     test_manip(assert, merge, "ac+abb+abb+ac", "ac+2abb+ac",  ["0/2", "0/3"]);
 
-    //Merge terms into fraction
+    //Merge fraction terms into fraction
     test_manip(assert, merge, "ac+\\frac{a}{b}+\\frac{cd}{b}", "ac+\\frac{a+cd}{b}",  ["0/2", "0/3"]);
 
-    //Don't merge terms into fraction. ALTHOUGH, in the future it should be do the right thing, use SageMath, etc., tho not with as nice animation probably
-    test_manip(assert, merge, "ac+\\frac{a}{b}+\\frac{cd}{eb}", "ac+\\frac{a}{b}+\\frac{cd}{eb}",  ["0/2", "0/3"]);
+    //Merge terms into fraction (using Algebrite)
+    test_manip(assert, merge, "ac+\\frac{a}{b}+\\frac{cd}{eb}", "ac+\\frac{aeb+cdb}{beb}",  ["0/2", "0/3"]);
 
     //Merge factors into fraction
     test_manip(assert, merge, "ac\\frac{a}{b}\\frac{cd\\sqrt{k}}{xx}", "ac\\frac{acd\\sqrt{k}}{bxx}",  ["0/1/3", "0/1/4"]);

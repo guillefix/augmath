@@ -58,7 +58,7 @@ var MQ = MathQuill.getInterface(2);
 mathquill = MQ.MathField($('#mathquill')[0]);
 
 var math_str_el = $("#MathInput input");
-$("#mathquill").keyup(function (e) {
+$("#mathquill").on("keyup",function (e) {
     if (e.keyCode == 13) {
         prepare(mathquill.latex().replace(/[^\x00-\x7F]/g, "")
           .replace(/\^([a-z0-9])/g, "^{$1}")
@@ -125,22 +125,24 @@ $("#replace_ind").on("click", function () {replace_ind = document.getElementById
 $("#var_select").on("click", function () {var_select = document.getElementById("var_select").checked; if (var_select) {multi_select = false;}});
 $(document).on( "keyup", function (e) { //right
     if (e.keyCode == 39) {
-      var index = parseInt(selected_nodes[0].model.id.split("/")[selected_nodes[0].model.id.split("/").length-1]); //no +1 because the tree index is 1 based not 0 based
-        var new_node = selected_nodes[0].parent.children[index] || undefined;
-        if (new_node) {
-          if (new_node.type !== selected_nodes[0].type) {
-            remove_events(manip, depth);
-            manip = new_node.type;
-            manip_el.val(manip);
-            create_events(manip, depth);
+      if (selected_nodes && selected_nodes.length > 0) {
+        var index = parseInt(selected_nodes[0].model.id.split("/")[selected_nodes[0].model.id.split("/").length-1]); //no +1 because the tree index is 1 based not 0 based
+          var new_node = selected_nodes[0].parent.children[index] || undefined;
+          if (new_node) {
+            if (new_node.type !== selected_nodes[0].type) {
+              remove_events(manip, depth);
+              manip = new_node.type;
+              manip_el.val(manip);
+              create_events(manip, depth);
+            }
+            select_node(new_node);
           }
-          select_node(new_node);
         }
     }
 });
 $(document).on( "keyup", function (e) { //left
     if (e.keyCode == 37) {
-      if (selected_nodes) {
+      if (selected_nodes && selected_nodes.length > 0) {
         var index = parseInt(selected_nodes[0].model.id.split("/")[selected_nodes[0].model.id.split("/").length-1])-2;
           var new_node = selected_nodes[0].parent.children[index] || undefined;
           if (new_node) {
@@ -157,7 +159,7 @@ $(document).on( "keyup", function (e) { //left
 });
 $(document).on( "keyup", function (e) { //down
     if (e.keyCode == 40) {
-      if (selected_nodes) {
+      if (selected_nodes && selected_nodes.length > 0) {
         if (selected_nodes[0].children.length > 0) {
           remove_events(manip, depth);
           var new_node = selected_nodes[0].children[0];
@@ -173,7 +175,7 @@ $(document).on( "keyup", function (e) { //down
 });
 $(document).on( "keyup", function (e) { //up
     if (e.keyCode == 38) {
-      if (selected_nodes) {
+      if (selected_nodes && selected_nodes.length > 0) {
         if (selected_nodes[0].parent !== math_root) {
           var new_node = selected_nodes[0].parent;
           remove_events(manip, depth);
@@ -545,14 +547,20 @@ function latex_to_ascii(str) {
   return str;
 }
 
-//evaluate an expression with Coffeeequate
+//convert a string in Algebrite ascii format to latex
+
+function ascii_to_latex(str) {
+  var exp = new algebra.Expression(str);
+  return exp.toTex().replace(/\^([a-z0-9])/g, "^{$1}").replace(/\^\(([-a-z0-9]+)\)/g, "^{$1}");
+}
+
+//evaluate an expression with Algebrite
 function eval_expression(expression) {
   var new_term;
   expression = latex_to_ascii(expression) //doesn't work with some expressions, as usual
   if (expression.search(/[a-z\(\)]/) > -1) {
     var new_str = Algebrite.simplify(expression).toString();
-    var new_exp = new algebra.Expression(new_str);
-    new_term = new_exp.toTex().replace(/\^([a-z0-9])/g, "^{$1}").replace(/\^\(([-a-z0-9]+)\)/g, "^{$1}");
+    new_term = ascii_to_latex(new_str);
     // try {
     //   new_term = CQ(expression).simplify().toLaTeX().replace("\\cdot", ""); //removing cdot format
     // }
@@ -569,6 +577,19 @@ function eval_expression(expression) {
     new_term = math.eval(expression).toString();
   }
   return new_term;
+}
+
+//Rationalize expression
+
+function rationalize(str) {
+  var ascii_str = latex_to_ascii(str);
+  ascii_str = ascii_str.replace(/e/g, "ee"); //becase Algebrite annoyingly thinks all es are exponentials..
+  // console.log("HIIIIII",ascii_str)
+  var new_exp = Algebrite.rationalize(ascii_str);
+  var new_str = "\\frac{" + Algebrite.numerator(new_exp).toString() + "}{" + Algebrite.denominator(new_exp).toString() + "}";
+  new_str = new_str.replace(/ee/g, "e").replace(/ /g, "");
+  // console.log("HIIIIII",new_str)
+  return ascii_to_latex(new_str);
 }
 
 //get the total width of a set of elements
@@ -650,6 +671,18 @@ function exponentiate(nodes, overall, power, distInFrac) {
 
 //TODO: Use exponentiate to extend features of changin side for power
 
+function multiply_grouped_nodes(nodes) {
+  var result = "";
+  for (var i = 0; i < nodes.length; i++) {
+    if (nodes[i].children.length > 1) {
+      result += "(" + nodes[i].text + ")";
+    } else {
+      result += nodes[i].text;
+    }
+  }
+  return result;
+}
+
 //flip fraction
 function flip_fraction(node) {
   if (node.children[0].text === "1") {
@@ -670,7 +703,70 @@ function add_brackets(str) {
 }
 
 
-//_____
+//Check properties
+
+//check if all nodes are fracs (for single elements)
+function are_of_type(nodes, type, check_single_children) {
+  var result = true;
+  if (!check_single_children) {
+    for (var i=0; i<nodes.length; i++) {
+      if (nodes[i].type !== type) {result = false}
+    }
+  } else { //useful for some things.
+    for (var i=0; i<nodes.length; i++) {
+      if (nodes[i].children[nodes[i].children.length-1] !== undefined) {
+        if (nodes[i].children[nodes[i].children.length-1].type2 !== type) {result = false}
+      }
+    }
+  }
+  return result;
+}
+
+function any_of_type(nodes,type, check_single_children) {
+  var result = false;
+  if (!check_single_children) {
+    for (var i=0; i<nodes.length; i++) {
+      if (nodes[i].type === type) {result = true}
+    }
+  } else { //useful for some things.
+    for (var i=0; i<nodes.length; i++) {
+      if (nodes[i].children[nodes[i].children.length-1] !== undefined) {
+        if (nodes[i].children[nodes[i].children.length-1].type2 === type) {result = true}
+      }
+    }
+  }
+  return result;
+}
+
+//
+
+function have_single_factor(nodes) {
+  var result = true;
+  for (var i=0; i<nodes.length; i++) {//making sure all elemnts have one factor
+    var child_cnt = 1;
+    if (nodes[i].children[0] !== undefined) {
+      if (nodes[i].children[0].type2 === "op") {
+        child_cnt++;
+      }
+    }
+    if (nodes[i].children.length !== child_cnt) {result = false}
+  }
+  return result;
+}
+
+//check if all term nodes have the same denominator
+function have_same_denom(nodes) {
+  if (!are_of_type(nodes, "frac", true)) {throw "Called have_same_denom with something that isn't fracs"}
+  var result = true;
+  for (var i=0; i<nodes.length-1; i++) {
+    if (nodes[i].children[nodes[i].children.length-1] !== undefined) {
+      if (nodes[i].children[nodes[i].children.length-1].children[1].text !== nodes[i+1].children[nodes[i+1].children.length-1].children[1].text) {result = false;}
+    }
+  }
+  return result;
+}
+
+//
 
 // function equiv_nodes(node1, node2) {
 //
@@ -1323,7 +1419,8 @@ function change_side() {
   }
   //factors
   else if ((selected_nodes[0].parent.type === "numerator"
-    || selected_nodes[0].type === "factor"
+    || (selected_nodes[0].type === "factor" && selected_nodes[0].model.id.split("/").length === 3)
+    || (selected_nodes[0].type === "factor" && selected_nodes[0].model.id.split("/").length === 6 && selected_nodes[0].parent.parent.type === "numerator")
     || selected_nodes[0].type === "numerator")
     //and it comes from a top level term, plus there is only one term on the side of the selected sign:
     && (($selected.prevAll(".mrel").length !== 0
@@ -1387,7 +1484,9 @@ function change_side() {
     }
   }
   //denominator
-  else if (selected_nodes[0].parent.type == "denominator" || selected_nodes[0].type === "denominator")
+  else if (selected_nodes[0].parent.type == "denominator"
+    || selected_nodes[0].type === "denominator"
+    || (selected_nodes[0].type === "factor" && selected_nodes[0].model.id.split("/").length === 6 && selected_nodes[0].parent.parent.type === "denominator"))
   {
     console.log("changing denominator of side");
     if (selected_nodes[0].model.id.split("/")[1] < equals_node.model.id.split("/")[1]) { //before eq sign
@@ -1900,6 +1999,7 @@ function split() {
   }
   //distribute power in
   else if (selected_nodes[0].children[0] !== undefined && selected_nodes.length === 1  && selected_nodes[0].children[0].children.length === 1
+    && (selected_nodes[0].children[0].children[0].children.length > 1 || selected_nodes[0].children[0].children[0].children[0].type2 === "frac")
     && (selected_nodes[0].type2 === "exp" || selected_nodes[0].type2 === "group_exp"))
   {
     console.log("distributing power in");
@@ -1994,7 +2094,7 @@ document.getElementById("merge").onclick = merge;
 document.getElementById("tb-merge").onclick = merge;
 function merge() {
   var same_parents = true, same_grandparents = true, same_type = true, same_type2 = true, same_text = true, same_factors = true,
-  single_factor = true, are_fracs = true, same_term = true;
+  single_factor = have_single_factor(selected_nodes), are_fracs = are_of_type(selected_nodes, "frac", true), same_term = true;
   for (var i=0; i<selected_nodes.length-1; i++) {//making sure all elemnts are of the same parent
     if (selected_nodes[i].parent !== selected_nodes[i+1].parent) {same_parents = false}
   }
@@ -2069,21 +2169,6 @@ function merge() {
 
   //
 
-
-  for (var i=0; i<selected_nodes.length; i++) {//making sure all elemnts have one factor
-    var child_cnt = 1;
-    if (selected_nodes[i].children[0] !== undefined) {
-      if (selected_nodes[i].children[0].type2 === "op") {
-        child_cnt++;
-      }
-    }
-    if (selected_nodes[i].children.length !== child_cnt) {single_factor = false}
-  }
-  for (var i=0; i<selected_nodes.length; i++) {//making sure all elemnts are fracs (for single elements)
-    if (selected_nodes[i].children[selected_nodes[i].children.length-1] !== undefined) {
-      if (selected_nodes[i].children[selected_nodes[i].children.length-1].type2 !== "frac") {are_fracs = false}
-    }
-  }
   for (var i=0; i<selected_nodes.length-1; i++) {//making sure all terms are the same
     var term_text1, term_text2;
     if (selected_nodes[i].children[0] !== undefined && selected_nodes[i].type === "term" && selected_nodes[i+1].children[0] !== undefined && selected_nodes[i+1].type === "term") {
@@ -2149,15 +2234,11 @@ function merge() {
     current_index++;
     prepare(new_math_str);
   }
-  //merge terms into fraction
-  else if (selected_nodes[0].type === "term" && same_type && single_factor && are_fracs && selected_nodes.length > 1)
+  //merge fraction terms into fraction
+  else if (selected_nodes[0].type === "term" && same_type && single_factor && are_fracs && have_same_denom(selected_nodes) && selected_nodes.length > 1)
   {
-    console.log("merge terms into fraction");
-    for (var i=0; i<selected_nodes.length-1; i++) {//making sure all elements have the same denominator
-      if (selected_nodes[i].children[selected_nodes[i].children.length-1].children[1].text !== selected_nodes[i+1].children[selected_nodes[i+1].children.length-1].children[1].text) {
-        return;
-      }
-    }
+    console.log("merge fraction terms into fraction");
+
     //ANIMATION??
     var denominator_text = selected_nodes[0].children[selected_nodes[0].children.length-1].children[1].text;
     var numerator_text = "";
@@ -2170,6 +2251,41 @@ function merge() {
       }
     }
     var new_text = "+\\frac{" + numerator_text + "}{" + denominator_text + "}";
+    new_math_str = replace_in_mtstr(selected_nodes, new_text);
+    current_index++;
+    prepare(new_math_str);
+  }
+  //merge terms into fraction
+  else if (selected_nodes[0].type === "term" && same_type && selected_nodes.length > 1)
+  {
+    console.log("merge terms into fraction");
+    var denominator_nodes = [];
+    for (var i=0; i<selected_nodes.length; i++) {//making sure all elements that are fractions have the same denominator
+      if (have_single_factor([selected_nodes[i]]) && selected_nodes[i].children[selected_nodes[i].children.length-1].type2 === "frac") {
+        denominator_nodes.push(selected_nodes[i].children[selected_nodes[i].children.length-1].children[1]); //doing the selected_nodes[i].children.length-1 in case there's an op.
+      }
+    }
+    var denominator_text = multiply_grouped_nodes(denominator_nodes);
+    var numerator_text = "";
+    var j = 0;
+    for (var i=0; i<selected_nodes.length; i++) {
+      if (i > 0) {numerator_text+="+";}
+      if (have_single_factor([selected_nodes[i]]) && selected_nodes[i].children[selected_nodes[i].children.length-1].type2 === "frac") {
+        var temp_denom_nodes = denominator_nodes.slice();
+        denominator_nodes.splice(j,1)
+        var new_nodes = [selected_nodes[i].children[selected_nodes[i].children.length-1].children[0]].concat(denominator_nodes);
+        denominator_nodes = temp_denom_nodes;
+        numerator_text += multiply_grouped_nodes(new_nodes);
+        j++;
+      } else {
+        numerator_text += selected_nodes[i].text + denominator_text;
+      }
+
+    }
+    console.log(numerator_text);
+    //ANIMATION??
+    var new_text = "+\\frac{" + numerator_text + "}{" + denominator_text + "}";
+    // new_text = "+" + rationalize(selected_text);
     new_math_str = replace_in_mtstr(selected_nodes, new_text);
     current_index++;
     prepare(new_math_str);
