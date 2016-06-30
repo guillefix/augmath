@@ -1,5 +1,7 @@
 #AugMath
 
+[![Join the chat at https://gitter.im/guillefix/augmath](https://badges.gitter.im/guillefix/augmath.svg)](https://gitter.im/guillefix/augmath?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+
 ##Vision
 
 AugMath is based on the idea that while Maths (broadly defined as the study and creation of structures) can and should explore its abstract aspects, it can not scape a "representation" when doing something that requires a tool that augments the human mind alone, and thus it should embrace, explore, and even seize this aspect as well. Really the work I'm doing here in JavaScript is the first baby step in a much grander vision of a future where Mathematics, Physics, Art, Engineering, Music, Philosophy, and other aspects of the Human Experience  become much more intertwined and hard to distinguish. I imagine the classroom having become a virtual space for the exploration of structures, creating virtual worlds, whether they are to explore some awe-inspiring idea in a video game, or to make a tool to predict and model bosonic excitations in condensed matter.
