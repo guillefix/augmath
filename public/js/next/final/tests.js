@@ -118,13 +118,17 @@ $( document ).ready(function() {
   });
 
   //move up in fraction
-  QUnit.test("manipulations.move_up", function( assert ) {
+  QUnit.only("manipulations.move_up", function( assert ) {
     //Move factors in single term in denominator up
     test_manip(assert, move_up, "\\frac{ex^{2}}{abcd\\sqrt{33}}+bx+c=1+1-bx", "\\frac{c^{-1}ex^{2}}{abd\\sqrt{33}}+bx+c=1+1-bx",  ["0/1/1/2/1/3"]);
     //Move all factors in single term in denominator up
-    test_manip(assert, move_up, "1=\\frac{x}{\\frac{2}{3}\\frac{5}{4}}", "1=(\\frac{2}{3})^{-1}(\\frac{5}{4})^{-1}x",  ["0/3/1/2/1/1","0/3/1/2/1/2"]);
+    test_manip(assert, move_up, "1=\\frac{x}{yz}", "1=y^{-1}z^{-1}x",  ["0/3/1/2/1/1","0/3/1/2/1/2"]);
+    //Move all fractions in single term in denominator up
+    test_manip(assert, move_up, "1=\\frac{x}{\\frac{2}{3}\\frac{5}{4}}", "1=\\frac{3}{2}\\frac{4}{5}x",  ["0/3/1/2/1/1","0/3/1/2/1/2"]);
     //Move single term in denominator
     test_manip(assert, move_up, "\\frac{xa}{aax(lel)^{2}}=\\tau", "a^{-1}a^{-1}x^{-1}(lel)^{-2}xa=\\tau ", ["0/1/1/2/1"])
+    //Move fraction up
+    test_manip(assert, move_up, "\\frac{v^{2}}{r}=\\frac{1}{\\frac{GMm}{r}}", "\\frac{v^{2}}{r}=\\frac{r}{GMm}", ["0/3/1/2/1/1"])
   });
 
   //move down in fraction
@@ -211,7 +215,7 @@ $( document ).ready(function() {
     test_manip(assert, eval, "a^{-1}a^{-1}", "a^{-2}",  ["0/1/1", "0/1/2"]);
   });
 
-  QUnit.only("manipulations.cancel_out", function( assert ) {
+  QUnit.test("manipulations.cancel_out", function( assert ) {
     //merge two exponentials
     test_manip(assert, cancel_out, "\\frac{v^{2}}{r}=\\frac{GMmr}{r^{2}}", "\\frac{v^{2}}{r}=\\frac{GMm}{r}",  ["0/3/1/1/1/4", "0/3/1/2/1/1"]);
   });

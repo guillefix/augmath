@@ -625,7 +625,7 @@ function change_sign(nodes) {
 
 //change sign of exponent of some nodes
 function exponentiate(nodes, overall, power, distInFrac) {
-  console.log("exponentiating")
+  // console.log("exponentiating")
   if (typeof distInFrac === 'undefined') { distInFrac = false; }
   var new_text="";
   for (var i=0; i<nodes.length; i++) {
@@ -684,12 +684,24 @@ function multiply_grouped_nodes(nodes) {
 }
 
 //flip fraction
-function flip_fraction(node) {
-  if (node.children[0].text === "1") {
-    return node.children[1].text;
-  } else {
-    return "\\frac{" + selected_nodes[0].children[0].children[0].children[1].text + "}{" + selected_nodes[0].children[0].children[0].children[0].text + "}";
+function flip_fraction(nodes) {
+  // console.log("flipping_fracs")
+  var new_text="";
+  for (var i = 0; i < nodes.length; i++) {
+    if (nodes[i].type !== "factor") { throw "Called flip_fraction with something that isn't a factor" }
+    switch (nodes[i].type2) {
+      case "frac":
+        if (nodes[i].children[0].text === "1") {
+          new_text += nodes[i].children[1].text;
+        } else {
+          new_text += "\\frac{" + nodes[i].children[1].text + "}{" + nodes[i].children[0].text + "}";
+        }
+        break;
+      default:
+        new_text += "\\frac{1}{" + nodes[i].text + "}";
+    }
   }
+  return new_text;
 }
 
 function add_brackets(str) {
@@ -715,10 +727,11 @@ function are_of_type(nodes, type, two) {
   return result;
 }
 
-function any_of_type(nodes,type) {
+function any_of_type(nodes,type, two) {
+  var two = two || 0;
   var result = false;
     for (var i=0; i<nodes.length; i++) {
-      if (Bro(nodes[i]).iCanHaz("type") === type) {result = true}
+      if (Bro(nodes[i]).iCanHaz("type"+"2".repeat(two)) === type) {result = true}
     }
   return result;
 }
@@ -1607,7 +1620,7 @@ function change_side() {
           new_math_str = math_HS[0] + "=" + "\\sqrt{" + math_HS[1] + "}";
         } else {
           if (selected_nodes[0].children.length === 1 && selected_nodes[0].children[0].children.length ===1 && selected_nodes[0].children[0].children[0].type2 === "frac") {
-            new_math_str = math_HS[0] + "=" + add_brackets(math_HS[1]) + "^{" + flip_fraction(selected_nodes[0].children[0].children[0]) + "}";
+            new_math_str = math_HS[0] + "=" + add_brackets(math_HS[1]) + "^{" + flip_fraction([selected_nodes[0].children[0].children[0]]) + "}";
           } else {
             new_math_str = math_HS[0] + "=" + add_brackets(math_HS[1]) + "^{" + "\\frac{1}{" + selected_text + "}}"; //add brackets
           }
@@ -1624,7 +1637,7 @@ function change_side() {
           new_math_str = "\\sqrt{" + math_HS[0] + "}" + "=" + math_HS[1];
         } else {
           if (selected_nodes[0].children.length === 1 && selected_nodes[0].children[0].children.length ===1 && selected_nodes[0].children[0].children[0].type2 === "frac") {
-            new_math_str = add_brackets(math_HS[0]) + "^{" + flip_fraction(selected_nodes[0].children[0].children[0]) + "}" + "=" + math_HS[1];
+            new_math_str = add_brackets(math_HS[0]) + "^{" + flip_fraction([selected_nodes[0].children[0].children[0]]) + "}" + "=" + math_HS[1];
           } else {
             new_math_str = add_brackets(math_HS[0]) + "^{" + "\\frac{1}{" + selected_text + "}}" + "=" + math_HS[1]; //add brackets
           }
@@ -1731,31 +1744,32 @@ function move_left() {
 document.getElementById("move_up").onclick = move_up;
 document.getElementById("tb-move_up").onclick = move_up;
 function move_up() {
-  var same_parents = have_same_ancestors(selected_nodes, 1), same_type = have_same_type(selected_nodes);
+  var same_parents = have_same_ancestors(selected_nodes, 1),
+    same_type2 = have_same_type(selected_nodes,1),
+    same_type = have_same_type(selected_nodes);
 
   // factors in single term in denominator
-  if ($selected.prev().filter(".mrel").length === 0
-    && selected_nodes[0].type === "factor"
+  if (selected_nodes[0].type === "factor"
     && same_type
     && same_parents
-    && selected_nodes[0].parent.parent.parent.type2 === "frac"
+    && !any_of_type(selected_nodes,"frac", 1)
+    && Bro(selected_nodes[0]).iCanHaz("parent.parent.parent.type2") === "frac"
     && selected_nodes[0].parent.parent.children.length === 1)
   {
     console.log("moving up factor");
     var numerator = selected_nodes[0].parent.parent.parent.children[0];
     var new_nom_text = exponentiate(selected_nodes, false, "-1");
     if (numerator.children.length === 1) {
-      new_nom_text+=numerator.text;
+      new_nom_text+=(numerator.text === "1" ? "" : numerator.text);
     } else {
       new_nom_text+="(" + numerator.text + ")";
     }
   }
   //single term in denominator
-  else if ($selected.prev().filter(".mrel").length === 0
-  && selected_nodes[0].type === "term"
-  && selected_nodes.length === 1
-  && selected_nodes[0].parent.parent.type2 === "frac"
-  && selected_nodes[0].parent.children.length === 1)
+  else if (selected_nodes[0].type === "term"
+    && selected_nodes.length === 1
+    && Bro(selected_nodes[0]).iCanHaz("parent.parent.type2") === "frac"
+    && selected_nodes[0].parent.children.length === 1)
   {
     console.log("moving up term");
     var numerator = selected_nodes[0].parent.parent.children[0];
@@ -1767,11 +1781,10 @@ function move_up() {
     }
   }
   //selecting denominator directly
-  else if ($selected.prev().filter(".mrel").length === 0
-  && selected_nodes[0].type === "denominator"
-  && selected_nodes.length === 1
-  && selected_nodes[0].parent.type2 === "frac"
-  && selected_nodes[0].children.length === 1)
+  else if (selected_nodes[0].type === "denominator"
+    && selected_nodes.length === 1
+    && selected_nodes[0].parent.type2 === "frac"
+    && selected_nodes[0].children.length === 1)
   {
     console.log("moving up denominator");
     var numerator = selected_nodes[0].parent.children[0];
@@ -1783,6 +1796,20 @@ function move_up() {
     }
     if (numerator.children.length === 1) {
       new_nom_text+=numerator.text;
+    } else {
+      new_nom_text+="(" + numerator.text + ")";
+    }
+  }
+  else if (selected_nodes[0].type === "factor"
+    && Bro(selected_nodes[0]).iCanHaz("type2") === "frac"
+    && Bro(selected_nodes[0]).iCanHaz("parent.parent.parent.type2") === "frac"
+    && selected_nodes[0].parent.parent.children.length === 1)
+  {
+    console.log("moving up fraction");
+    var numerator = selected_nodes[0].parent.parent.parent.children[0];
+    var new_nom_text = flip_fraction(selected_nodes);
+    if (numerator.children.length === 1) {
+      new_nom_text+=(numerator.text === "1" ? "" : numerator.text);
     } else {
       new_nom_text+="(" + numerator.text + ")";
     }
@@ -2562,7 +2589,7 @@ function cancel_out() {
       new_math_str = replace_in_mtstr(num_nodes.concat(denom_nodes), new_num_strs.concat(new_denom_strs));
       prepare(new_math_str);
     }
-
+    //TODO: Add way to cancel terms too.
 }
 
 //flip equation
