@@ -1356,7 +1356,8 @@ function prepare(math) {
 }
 
 //initial render
-var initial_math_str = "ax^{2}+bx+c=0";
+// var initial_math_str = "ax^{2}+bx+c=0";
+var initial_math_str = "\\frac{v^{2}}{r}=\\frac{GMmr}{r^{2}}";
 // $(document).ready(() =>prepare(initial_math_str));
 
 $(document).ready(prepare(initial_math_str));
@@ -1959,7 +1960,7 @@ function merge() {
     // same_grandparents = have_same_ancestors(selected_nodes, 2),
     // same_ggparents = have_same_ancestors(selected_nodes, 3),
     same_type = have_same_type(selected_nodes),
-    same_type2 = have_same_type(selected_nodes,1)
+    same_type2 = have_same_type(selected_nodes,1);
     //merge factors into fraction
     if (selected_nodes[0].type2 === "frac" && same_parents && same_type && same_type2)
     {
@@ -2516,6 +2517,52 @@ function remove() {
     });
     if (recording || playing) {recording_index++;}
   if (recording) {add_to_manip_rec(11);}
+}
+
+document.getElementById("tb-cancel-out").onclick = cancel_out;
+function cancel_out() {
+  var same_factor = true,
+    same_parents = have_same_ancestors(selected_nodes, 1),
+    same_grandparents = have_same_ancestors(selected_nodes, 2),
+    same_ggparents = have_same_ancestors(selected_nodes, 3),
+    same_type = have_same_type(selected_nodes),
+    same_type2 = have_same_type(selected_nodes,1);
+
+    //cancel factors
+    if (selected_nodes[0].type === "factor" && same_type && same_ggparents
+        && Bro(selected_nodes[0]).iCanHaz("parent.parent.parent.type2") === "frac"
+        && Bro(selected_nodes[0]).iCanHaz("parent.parent.parent.children.0.children.length") === 1
+        && Bro(selected_nodes[0]).iCanHaz("parent.parent.parent.children.1.children.length") === 1)
+    {
+      console.log("canceling out")
+      var num_text = "", denom_text = "";
+      var num_nodes = [], denom_nodes = [];
+      for (var i = 0; i < selected_nodes.length; i++) {
+        if (selected_nodes[i].parent.parent.type === "numerator") {
+          num_text+=selected_nodes[i].text;
+          num_nodes.push(selected_nodes[i]);
+        } else if (selected_nodes[i].parent.parent.type === "denominator") {
+          denom_text+=selected_nodes[i].text;
+          denom_nodes.push(selected_nodes[i]);
+        }
+      }
+      var ascii_str = latex_to_ascii("\\frac{"+num_text+"}{"+denom_text+"}");
+      var new_exp = Algebrite.simplify(ascii_str);
+      var new_num = ascii_to_latex(Algebrite.numerator(new_exp).toString());
+      var new_denom = ascii_to_latex(Algebrite.denominator(new_exp).toString());
+      //ANIMATION??
+      var new_num_strs = new_num === "1" ? [""] : [new_num];
+      var new_denom_strs = new_denom === "1" ? [""] : [new_denom];
+      for (var i = 1; i < num_nodes.length; i++) {
+        new_num_strs.push("");
+      }
+      for (var i = 1; i < denom_nodes.length; i++) {
+        new_denom_strs.push("");
+      }
+      new_math_str = replace_in_mtstr(num_nodes.concat(denom_nodes), new_num_strs.concat(new_denom_strs));
+      prepare(new_math_str);
+    }
+
 }
 
 //flip equation

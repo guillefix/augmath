@@ -211,4 +211,9 @@ $( document ).ready(function() {
     test_manip(assert, eval, "a^{-1}a^{-1}", "a^{-2}",  ["0/1/1", "0/1/2"]);
   });
 
+  QUnit.only("manipulations.cancel_out", function( assert ) {
+    //merge two exponentials
+    test_manip(assert, cancel_out, "\\frac{v^{2}}{r}=\\frac{GMmr}{r^{2}}", "\\frac{v^{2}}{r}=\\frac{GMm}{r}",  ["0/3/1/1/1/4", "0/3/1/2/1/1"]);
+  });
+
 });
