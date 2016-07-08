@@ -133,70 +133,77 @@ $( document ).ready(function() {
     test_manip(assert, move_down, "\\frac{ex^{2}}{abcd\\sqrt{32}}+bx+c=1+1-bx", "\\frac{ex^{2}}{abcd\\sqrt{32}}+\\frac{x}{b^{-1}}+c=1+1-bx",  ["0/2/2"]);
   });
 
-  QUnit.test("manipulations.merge", function( assert ) {
+  QUnit.test("manipulations.collect_out", function( assert ) {
     //BASIC FACTOR OUT
-    test_manip(assert, merge, "ax+ay", "a(x+y)",  ["0/1/1", "0/2/2"]);
+    test_manip(assert, collect_out, "ax+ay", "a(x+y)",  ["0/1/1", "0/2/2"]);
 
     //FACTOR OUT with one one-factor term
-    test_manip(assert, merge, "p+\\frac{ac}{a+c}p=1", "p(1+\\frac{ac}{a+c})=1",  ["0/1/1", "0/2/3"]);
+    test_manip(assert, collect_out, "p+\\frac{ac}{a+c}p=1", "p(1+\\frac{ac}{a+c})=1",  ["0/1/1", "0/2/3"]);
 
     //FACTOR OUT with one one-factor term AGAIN
-    test_manip(assert, merge, "-\\omega^{2} B e^{i\\phi} + i \\beta \\omega B e^{i\\phi} + B e^{i\\phi} = \\Gamma", "Be^{i\\phi }(-\\omega ^{2}+i\\beta \\omega +1)=\\Gamma ",  ["0/1/3", "0/1/4", "0/2/5", "0/2/6", "0/3/2", "0/3/3"]);
+    test_manip(assert, collect_out, "-\\omega^{2} B e^{i\\phi} + i \\beta \\omega B e^{i\\phi} + B e^{i\\phi} = \\Gamma", "Be^{i\\phi }(-\\omega ^{2}+i\\beta \\omega +1)=\\Gamma ",  ["0/1/3", "0/1/4", "0/2/5", "0/2/6", "0/3/2", "0/3/3"]);
 
     //FACTOR OUT with containing terms not being directly their parents. TODO: NEED TO CODE THIS IN
     // test_manip(assert, merge, "\\frac{c(a+k-1)}{a+c}p-\\frac{c(a+k)}{a+c}p", "c(\\frac{(a+k-1)}{a+c}p-\\frac{(a+k)}{a+c}p)",  ["0/1/1/1/1/1", "0/2/2/1/1/1"]);
 
     //FACTOR OUT more than one factor per term.
-    test_manip(assert, merge, "abx+ayb", "ab(x+y)",  ["0/1/1", "0/1/2", "0/2/2", "0/2/4"]);
+    test_manip(assert, collect_out, "abx+ayb", "ab(x+y)",  ["0/1/1", "0/1/2", "0/2/2", "0/2/4"]);
 
     //Merge equal factors into exp 1
-    test_manip(assert, merge, "abxx+ayb", "abx^{2}+ayb",  ["0/1/3", "0/1/4"]);
+    test_manip(assert, collect_out, "abxx+ayb", "abx^{2}+ayb",  ["0/1/3", "0/1/4"]);
 
     //Merge equal factors into exp 2
     // test_manip(assert, merge, "abxbx+ayb", "ab^{2}  x^{2}+ayb",  ["0/1/2", "0/1/3", "0/1/4", "0/1/5"]); //USE EVALUATE FOR THIS
 
     //Merge equal terms into term
-    test_manip(assert, merge, "ac+abb+abb+ac", "ac+2abb+ac",  ["0/2", "0/3"]);
+    test_manip(assert, collect_out, "ac+abb+abb+ac", "ac+2abb+ac",  ["0/2", "0/3"]);
 
     //Merge fraction terms into fraction
-    test_manip(assert, merge, "ac+\\frac{a}{b}+\\frac{cd}{b}", "ac+\\frac{a+cd}{b}",  ["0/2", "0/3"]);
+    test_manip(assert, collect_out, "ac+\\frac{a}{b}+\\frac{cd}{b}", "ac+\\frac{a+cd}{b}",  ["0/2", "0/3"]);
 
     //Merge terms into fraction (using Algebrite)
-    test_manip(assert, merge, "ac+\\frac{a}{b}+\\frac{cd}{eb}", "ac+\\frac{aeb+cdb}{beb}",  ["0/2", "0/3"]);
-
-    //Merge factors into fraction
-    test_manip(assert, merge, "ac\\frac{a}{b}\\frac{cd\\sqrt{k}}{xx}", "ac\\frac{acd\\sqrt{k}}{bxx}",  ["0/1/3", "0/1/4"]);
+    test_manip(assert, collect_out, "ac+\\frac{a}{b}+\\frac{cd}{eb}", "ac+\\frac{aeb+cdb}{beb}",  ["0/2", "0/3"]);
 
     //Merge exponentials with same base
-    test_manip(assert, merge, "acu^{\\frac{2}{3}}u^{3}", "acu^{\\frac{2}{3}+3}",  ["0/1/3", "0/1/4"]);
+    test_manip(assert, collect_out, "acu^{\\frac{2}{3}}u^{3}", "acu^{\\frac{2}{3}+3}",  ["0/1/3", "0/1/4"]);
 
     //Merge exponentials with same power
-    test_manip(assert, merge, "acu^{\\frac{2}{3}}(u+v)^{\\frac{2}{3}}", "ac(u(u+v))^{\\frac{2}{3}}",  ["0/1/3", "0/1/4"]);
+    test_manip(assert, collect_out, "acu^{\\frac{2}{3}}(u+v)^{\\frac{2}{3}}", "ac(u(u+v))^{\\frac{2}{3}}",  ["0/1/3", "0/1/4"]);
 
     //Merge sqrts into sqrt
-    test_manip(assert, merge, "ac\\sqrt{uu+v}\\sqrt{x}", "ac\\sqrt{(uu+v)x}",  ["0/1/3", "0/1/4"]);
+    test_manip(assert, collect_out, "ac\\sqrt{uu+v}\\sqrt{x}", "ac\\sqrt{(uu+v)x}",  ["0/1/3", "0/1/4"]);
 
   });
 
-  QUnit.test("manipulations.split", function( assert ) {
+  QUnit.test("manipulations.distribute_in", function( assert ) {
     //BASIC DISTRIBUTE IN
-    test_manip(assert, split, "a(x+y)", "ax+ay",  ["0/1/1", "0/1/2"]);
+    test_manip(assert, distribute_in, "a(x+y)", "ax+ay",  ["0/1/1", "0/1/2"]);
 
     //DISTRIBUTE IN with one one-factor term
-    test_manip(assert, split, "p(1+\\frac{ac}{a+c})=1", "p+p\\frac{ac}{a+c}=1", ["0/1/1", "0/1/2"]);
+    test_manip(assert, distribute_in, "p(1+\\frac{ac}{a+c})=1", "p+p\\frac{ac}{a+c}=1", ["0/1/1", "0/1/2"]);
 
     //DISTRIBUTE IN more than one factor per term.
-    test_manip(assert, split, "ab(x+y)", "abx+aby", ["0/1/1", "0/1/2", "0/1/3"]);
+    test_manip(assert, distribute_in, "ab(x+y)", "abx+aby", ["0/1/1", "0/1/2", "0/1/3"]);
 
     //DISTRIBUTE power in
-    test_manip(assert, split, "(ab(x+y))^{33x}", "a^{33x}b^{33x}(x+y)^{33x}", ["0/1/1"]);
+    test_manip(assert, distribute_in, "(ab(x+y))^{33x}", "a^{33x}b^{33x}(x+y)^{33x}", ["0/1/1"]);
 
     //Split exponential with terms into several exponentials
-    test_manip(assert, split, "(ab(x+y))^{33x+y}", "(ab(x+y))^{33x}(ab(x+y))^{+y}", ["0/1/1/2"]);
+    test_manip(assert, distribute_in, "(ab(x+y))^{33x+y}", "(ab(x+y))^{33x}(ab(x+y))^{+y}", ["0/1/1/2"]);
 
     //distribute power in fraction
-    test_manip(assert, split, "1=(\\frac{2}{3})^{-1}(\\frac{5}{4})^{-1}x", "1=\\frac{2^{-1}}{3^{-1}}(\\frac{5}{4})^{-1}x", ["0/3/1"]);
+    test_manip(assert, distribute_in, "1=(\\frac{2}{3})^{-1}(\\frac{5}{4})^{-1}x", "1=\\frac{2^{-1}}{3^{-1}}(\\frac{5}{4})^{-1}x", ["0/3/1"]);
 
+  });
+
+  QUnit.test("manipulations.merge", function( assert ) {
+    //Merge factors into fraction
+    test_manip(assert, merge, "ac\\frac{a}{b}\\frac{cd\\sqrt{k}}{xx}", "ac\\frac{acd\\sqrt{k}}{bxx}",  ["0/1/3", "0/1/4"]);
+  });
+
+  QUnit.test("manipulations.split", function( assert ) {
+    //Merge factors into fraction
+    test_manip(assert, split, "ac\\frac{acd\\sqrt{k}}{bxx}", "ac\\frac{cd\\sqrt{k}}{xx}\\frac{a}{b}",  ["0/1/3/1/1/2", "0/1/3/1/1/3", "0/1/3/1/1/4", "0/1/3/2/1/2", "0/1/3/2/1/3"]);
   });
 
   QUnit.test("manipulations.eval", function( assert ) {

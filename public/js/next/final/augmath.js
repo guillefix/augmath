@@ -272,7 +272,7 @@ $("#next_step").on("click", function () {
         add_both_sides(manipulation_rec[recording_index].arg);
         break;
       case 8:
-        split();
+        split_all();
         break;
       case 9:
         unbracket();
@@ -1890,10 +1890,97 @@ function move_down() {
   if (recording) {add_to_manip_rec(6);}
 }
 
-//splitting stuff
-document.getElementById("split").onclick = split;
+// document.getElementById("split").onclick = split;
 document.getElementById("tb-split").onclick = split;
 function split() {
+  var same_factor = true,
+    // same_parents = have_same_ancestors(selected_nodes, 1),
+    // same_grandparents = have_same_ancestors(selected_nodes, 2),
+    same_ggparents = have_same_ancestors(selected_nodes, 3),
+    same_type = have_same_type(selected_nodes);
+    // same_type2 = have_same_type(selected_nodes,1)
+  //split factors out of a fraction
+  if (selected_nodes[0].type === "factor"
+      && same_type && same_ggparents
+      && Bro(selected_nodes[0]).iCanHaz("parent.parent.parent.type2") === "frac"
+      && Bro(selected_nodes[0]).iCanHaz("parent.parent.parent.children.0.children.length") === 1)
+  {
+    //ANIMATION?
+    var numerator_text = "", denominator_text = "", numerator_text2 = "", denominator_text2 = "";
+    var numerator_factors = selected_nodes[0].parent.parent.parent.children[0].children[0].children;
+    var denominator_factors;
+    for (var j=0; j<numerator_factors.length; j++) {
+      var do_continue = false;
+      for (var k=0; k<selected_nodes.length; k++) {
+        if (numerator_factors[j].model.id === selected_nodes[k].model.id) {do_continue = true;}
+      }
+      if (do_continue) {continue;}
+      numerator_text2+=numerator_factors[j].text;
+    }
+    for (var i=0; i<selected_nodes.length; i++) {
+      if (selected_nodes[i].parent.parent.type === "numerator") {
+        numerator_text+=selected_nodes[i].text;
+      } else if (selected_nodes[i].parent.parent.type === "denominator") {
+        denominator_text+=selected_nodes[i].text;
+      }
+    }
+    if (denominator_text !== "" && denominator_text !== selected_nodes[0].parent.parent.parent.children[1].text) {
+      if (!(selected_nodes[0].parent.parent.parent.children[1].children.length === 1)) {
+        return;
+      } else {
+        var denominator_factors = selected_nodes[0].parent.parent.parent.children[1].children[0].children;
+        for (var j=0; j<denominator_factors.length; j++) {
+          do_continue = false;
+          for (var k=0; k<selected_nodes.length; k++) {
+            if (denominator_factors[j].model.id === selected_nodes[k].model.id) {do_continue = true;}
+          }
+          console.log(denominator_factors);
+          if (do_continue) {continue;}
+          denominator_text2+=denominator_factors[j].text;
+        }
+      }
+    } else if (denominator_text === "") {
+      denominator_text2 = selected_nodes[0].parent.parent.parent.children[1].text;
+    } else if (denominator_text === selected_nodes[0].parent.parent.parent.children[1].text) {
+      denominator_text2 = "";
+    }
+    var new_text = "\\frac{" + numerator_text + "}{" + denominator_text + "}" + "\\frac{" + numerator_text2 + "}{" + denominator_text2 + "}";
+    new_math_str = replace_in_mtstr([selected_nodes[0].parent.parent.parent], new_text);
+    current_index++;
+    prepare(new_math_str);
+      }
+}
+
+// document.getElementById("merge").onclick = merge;
+document.getElementById("tb-merge").onclick = merge;
+function merge() {
+  var same_factor = true,
+    same_parents = have_same_ancestors(selected_nodes, 1),
+    // same_grandparents = have_same_ancestors(selected_nodes, 2),
+    // same_ggparents = have_same_ancestors(selected_nodes, 3),
+    same_type = have_same_type(selected_nodes),
+    same_type2 = have_same_type(selected_nodes,1)
+    //merge factors into fraction
+    if (selected_nodes[0].type2 === "frac" && same_parents && same_type && same_type2)
+    {
+      console.log("merge factors into fraction");
+      //ANIMATION??
+      var numerator_text = "", denominator_text = "";
+      for (var i=0; i<selected_nodes.length; i++) {
+        numerator_text+=selected_nodes[i].children[0].text;
+        denominator_text+=selected_nodes[i].children[1].text;
+      }
+      var new_text = "\\frac{" + numerator_text + "}{" + denominator_text + "}";
+      new_math_str = replace_in_mtstr(selected_nodes, new_text);
+      current_index++;
+      prepare(new_math_str);
+    }
+}
+
+//distributing in stuff
+document.getElementById("distribute-in").onclick = distribute_in;
+document.getElementById("tb-distribute-in").onclick = distribute_in;
+function distribute_in() {
   var same_factor = true,
     same_parents = have_same_ancestors(selected_nodes, 1),
     same_grandparents = have_same_ancestors(selected_nodes, 2),
@@ -2016,9 +2103,9 @@ function split() {
     prepare(new_math_str);
   }
   //distribute power in
-  else if (selected_nodes[0].children[0] !== undefined && selected_nodes.length === 1  && selected_nodes[0].children[0].children.length === 1
-    && (selected_nodes[0].children[0].children[0].children.length > 1 || selected_nodes[0].children[0].children[0].children[0].type2 === "frac")
-    && (selected_nodes[0].type2 === "exp" || selected_nodes[0].type2 === "group_exp"))
+  else if (selected_nodes.length === 1  && Bro(selected_nodes[0]).iCanHaz("children.0.children.length") === 1
+    && (Bro(selected_nodes[0]).iCanHaz("children.0.children.0.children.length") > 1 || Bro(selected_nodes[0]).iCanHaz("children.0.children.0.children.0.type2") === "frac")
+    && (Bro(selected_nodes[0]).iCanHaz("type2") === "exp" || Bro(selected_nodes[0]).iCanHaz("type2") === "group_exp"))
   {
     console.log("distributing power in");
     //ANIMATION?
@@ -2050,67 +2137,15 @@ function split() {
     current_index++;
     prepare(new_math_str);
   }
-  //split factors out of a fraction
-  else if (selected_nodes[0].type === "factor" && same_type && same_ggparents)
-  {
-    if (selected_nodes[0].parent.parent.parent !== undefined) {
-      if (!(selected_nodes[0].parent.parent.parent.type2 === "frac"
-    && selected_nodes[0].parent.parent.parent.children[0].children.length === 1)) {
-        return;
-      }
-    } else {return;}
-    //ANIMATION?
-    var numerator_text = "", denominator_text = "", numerator_text2 = "", denominator_text2 = "";
-    var numerator_factors = selected_nodes[0].parent.parent.parent.children[0].children[0].children;
-    var denominator_factors;
-    for (var j=0; j<numerator_factors.length; j++) {
-      var do_continue = false;
-      for (var k=0; k<selected_nodes.length; k++) {
-        if (numerator_factors[j].model.id === selected_nodes[k].model.id) {do_continue = true;}
-      }
-      if (do_continue) {continue;}
-      numerator_text2+=numerator_factors[j].text;
-    }
-    for (var i=0; i<selected_nodes.length; i++) {
-      if (selected_nodes[i].parent.parent.type === "numerator") {
-        numerator_text+=selected_nodes[i].text;
-      } else if (selected_nodes[i].parent.parent.type === "denominator") {
-        denominator_text+=selected_nodes[i].text;
-      }
-    }
-    if (denominator_text !== "" && denominator_text !== selected_nodes[0].parent.parent.parent.children[1].text) {
-      if (!(selected_nodes[0].parent.parent.parent.children[1].children.length === 1)) {
-        return;
-      } else {
-        var denominator_factors = selected_nodes[0].parent.parent.parent.children[1].children[0].children;
-        for (var j=0; j<denominator_factors.length; j++) {
-          do_continue = false;
-          for (var k=0; k<selected_nodes.length; k++) {
-            if (denominator_factors[j].model.id === selected_nodes[k].model.id) {do_continue = true;}
-          }
-          console.log(denominator_factors);
-          if (do_continue) {continue;}
-          denominator_text2+=denominator_factors[j].text;
-        }
-      }
-    } else if (denominator_text === "") {
-      denominator_text2 = selected_nodes[0].parent.parent.parent.children[1].text;
-    } else if (denominator_text === selected_nodes[0].parent.parent.parent.children[1].text) {
-      denominator_text2 = "";
-    }
-    var new_text = "\\frac{" + numerator_text + "}{" + denominator_text + "}" + "\\frac{" + numerator_text2 + "}{" + denominator_text2 + "}";
-    new_math_str = replace_in_mtstr([selected_nodes[0].parent.parent.parent], new_text);
-    current_index++;
-    prepare(new_math_str);
-  }
+
   if (recording || playing) {recording_index++;}
   if (recording) {add_to_manip_rec(8);}
 }
 
 //merging stuff
-document.getElementById("merge").onclick = merge;
-document.getElementById("tb-merge").onclick = merge;
-function merge() {
+document.getElementById("collect-out").onclick = collect_out;
+document.getElementById("tb-collect-out").onclick = collect_out;
+function collect_out() {
   var same_parents = have_same_ancestors(selected_nodes, 1),
   same_grandparents = have_same_ancestors(selected_nodes, 2),
   same_type = have_same_type(selected_nodes),
@@ -2282,21 +2317,6 @@ function merge() {
     //ANIMATION??
     var new_text = "+\\frac{" + numerator_text + "}{" + denominator_text + "}";
     // new_text = "+" + rationalize(selected_text);
-    new_math_str = replace_in_mtstr(selected_nodes, new_text);
-    current_index++;
-    prepare(new_math_str);
-  }
-  //merge factors into fraction
-  else if (selected_nodes[0].type2 === "frac" && same_parents && same_type && same_type2)
-  {
-    console.log("merge factors into fraction");
-    //ANIMATION??
-    var numerator_text = "", denominator_text = "";
-    for (var i=0; i<selected_nodes.length; i++) {
-      numerator_text+=selected_nodes[i].children[0].text;
-      denominator_text+=selected_nodes[i].children[1].text;
-    }
-    var new_text = "\\frac{" + numerator_text + "}{" + denominator_text + "}";
     new_math_str = replace_in_mtstr(selected_nodes, new_text);
     current_index++;
     prepare(new_math_str);
