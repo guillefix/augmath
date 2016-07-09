@@ -17,13 +17,25 @@
   },
   "homepage": "https://github.com/guillefix/augmath#readme",
   "dependencies": {
+    "algebra.js": "^0.2.5",
+    "algebrite": "^0.2.20",
     "big-integer": "^1.6.15",
+    "brototype": "0.0.5",
     "jquery": "^3.0.0",
     "jquery-ui": "^1.10.5",
+    "katex": "^0.6.0",
+    "mathjs": "^3.3.0",
+    "mathquill": "^0.10.1-a",
     "meteor-node-stubs": "^0.2.3",
-    "qunit": "^0.9.1"
+    "nodejs": "0.0.0",
+    "qunit": "^0.9.1",
+    "react": "^15.2.1",
+    "react-dom": "^15.2.1",
+    "tree-model": "^1.0.4"
   },
-  "devDependencies": {},
+  "devDependencies": {
+    "qunitjs": "^2.0.0"
+  },
   "keywords": [
     "maths",
     "interactive",

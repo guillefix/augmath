@@ -16,7 +16,7 @@
  * accepted in (e.g. "math" or "text").
  */
 
-var symbols = {
+export const symbols = {
     "math": {
         // Relation Symbols
         "\\equiv": {

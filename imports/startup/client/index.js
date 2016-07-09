@@ -1,12 +1,28 @@
-// import '../../../public/js/jquery.js';
-// import '../../../public/js/jquery-ui.js';
-// import '../../../public/js/qunit-1.20.0.js';
-//
-// import '../../../public/js/symbols.js';
-//
-// import '../../maths/math.es5.js'
-// import TreeModel from './TreeModel.js'
-//
-import {algebrite} from '../../maths/algebrite.es5.js'
-// import coffeequate from '../../maths/coffeequate.es5.js'
-// import MathQuill from '../../maths/mathquill.min.es5.js'
+import React from 'react';
+import ReactDOM from 'react-dom';
+import App from './App.js';
+
+Meteor.startup(() => {
+  ReactDOM.render(<App />, document.getElementById('app'));
+
+  //undo
+  document.getElementById("tb-undo").onclick = undo;
+  document.getElementById("undo").onclick = undo;
+  function undo() {
+    if (current_index > 0) {
+      if (recording_index > 0) {recording_index--;}
+      select_in_history(current_index-1);
+    }
+  }
+
+  //redo
+  document.getElementById("tb-redo").onclick = redo;
+  document.getElementById("redo").onclick = redo;
+  function redo() {
+    if (current_index < math_str.length-1) {
+      if (recording_index < math_str_rec.length-1) {recording_index++;}
+      select_in_history(current_index+1);
+    }
+  }
+
+});

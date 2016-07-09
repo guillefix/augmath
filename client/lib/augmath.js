@@ -10,6 +10,14 @@
 Augmenting how we *do* maths using Computers
 */
 
+// import MathQuill from 'mathquill';
+import jQuery from 'jquery';
+import katex from 'katex';
+import TreeModel from './before/TreeModel-min.js';
+import symbols from './before/symbols.js'
+
+$(document).ready(() => {
+
 //GLOBAL VARIABLES
 var h_eq_shift=0,
   v_eq_shift=0,
@@ -340,26 +348,6 @@ $("#keep").on("click", function () {
 });
 
 //HISTORY
-
-//undo
-document.getElementById("tb-undo").onclick = undo;
-document.getElementById("undo").onclick = undo;
-function undo() {
-  if (current_index > 0) {
-    if (recording_index > 0) {recording_index--;}
-    select_in_history(current_index-1);
-  }
-}
-
-//redo
-document.getElementById("tb-redo").onclick = redo;
-document.getElementById("redo").onclick = redo;
-function redo() {
-  if (current_index < math_str.length-1) {
-    if (recording_index < math_str_rec.length-1) {recording_index++;}
-    select_in_history(current_index+1);
-  }
-}
 
 function select_in_history(index) {
   if (recording) {
@@ -1373,7 +1361,7 @@ function prepare(math) {
 var initial_math_str = "\\frac{v^{2}}{r}=\\frac{GMmr}{r^{2}}";
 // $(document).ready(() =>prepare(initial_math_str));
 
-$(document).ready(prepare(initial_math_str));
+$(document).ready(() => prepare(initial_math_str));
 
 // let toplel = (x) => x*x
 //
@@ -2610,3 +2598,5 @@ function flip_equation() {
   if (recording || playing) {recording_index++;}
   if (recording) {add_to_manip_rec(15);}
 }
+
+});

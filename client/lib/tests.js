@@ -118,7 +118,7 @@ $( document ).ready(function() {
   });
 
   //move up in fraction
-  QUnit.only("manipulations.move_up", function( assert ) {
+  QUnit.test("manipulations.move_up", function( assert ) {
     //Move factors in single term in denominator up
     test_manip(assert, move_up, "\\frac{ex^{2}}{abcd\\sqrt{33}}+bx+c=1+1-bx", "\\frac{c^{-1}ex^{2}}{abd\\sqrt{33}}+bx+c=1+1-bx",  ["0/1/1/2/1/3"]);
     //Move all factors in single term in denominator up
