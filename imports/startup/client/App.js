@@ -4,22 +4,50 @@ import Tools from './tools.js';
 import EquationsPanel from './equations-panel.js';
 import * as manips from '../../maths/manipulations.js';
 import * as hist from './history';
+import {prepare, select_node, remove_events, create_events} from "../../maths/functions";
 
 export default class App extends React.Component {
   constructor() {
     super();
-    // this.update = this.update.bind(this);
-    this.state = {}
+    this.update = this.update.bind(this);
+    this.updateSelect = this.updateSelect.bind(this);
+    this.state = {
+      mathStr:"\\frac{v^{2}}{r}=\\frac{GMm}{r^{2}}",
+      manip: "term",
+      depth: 1};
+  }
+  update(newStr, render) {
+    this.setState({mathStr: newStr})
+    if (render) prepare(newStr)
+  }
+  updateSelect(resetManip = false) {
+    newManip = ReactDOM.findDOMNode(this.toolsPane.manipSelect).value;
+    newDepth = parseInt(ReactDOM.findDOMNode(this.toolsPane.depthSelect).value);
+    remove_events(this.state.manip, this.state.depth);
+    if (resetManip) {
+      switch(newManip) {
+        case "factor":
+          newDepth = 2
+          break;
+        case "term":
+          newDepth = 1
+          break;
+        default:
+          newDepth = 3
+      }
+    }
+    create_events(newManip, newDepth);
+    this.setState({manip: newManip, depth: newDepth});
   }
   render() {
     return (
       <div>
         <div className="col-md-3 toolbar">
-          <Tools />
+          <Tools ref={(ref) => this.toolsPane = ref} updateSelect={this.updateSelect} manip={this.state.manip} depth={this.state.depth} />
         </div>
         <div className="col-md-6">
           <Toolbar />
-          <MathInput />
+          <MathInput mathStr={this.state.mathStr} update={this.update}/>
           <MathArea />
         </div>
         <div className="col-md-3">
@@ -78,7 +106,8 @@ class Toolbar extends React.Component {
   						Merge in
   					</button>
   				</div>
-
+          <br />
+          <br />
   				<button type="button" className="btn btn-default" id="tb-eval" onClick={manips.evaluate}>
   					Evaluate/Simplify
   				</button>
@@ -95,17 +124,54 @@ class Toolbar extends React.Component {
 }
 
 class MathInput extends React.Component {
+  latexStr() {
+    return ReactDOM.findDOMNode(this.refs.latexInput).value
+  }
   render() {
     return (
       <div className="row">
-  			<p id="MathInput">Input some equation (<a id="show_latex">show LaTeX</a>): <span id="mathquill" >...</span>
-  			<input size="50"/>
-  			<button type="button" className="btn btn-default" id="keep">
+  			<p id="MathInput">Input some equation (<a id="show_latex" onClick={
+            () => {math_str_el.toggle();
+              math_str_el.is(":visible") ? $("#show_latex").text("Hide LaTeX") : $("#show_latex").text("Show LaTeX")}
+            }>show LaTeX</a>): &nbsp;
+          <MQInput mathStr={this.props.mathStr} update={this.props.update}/>
+          &nbsp;
+          <input size="50" ref="latexInput" value={this.props.mathStr}
+            onChange={() => {this.props.update(this.latexStr())}}
+            onKeyUp={(e) =>{if (e.keyCode == 13) this.props.update(this.props.mathStr, true)}}/>
+          &nbsp;
+          <button type="button" className="btn btn-default" id="keep">
   					Keep
-  			</button>
+  			  </button>
   			</p>
   		</div>
     )
+  }
+}
+
+class MQInput extends React.Component {
+  mqlatex() {
+    return mathquill.latex().replace(/[^\x00-\x7F]/g, "")
+      .replace(/\^([a-z0-9])/g, "^{$1}")
+      .replace(/\\left/g, "")
+      .replace(/\\right/g, "")
+  }
+  shouldComponentUpdate(nextProps, nextState) {
+    return this.mqlatex() !== nextProps.mathStr
+  }
+  render() {
+    if (mathquill) mathquill.latex(this.props.mathStr)
+    return (
+      <span id="mathquill"
+        onKeyUp={(e) => {
+          if (e.keyCode == 13) this.props.update(this.mqlatex(), true)
+          else this.props.update(this.mqlatex(), false) }}>...</span>
+    );
+  }
+  componentDidMount() {
+    let MQ = MathQuill.getInterface(2);
+    window.mathquill = MQ.MathField($('#mathquill')[0]);
+    mathquill.latex(this.props.mathStr)
   }
 }
 

@@ -21,39 +21,6 @@ export function remove_events(type, depth) {
   $selectable.off();
 }
 
-export function select_node(node) {
-  $this = node.model.obj;
-  $this.toggleClass("selected");
-  node.selected = !node.selected;
-  if (!multi_select) {
-    math_root.walk(function (node2) {
-      if (node2 !== node) {node2.selected = false;}
-    });
-    $(".base *").filter(".selected").not($this).toggleClass("selected");
-  }
-  if (var_select) {
-    math_root.walk(function (node2) {
-      if (node.selected && !node2.selected && node2.text === node.text) {
-        node2.selected = true;
-        node2.model.obj.toggleClass("selected");
-      }
-    });
-  }
-  selected_nodes = [];
-  selected_text = "";
-  math_root.walk(function (node) {
-    if (node.selected) {selected_nodes.push(node); selected_text += node.text;}
-  });
-  if (var_select) {
-    selected_text = node.text;
-  }
-  $selected = $(".selected");
-  selected_width = tot_width($selected, true);
-  selected_position = $selected.offset();
-  var replace_el = document.getElementById("replace");
-  replace_el.value = selected_text;
-}
-
 export function create_events(type, depth) {
   var  index;
   //reset stuff
@@ -101,6 +68,41 @@ export function create_events(type, depth) {
   });
   //Draggable.create(".mord", {type:"x,y", edgeResistance:0.65, throwProps:true});
 }
+
+
+export function select_node(node) {
+  $this = node.model.obj;
+  $this.toggleClass("selected");
+  node.selected = !node.selected;
+  if (!multi_select) {
+    math_root.walk(function (node2) {
+      if (node2 !== node) {node2.selected = false;}
+    });
+    $(".base *").filter(".selected").not($this).toggleClass("selected");
+  }
+  if (var_select) {
+    math_root.walk(function (node2) {
+      if (node.selected && !node2.selected && node2.text === node.text) {
+        node2.selected = true;
+        node2.model.obj.toggleClass("selected");
+      }
+    });
+  }
+  selected_nodes = [];
+  selected_text = "";
+  math_root.walk(function (node) {
+    if (node.selected) {selected_nodes.push(node); selected_text += node.text;}
+  });
+  if (var_select) {
+    selected_text = node.text;
+  }
+  $selected = $(".selected");
+  selected_width = tot_width($selected, true);
+  selected_position = $selected.offset();
+  var replace_el = document.getElementById("replace");
+  replace_el.value = selected_text;
+}
+
 //get all the indices of searchStr within str
 export function getIndicesOf(searchStr, str) { //should fix the getIndicesOf to work with regexes
     var startIndex = 0, searchStrLen = searchStr.length;

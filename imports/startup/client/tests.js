@@ -1,5 +1,5 @@
 import {change_side, move_right, move_left, move_up, move_down, split, merge, distribute_in, collect_out, unbracket, evaluate, operate, add_both_sides, replace, remove, cancel_out, flip_equation} from "../../../imports/maths/manipulations.js";
-import {prepare, remove_events, create_events, select_node} from "../../maths/functions";
+import {prepare, select_node} from "../../maths/functions";
 import Bro from 'brototype'
 import {symbols} from '../../maths/symbols.js';
 

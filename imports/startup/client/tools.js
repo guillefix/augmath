@@ -4,6 +4,11 @@ import * as manip from '../../maths/manipulations.js';
 import * as hist from './history';
 
 export default class Tools extends React.Component {
+  // constructor() {
+  //   super();
+  //   this.state = {manip}
+  // }
+
   render() {
     return <div>
       <ul id="tools" className="list-group text-center">
@@ -11,7 +16,7 @@ export default class Tools extends React.Component {
   			<div>
   				<li className="list-group-item">
   					<span>Manipulative:
-  					<select className="traverse" id="manip" defaultValue="term">
+  					<select className="traverse" id="manip" ref={(ref) => this.manipSelect = ref} value={this.props.manip} onChange={() => this.props.updateSelect(true)}>
   						<option value="term">Term</option>
   						<option value="factor">Factor</option>
   						<option value="power">Power</option>
@@ -32,7 +37,7 @@ export default class Tools extends React.Component {
   				</li>
   				<li className="list-group-item">
   					<span> Depth:
-  						<input type="number" min="1" step="1" defaultValue="1" className="traverse" id="depth"/>
+  						<input type="number" min="1" step="1" value={this.props.depth} className="traverse" id="depth" ref={(ref) => this.depthSelect = ref} onChange={ () => this.props.updateSelect()}/>
   					</span>
   				</li>
   			</div>

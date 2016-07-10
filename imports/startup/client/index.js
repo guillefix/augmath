@@ -1,7 +1,7 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
 import App from './App.js';
-import {prepare, remove_events, create_events, select_node} from "../../maths/functions";
+import {prepare, select_node, create_events, remove_events} from "../../maths/functions";
 
 import jQuery from 'jquery';
 import katex from 'katex';
@@ -24,54 +24,28 @@ import {active_in_history, select_in_history, add_to_history, remove_from_histor
 Augmenting how we *do* maths using Computers
 */
 
+//jQuery plugins
+(function($) {
+    $.fn.closest_n_descendents = function(filter, n) {
+        var $found = $(),
+            $currentSet = this; // Current place
+        while ($currentSet.length) {
+            $found = $currentSet.filter(filter);
+            if ($found.length === n) break;  // At least one match: break loop
+            // Get all children of the current set
+            $currentSet = $currentSet.children();
+        }
+        return $found; // Return first match of the collection
+    }
+})(jQuery);
 
 Meteor.startup(() => {
 
   ReactDOM.render(<App />, document.getElementById('app'));
 
-  //jQuery plugins
-  (function($) {
-      $.fn.closest_n_descendents = function(filter, n) {
-          var $found = $(),
-              $currentSet = this; // Current place
-          while ($currentSet.length) {
-              $found = $currentSet.filter(filter);
-              if ($found.length === n) break;  // At least one match: break loop
-              // Get all children of the current set
-              $currentSet = $currentSet.children();
-          }
-          return $found; // Return first match of the collection
-      }
-  })(jQuery);
-
-  console.log("test");
-
   window.math_str_el = $("#MathInput input");
-  let MQ = MathQuill.getInterface(2);
-  window.mathquill = MQ.MathField($('#mathquill')[0]);
 
-  $("#mathquill").on("keyup",function (e) {
-      if (e.keyCode == 13) {
-          prepare(mathquill.latex().replace(/[^\x00-\x7F]/g, "")
-            .replace(/\^([a-z0-9])/g, "^{$1}")
-            .replace(/\\left/g, "")
-            .replace(/\\right/g, ""));
-      }
-  });
-  $("#mathquill").on("focusout", function () {math_str_el.val(mathquill.latex().replace(/[^\x00-\x7F]/g, "")
-    .replace(/\^([a-z0-9])/g, "^{$1}")
-    .replace(/\\left/g, "")
-      .replace(/\\right/g, ""))});
-  math_str_el.on("change", function () {mathquill.latex(math_str_el.get()[0].value)});
   math_str_el.hide();
-  $("#show_latex").on("click", function () {math_str_el.toggle(); math_str_el.is(":visible") ? $("#show_latex").text("Hide LaTeX") : $("#show_latex").text("Show LaTeX")});
-  math_str_el.keyup(function (e) {
-      if (e.keyCode == 13) {
-          console.log(math_str_el.get()[0].value)
-          prepare(math_str_el.get()[0].value);
-          console.log(math_str_el.get()[0].value)
-      }
-  });
 
   //SELECTION control
 
@@ -83,38 +57,39 @@ Meteor.startup(() => {
     $( "#tabs" ).tabs();
   });
 
-  var manip_el = $("#manip"), depth_el = $("#depth");
-  manip_el.on("change", function () {
-    remove_events(manip, depth);
-    manip = this.value;
-    create_events(manip, depth);
-    if (manip === "factor") {
-      depth_el[0].value = "2";
-      remove_events(manip, depth);
-      depth = parseInt(depth_el[0].value, 10);
-      create_events(manip, depth);
-    } else if (manip === "power"
-      || manip === "available"
-      || manip === "chosen"
-      || manip === "numerator"
-      || manip === "denominator"
-      || manip === "sup"
-      || manip === "sub") {
-      depth_el[0].value = "3";
-      remove_events(manip, depth);
-      depth = parseInt(depth_el[0].value, 10);
-      create_events(manip, depth);
-    } else if (manip === "term") {
-      depth_el[0].value = "1";
-      remove_events(manip, depth);
-      depth = parseInt(depth_el[0].value, 10);
-      create_events(manip, depth);
-    }
-  });
-  depth_el.on("change", function () {remove_events(manip, depth); depth = parseInt(this.value, 10); create_events(manip, depth);});
+  // var manip_el = $("#manip"), depth_el = $("#depth");
+  // manip_el.on("change", function () {
+  //   remove_events(manip, depth);
+  //   manip = this.value;
+  //   create_events(manip, depth);
+  //   if (manip === "factor") {
+  //     depth_el[0].value = "2";
+  //     remove_events(manip, depth);
+  //     depth = parseInt(depth_el[0].value, 10);
+  //     create_events(manip, depth);
+  //   } else if (manip === "power"
+  //     || manip === "available"
+  //     || manip === "chosen"
+  //     || manip === "numerator"
+  //     || manip === "denominator"
+  //     || manip === "sup"
+  //     || manip === "sub") {
+  //     depth_el[0].value = "3";
+  //     remove_events(manip, depth);
+  //     depth = parseInt(depth_el[0].value, 10);
+  //     create_events(manip, depth);
+  //   } else if (manip === "term") {
+  //     depth_el[0].value = "1";
+  //     remove_events(manip, depth);
+  //     depth = parseInt(depth_el[0].value, 10);
+  //     create_events(manip, depth);
+  //   }
+  // });
+  // depth_el.on("change", function () {remove_events(manip, depth); depth = parseInt(this.value, 10); create_events(manip, depth);});
   $("#multi_select").on("click", function () {multi_select = document.getElementById("multi_select").checked;});
   $("#replace_ind").on("click", function () {replace_ind = document.getElementById("replace_ind").checked;});
   $("#var_select").on("click", function () {var_select = document.getElementById("var_select").checked; if (var_select) {multi_select = false;}});
+
   $(document).on( "keyup", function (e) { //right
       if (e.keyCode == 39) {
         if (selected_nodes && selected_nodes.length > 0) {
