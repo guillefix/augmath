@@ -1,3 +1,9 @@
+import {change_side, move_right, move_left, move_up, move_down, split, merge, distribute_in, collect_out, unbracket, evaluate, operate, add_both_sides, replace, remove, cancel_out, flip_equation} from "../../../imports/maths/manipulations.js";
+import {prepare, remove_events, create_events, select_node} from "../../maths/functions";
+import Bro from 'brototype'
+import {symbols} from '../../maths/symbols.js';
+
+
 //Oh man tests do really rock
 
 function test_manip(assert, manip, math_str_init, math_str_exp, node_ids) {
@@ -210,9 +216,9 @@ $( document ).ready(function() {
     test_manip(assert, split, "ac\\frac{acd\\sqrt{k}}{bxx}", "ac\\frac{cd\\sqrt{k}}{xx}\\frac{a}{b}",  ["0/1/3/1/1/2", "0/1/3/1/1/3", "0/1/3/1/1/4", "0/1/3/2/1/2", "0/1/3/2/1/3"]);
   });
 
-  QUnit.test("manipulations.eval", function( assert ) {
+  QUnit.test("manipulations.evaluate", function( assert ) {
     //merge two exponentials
-    test_manip(assert, eval, "a^{-1}a^{-1}", "a^{-2}",  ["0/1/1", "0/1/2"]);
+    test_manip(assert, evaluate, "a^{-1}a^{-1}", "a^{-2}",  ["0/1/1", "0/1/2"]);
   });
 
   QUnit.test("manipulations.cancel_out", function( assert ) {

@@ -1,4 +1,6 @@
 import React from 'react';
+import {active_in_history, select_in_history, add_to_history, remove_from_history} from './history';
+
 
 export default class EquationsPanel extends React.Component {
   render() {

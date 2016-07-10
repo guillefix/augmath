@@ -1,1378 +1,18 @@
-/*
-                      __  __       _   _
-     /\              |  \/  |     | | | |
-    /  \  _   _  __ _| \  / | __ _| |_| |__
-   / /\ \| | | |/ _` | |\/| |/ _` | __| '_ \
-  / ____ \ |_| | (_| | |  | | (_| | |_| | | |
- /_/    \_\__,_|\__, |_|  |_|\__,_|\__|_| |_|
-                 __/ |
-                |___/
-Augmenting how we *do* maths using Computers
-*/
+import {replace_in_mtstr, tot_width, rationalize, eval_expression, ascii_to_latex, latex_to_ascii, getIndicesOf, cleanIndices, change_sign, exponentiate, multiply_grouped_nodes, flip_fraction, add_brackets, are_of_type, any_of_type, have_same_ancestors, have_same_type, have_same_text, have_single_factor, have_same_denom, are_same_terms, get_prev, get_next, get_all_next, has_op, parse_mtstr, parse_poly, prepare} from "./functions";
 
-// import MathQuill from 'mathquill';
-import jQuery from 'jquery';
-import katex from 'katex';
-import TreeModel from './before/TreeModel-min.js';
-import symbols from './before/symbols.js'
+// import Algebrite from 'algebrite';
 
-$(document).ready(() => {
+import algebra from 'algebra.js'
 
-//GLOBAL VARIABLES
-var h_eq_shift=0,
-  v_eq_shift=0,
-  equals_position = {left: 0, top: 100},
-  manip = "term",
-  depth = 1,
-  multi_select = false,
-  var_select = false,
-  replace_ind = false,
-  step_duration = 700,
-  TEST,
-  inner_select = false,
-  math_root,
-  selected_nodes = [],
-  selected_text = "",
-  math_str = [],
-  //for recording
-  current_index = 0,
-  selected_nodes_id_rec = [],
-  math_str_rec = [],
-  recording = false,
-  recording_index = 0,
-  manipulation_rec = [],
-  playing = false;
-  //for multi-equation
-  equations = [];
+import Bro from 'brototype';
 
-//jQuery plugins
-(function($) {
-    $.fn.closest_n_descendents = function(filter, n) {
-        var $found = $(),
-            $currentSet = this; // Current place
-        while ($currentSet.length) {
-            $found = $currentSet.filter(filter);
-            if ($found.length === n) break;  // At least one match: break loop
-            // Get all children of the current set
-            $currentSet = $currentSet.children();
-        }
-        return $found; // Return first match of the collection
-    }
-})(jQuery);
+import {symbols} from './symbols.js';
 
-//MATH INPUT
-
-var MQ = MathQuill.getInterface(2);
-mathquill = MQ.MathField($('#mathquill')[0]);
-
-var math_str_el = $("#MathInput input");
-$("#mathquill").on("keyup",function (e) {
-    if (e.keyCode == 13) {
-        prepare(mathquill.latex().replace(/[^\x00-\x7F]/g, "")
-          .replace(/\^([a-z0-9])/g, "^{$1}")
-          .replace(/\\left/g, "")
-          .replace(/\\right/g, ""));
-    }
-});
-$("#mathquill").on("focusout", function () {math_str_el.val(mathquill.latex().replace(/[^\x00-\x7F]/g, "")
-  .replace(/\^([a-z0-9])/g, "^{$1}")
-  .replace(/\\left/g, "")
-    .replace(/\\right/g, ""))});
-math_str_el.on("change", function () {mathquill.latex(math_str_el.get()[0].value)});
-math_str_el.hide();
-$("#show_latex").on("click", function () {math_str_el.toggle(); math_str_el.is(":visible") ? $("#show_latex").text("Hide LaTeX") : $("#show_latex").text("Show LaTeX")});
-math_str_el.keyup(function (e) {
-    if (e.keyCode == 13) {
-        console.log(math_str_el.get()[0].value)
-        prepare(math_str_el.get()[0].value);
-        console.log(math_str_el.get()[0].value)
-    }
-});
-
-//SELECTION control
-
-$(function() {
-  $("#tools").accordion({
-    collapsible: true,
-    heightStyle: "content"
-  });
-  $( "#tabs" ).tabs();
-});
-
-var manip_el = $("#manip"), depth_el = $("#depth");
-manip_el.on("change", function () {
-  remove_events(manip, depth);
-  manip = this.value;
-  create_events(manip, depth);
-  if (manip === "factor") {
-    depth_el[0].value = "2";
-    remove_events(manip, depth);
-    depth = parseInt(depth_el[0].value, 10);
-    create_events(manip, depth);
-  } else if (manip === "power"
-    || manip === "available"
-    || manip === "chosen"
-    || manip === "numerator"
-    || manip === "denominator"
-    || manip === "sup"
-    || manip === "sub") {
-    depth_el[0].value = "3";
-    remove_events(manip, depth);
-    depth = parseInt(depth_el[0].value, 10);
-    create_events(manip, depth);
-  } else if (manip === "term") {
-    depth_el[0].value = "1";
-    remove_events(manip, depth);
-    depth = parseInt(depth_el[0].value, 10);
-    create_events(manip, depth);
-  }
-});
-depth_el.on("change", function () {remove_events(manip, depth); depth = parseInt(this.value, 10); create_events(manip, depth);});
-$("#multi_select").on("click", function () {multi_select = document.getElementById("multi_select").checked;});
-$("#replace_ind").on("click", function () {replace_ind = document.getElementById("replace_ind").checked;});
-$("#var_select").on("click", function () {var_select = document.getElementById("var_select").checked; if (var_select) {multi_select = false;}});
-$(document).on( "keyup", function (e) { //right
-    if (e.keyCode == 39) {
-      if (selected_nodes && selected_nodes.length > 0) {
-        var index = parseInt(selected_nodes[0].model.id.split("/")[selected_nodes[0].model.id.split("/").length-1]); //no +1 because the tree index is 1 based not 0 based
-          var new_node = selected_nodes[0].parent.children[index] || undefined;
-          if (new_node) {
-            if (new_node.type !== selected_nodes[0].type) {
-              remove_events(manip, depth);
-              manip = new_node.type;
-              manip_el.val(manip);
-              create_events(manip, depth);
-            }
-            select_node(new_node);
-          }
-        }
-    }
-});
-$(document).on( "keyup", function (e) { //left
-    if (e.keyCode == 37) {
-      if (selected_nodes && selected_nodes.length > 0) {
-        var index = parseInt(selected_nodes[0].model.id.split("/")[selected_nodes[0].model.id.split("/").length-1])-2;
-          var new_node = selected_nodes[0].parent.children[index] || undefined;
-          if (new_node) {
-            if (new_node.type !== selected_nodes[0].type) {
-              remove_events(manip, depth);
-              manip = new_node.type;
-              manip_el.val(manip);
-              create_events(manip, depth);
-            }
-            select_node(new_node);
-          }
-        }
-    }
-});
-$(document).on( "keyup", function (e) { //down
-    if (e.keyCode == 40) {
-      if (selected_nodes && selected_nodes.length > 0) {
-        if (selected_nodes[0].children.length > 0) {
-          remove_events(manip, depth);
-          var new_node = selected_nodes[0].children[0];
-          manip = new_node.type;
-          manip_el.val(manip);
-          depth++;
-          depth_el.val(depth);
-          create_events(manip, depth);
-          select_node(new_node);
-        }
-      }
-    }
-});
-$(document).on( "keyup", function (e) { //up
-    if (e.keyCode == 38) {
-      if (selected_nodes && selected_nodes.length > 0) {
-        if (selected_nodes[0].parent !== math_root) {
-          var new_node = selected_nodes[0].parent;
-          remove_events(manip, depth);
-          manip = new_node.type;
-          manip_el.val(manip);
-          depth--;
-          depth_el.val(depth);
-        create_events(manip, depth);
-          select_node(new_node);
-        }
-      }
-    }
-});
-
-$(document).on( "keyup", function (e) { //ctrl+m for multiselect
-    if (e.keyCode == 77 && e.ctrlKey) {
-      $("#multi_select").prop("checked", !multi_select);
-      multi_select = document.getElementById("multi_select").checked;
-    }
-});
-
-//to prevent event bubbling when in input
-$('input').on('keyup', function (e) {
-    if(!e.ctrlKey && !e.altKey && !e.metaKey) {
-        if(e.keyCode==37 || e.keyCode==39 || e.keyCode==40 || e.keyCode==38) {
-            e.stopPropagation();
-        }
-    }
-    return true;
-});
-
-//RECORD/PLAY control
-$("#recording").on("click", function () {
-  recording = document.getElementById("recording").checked;
-  if (recording) {
-    math_str_rec = [math_str[current_index]];
-    manipulation_rec.unshift({});
-    selected_nodes_id_rec.unshift([]);
-    active_in_history(current_index);
-  }
-});
-$("#play").on("click", function () {
-  playing = true;
-  document.getElementById("recording").checked = false;
-  recording = document.getElementById("recording").checked;
-  recording_index = 0;
-  if (math_str.length === 0 && math_str_rec.length !== 0) {math_str = math_str_rec;}
-  init_index = math_str.length-math_str_rec.length;
-  select_in_history(init_index);
-  recording_index++; //recording_index will always be one ahead of the current math_str displayed as that is the appropriate manipulation to apply.
-});
-$("#next_step").on("click", function () {
-  if (recording_index>selected_nodes_id_rec.length-1) {return;}
-  selected_nodes = [];
-  $selected = $();
-  var ids = selected_nodes_id_rec[recording_index];
-  for (i=0; i<ids.length; i++) {
-    var selected_node = math_root.first(function (node) {
-          return node.model.id === ids[i];
-      });
-    selected_nodes.push(selected_node);
-    selected_node.selected = true;
-    $selected = $selected.add(selected_node.model.obj);
-
-  }
-  selected_text = "";
-  math_root.walk(function (node) {
-    if (node.selected) {selected_text += node.text;}
-  });
-  equals_position = $equals.offset();
-  selected_width = tot_width($selected, true);
-  selected_position = $selected.offset();
-  $selected.toggleClass("selected");
-  switch (manipulation_rec[recording_index].manipulation) {
-      case 1:
-        change_side();
-        break;
-      case 2:
-        move_up();
-        break;
-      case 3:
-        eval();
-        break;
-      case 4:
-        move_right();
-        break;
-      case 5:
-        move_left();
-        break;
-      case 6:
-        move_down();
-        break;
-      case 7:
-        add_both_sides(manipulation_rec[recording_index].arg);
-        break;
-      case 8:
-        split_all();
-        break;
-      case 9:
-        unbracket();
-        break;
-      case 10:
-        replace(manipulation_rec[recording_index].arg)
-        break;
-      case 11:
-        remove();
-        break;
-      case 12:
-        distribute_in();
-        break;
-      case 13:
-        pull();
-        break;
-      case 14:
-        operate();
-        break;
-      case 15:
-        flip_equation();
-        break;
-      default:
-        break;
-  }
-});
-
-$("#prev_step").on("click", function () {//FIX THIS
-  if (!(recording_index>0)) {return;}
-  recording_index--;
-  select_in_history(init_index+recording_index);
-});
-
-$("#make_json").on("click", function () {
-  console.log("selected_nodes_id_rec");
-  console.log(JSON.stringify(selected_nodes_id_rec));
-  console.log("math_str_rec");
-  console.log(JSON.stringify(math_str_rec));
-  console.log("manipulation_rec");
-  console.log(JSON.stringify(manipulation_rec));
-});
-
-function add_to_manip_rec(integer, argument) {
-  manipulation_rec.push({manipulation:integer, arg:argument});
-}
-
-//EQUATIONS PANEL
-
-function add_equation(eq) {
-  var eq_number = equations.push(eq)-1;
-  var eq_html = '<a class="list-group-item" onmouseover="$(this).stop().children(\'.eq_buttons\').show()" onmouseout="$(this).stop().children(\'.eq_buttons\').hide()"><p id="'+'eq'+eq_number.toString()+'" class="list-group-item">...</p><div class="eq_buttons"><br><button type="button" class="btn btn-default" onclick="prepare(equations['+eq_number.toString()+'])"><span class="glyphicon glyphicon-chevron-left"></span></button><button type="button" class="btn btn-default" onclick="$(this).parent().parent().remove()"><span class="glyphicon glyphicon-remove"></span></button>&nbsp;Latex:<input size="20" value="'+equations[+eq_number.toString()]+'"/></div></a>';
-  $("#eq_list").prepend(eq_html);
-  var eq_el = document.getElementById('eq'+eq_number.toString()); katex.render(equations[eq_number], eq_el, { displayMode: true });
-}
-
-$("#add_eq").keyup(function (e) {
-    if (e.keyCode == 13) {
-      var eq = $("#add_eq").get()[0].value;
-        add_equation(eq);
-    }
-});
-$("#keep").on("click", function () {
-  var eq = math_str_el.get()[0].value;
-    add_equation(eq);
-});
-
-//HISTORY
-
-function select_in_history(index) {
-  if (recording) {
-    recording_index-=(math_str.length-1-index);
-    math_str_rec = math_str_rec.slice(0, recording_index-1);
-    manipulation_rec = manipulation_rec.slice(0, recording_index-1);
-    selected_nodes_id_rec = selected_nodes_id_rec.slice(0, recording_index-1);
-    for (current_index; current_index > index; current_index--) {
-      $("#step"+current_index.toString()).parent().removeClass("recording-active");
-      $("#step"+current_index.toString()).parent().removeClass("recording");
-    }
-  } else {
-    current_index=index;
-  }
-  active_in_history(index);
-  prepare(math_str[index]);
-}
-function add_to_history(index, place) {
-  var his_html = '<a class="list-group-item" onmouseover="$(this).stop().children(\'.his_buttons\').show()" onmouseout="$(this).stop().children(\'.his_buttons\').hide()"><p id="'+'step'+index.toString()+'" class="list-group-item">...</p><div class="his_buttons"><br><button type="button" class="btn btn-default" onclick="select_in_history('+index.toString()+')"><span class="glyphicon glyphicon-chevron-left"></span></button>&nbsp;Latex:<input size="20" value="'+math_str[index.toString()]+'"/></div></a>';
-  if (place>-1) {
-    $("#history_list").children(":has(#step"+place+")").before(his_html);
-  } else {
-    $("#history_list").append(his_html);
-  }
-  var his_el = document.getElementById('step'+index.toString());
-  katex.render(math_str[index], his_el, { displayMode: true });
-  if (recording) {
-    $(his_el).parent().addClass("recording");
-  }
-}
-function active_in_history(index) {
-  $("#history_list").children().removeClass("active");
-  $("#history_list").children().removeClass("recording-active");
-  var cl;
-  if (recording) {
-    $("#step"+index.toString()).parent().addClass("recording");
-    cl = "recording-active";
-  } else {
-    cl = "active";
-  }
-  $("#step"+index.toString()).parent().addClass(cl);
-}
-function remove_from_history(index) {
-  $("#step"+index.toString()).parent().remove();
-}
-
-//USEFUL FUNCTIONS
-
-//remove and create events handlers that happen when user clicks a manipulative
-function remove_events(type, depth) {
-  var $selectable = $();
-  math_root.walk(function (node) {
-    if (node.model.id !== "0" && node.type === type && getIndicesOf("/", node.model.id).length === depth) {
-      $selectable = $selectable.add(node.model.obj);
-      }
-  });
-  $selectable.off();
-}
-
-function select_node(node) {
-  $this = node.model.obj;
-  $this.toggleClass("selected");
-  node.selected = !node.selected;
-  if (!multi_select) {
-    math_root.walk(function (node2) {
-      if (node2 !== node) {node2.selected = false;}
-    });
-    $(".base *").filter(".selected").not($this).toggleClass("selected");
-  }
-  if (var_select) {
-    math_root.walk(function (node2) {
-      if (node.selected && !node2.selected && node2.text === node.text) {
-        node2.selected = true;
-        node2.model.obj.toggleClass("selected");
-      }
-    });
-  }
-  selected_nodes = [];
-  selected_text = "";
-  math_root.walk(function (node) {
-    if (node.selected) {selected_nodes.push(node); selected_text += node.text;}
-  });
-  if (var_select) {
-    selected_text = node.text;
-  }
-  $selected = $(".selected");
-  selected_width = tot_width($selected, true);
-  selected_position = $selected.offset();
-  var replace_el = document.getElementById("replace");
-  replace_el.value = selected_text;
-}
-
-function create_events(type, depth) {
-  var  index;
-  //reset stuff
-  math_root.walk(function (node) {
-    node.selected = false;
-  });
-  $(".selected").toggleClass("selected");
-  selected_nodes = [];
-  selected_text = "";
-  //DRAG AND DROP. Goes here because I should group stuff depending on which manipulative is selectable really
-  $(".base").attr('id', 'sortable');
-  $("#sortable").sortable({
-    forceHelperSize: true,
-    placeholder: "sortable-placeholder"
-        });
-  $( "#sortable" ).droppable({
-      drop: function( event, ui ) {
-
-        window.setTimeout(rerender, 50); //probably not a very elegant solution
-
-        function rerender() {
-          var root_poly = $("#math .base");
-
-          tree = new TreeModel();
-
-          math_root = tree.parse({});
-          math_root.model.id = "0";
-          //KaTeX offers MathML semantic elements on the HTML, could that be used?
-
-          parse_poly(math_root, root_poly, 0, true);
-
-          var newmath = parse_mtstr(math_root, [], []);
-
-          prepare(newmath);
-        }
-
-      }
-    });
-
-  math_root.walk(function (node) {
-    if (node.model.id !== "0" && node.type === type && getIndicesOf("/", node.model.id).length === depth) {
-        node.model.obj.on("click", function() {select_node(node);});
-        node.model.obj.css({"display":"inline-block"});
-      }
-  });
-  //Draggable.create(".mord", {type:"x,y", edgeResistance:0.65, throwProps:true});
-}
-//get all the indices of searchStr within str
-function getIndicesOf(searchStr, str) { //should fix the getIndicesOf to work with regexes
-    var startIndex = 0, searchStrLen = searchStr.length;
-    var index, indices = [];
-    while ((index = str.indexOf(searchStr, startIndex)) > -1) {
-        indices.push(index);
-        startIndex = index + searchStrLen;
-    }
-    return indices;
-}
-
-//ignore matches due to LaTeX sintax
-function cleanIndices(arr, str) {
-  var indices = getIndicesOf("\\frac", str); //should fix the getIndicesOf to work with regexes
-  indices = indices.concat(getIndicesOf("\\sqrt", str)); //should add all of the ones in symbols.js
-  indices = indices.concat(getIndicesOf("\\text", str));
-  indices = indices.concat(getIndicesOf("\\int", str));
-  indices = indices.concat(getIndicesOf("\\hat", str));
-  indices = indices.concat(getIndicesOf("\\pi", str));
-  for (var i=0; i < arr.length; i++) {
-    for (var j=0; j < indices.length; j++) {
-      if (arr[i] >= indices[j] && arr[i] <= indices[j]+4) {
-        arr.splice(i, 1);
-      }
-    }
-  }
-  return arr;
-}
-
-//convert a string from LaTeX to the format used by Algebrite. TODO: THIS SHOULD BE IMPROVED A LOT. OR JUST STORE AN ASCIIMATH COPY OF MATH_STR...
-function latex_to_ascii(str) {
-  str.replace(/\\sqrt\{([-a-z0-9]+)\}/g, "sqrt($1)");
-  str = str.replace(/\}\{/g, ")/(").replace(/\\frac{/g, "(").replace(/\}/g, ")");
-  str = str.split("").join("*");
-  str = str.replace(/\*?\+\*?/g, "+")
-    .replace(/([0-9])\*([0-9])/g, "$1$2")
-    .replace(/\*?-\*?/g, "-")
-    .replace(/\*?=\*?/g, "=")
-    .replace(/\*?\(\*?/g, "(")
-    .replace(/\*?\)\*?/g, ")")
-    .replace(/\*?\/\*?/g, "/")
-    .replace(/\(\+/g, "(")
-    .replace(/\*\^\*\{\*(\-?[0-9]+)\)/g, "^($1)")
-    .replace(/\^\*\{\*(\-?[0-9]+)\)/g, "^($1)")
-    .replace(/\*\^\*\{(\-?[0-9]+)\)/g, "^($1)");
-  return str;
-}
-
-//convert a string in Algebrite ascii format to latex
-
-function ascii_to_latex(str) {
-  var exp = new algebra.Expression(str);
-  return exp.toTex().replace(/\^([a-z0-9])/g, "^{$1}").replace(/\^\(([-a-z0-9]+)\)/g, "^{$1}");
-}
-
-//evaluate an expression with Algebrite
-function eval_expression(expression) {
-  var new_term;
-  expression = latex_to_ascii(expression) //doesn't work with some expressions, as usual
-  if (expression.search(/[a-z\(\)]/) > -1) {
-    var new_str = Algebrite.simplify(expression).toString();
-    new_term = ascii_to_latex(new_str);
-    // try {
-    //   new_term = CQ(expression).simplify().toLaTeX().replace("\\cdot", ""); //removing cdot format
-    // }
-    // catch(err) {
-    //   console.log("Error (from CQ): " + err);
-    //   console.log("Expression is : " + expression);
-    //   new_term = CQ(expression).simplify().toString().replace(/\*{2}(\d+)/, "^{$1}").replace(/\*/g, "")
-    //                           .replace(/([a-z0-9]+)\/([a-z0-9]+)/, "\\frac{$1}{$2}");
-    // }
-    // finally {
-    // }
-
-  } else {
-    new_term = math.eval(expression).toString();
-  }
-  return new_term;
-}
-
-//Rationalize expression
-
-function rationalize(str) {
-  var ascii_str = latex_to_ascii(str);
-  ascii_str = ascii_str.replace(/e/g, "ee"); //becase Algebrite annoyingly thinks all es are exponentials..
-  // console.log("HIIIIII",ascii_str)
-  var new_exp = Algebrite.rationalize(ascii_str);
-  var new_str = "\\frac{" + Algebrite.numerator(new_exp).toString() + "}{" + Algebrite.denominator(new_exp).toString() + "}";
-  new_str = new_str.replace(/ee/g, "e").replace(/ /g, "");
-  // console.log("HIIIIII",new_str)
-  return ascii_to_latex(new_str);
-}
-
-//get the total width of a set of elements
-function tot_width(obj, bool, include_op) {
-  var width=0;
-  obj.each(function(i) {
-    width += $(this).outerWidth(includeMargin=bool);
-  })
-  if (include_op === true) {
-    if (obj.first().text() !== "+" && obj.first().text() !== "−") {
-      width += $(".base").find(".mbin").first().outerWidth(includeMargin=bool);
-    }
-  }
-  return width;
-}
-
-//__Mathematical and notational functions__
-
-//change sign of some nodes
-function change_sign(nodes) {
-  var text="";
-  for (i=0; i<nodes.length; i++) {
-    if (nodes[i].text.slice(0, 1) === "+") {
-      text += nodes[i].text.replace("+", "-");
-    } else if (nodes[i].text.slice(0, 1) === "-") {
-      text += nodes[i].text.replace("-", "+");
-    } else {
-      text += "-" + nodes[i].text;
-    }
-  }
-  return text.replace(/^\+/, "");
-}
-
-//change sign of exponent of some nodes
-function exponentiate(nodes, overall, power, distInFrac) {
-  // console.log("exponentiating")
-  if (typeof distInFrac === 'undefined') { distInFrac = false; }
-  var new_text="";
-  for (var i=0; i<nodes.length; i++) {
-    if (nodes[i].type !== "factor") { throw "Called exponentiate with something that isn't a factor" }
-    switch (nodes[i].type2) {
-      case "exp":
-      case "group_exp":
-        var new_pow;
-        if (power === "-1") { //if power is -1 then change sign of power
-          new_pow = change_sign(nodes[i].children[1].children);
-        }
-        else {
-          new_pow = math.eval(power + "*" + nodes[i].children[1]);
-        }
-        if (new_pow === "1") {
-          new_pow = "";
-        }
-        if (nodes[i].type2 === "exp") {
-          new_text+= (overall ? nodes[i].text : nodes[i].children[0].text + "^{" + new_pow + "}");
-        } else if (nodes[i].type2 === "group_exp") {
-          new_text+= (overall ? nodes[i].text : add_brackets(nodes[i].children[0].text) + "^{" + new_pow + "}");
-        }
-        break;
-      case "frac":
-        var new_frac_text;
-        if (distInFrac) {
-          new_frac_text = "\\frac{"+exponentiate(nodes[i].children[0].children[0].children, false, power)+"}{"+exponentiate(nodes[i].children[1].children[0].children, false, power)+"}";
-        }
-        else {
-          new_frac_text = add_brackets(nodes[i].text) + "^{"+power+"}";
-        }
-        new_text+= (overall ? nodes[i].text : new_frac_text);
-        break;
-      case "sqrt":
-        new_text+=nodes[i].text.slice(6, -1) + (overall ? "" : "^{" + power + "\\frac{1}{2}}");
-        break;
-      default:
-        new_text+=nodes[i].text + (overall ? "" : "^{" + power + "}");
-    }
-  }
-  return overall ? add_brackets(new_text) + "^{" + power + "}" : new_text;
-}
-
-//TODO: Use exponentiate to extend features of changin side for power
-
-function multiply_grouped_nodes(nodes) {
-  var result = "";
-  for (var i = 0; i < nodes.length; i++) {
-    if (nodes[i].children.length > 1) {
-      result += "(" + nodes[i].text + ")";
-    } else {
-      result += nodes[i].text;
-    }
-  }
-  return result;
-}
-
-//flip fraction
-function flip_fraction(nodes) {
-  // console.log("flipping_fracs")
-  var new_text="";
-  for (var i = 0; i < nodes.length; i++) {
-    if (nodes[i].type !== "factor") { throw "Called flip_fraction with something that isn't a factor" }
-    switch (nodes[i].type2) {
-      case "frac":
-        if (nodes[i].children[0].text === "1") {
-          new_text += nodes[i].children[1].text;
-        } else {
-          new_text += "\\frac{" + nodes[i].children[1].text + "}{" + nodes[i].children[0].text + "}";
-        }
-        break;
-      default:
-        new_text += "\\frac{1}{" + nodes[i].text + "}";
-    }
-  }
-  return new_text;
-}
-
-function add_brackets(str) {
-  if (str.charAt(0) === "(" && str.charAt(str.length-1) === ")") {
-    if (str.slice(1,-1).indexOf(")") > str.slice(1,-1).indexOf("(")) {
-        return str
-    }
-  } else {
-    return "(" + str + ")";
-  }
-}
-
-
-//Check properties
-
-//check if all nodes are of a given type or type 2 (if two=1)
-function are_of_type(nodes, type, two) {
-  var two = two || 0;
-  var result = true;
-    for (var i=0; i<nodes.length; i++) {
-      if (Bro(nodes[i]).iCanHaz("type"+"2".repeat(two)) !== type) {result = false}
-    }
-  return result;
-}
-
-function any_of_type(nodes,type, two) {
-  var two = two || 0;
-  var result = false;
-    for (var i=0; i<nodes.length; i++) {
-      if (Bro(nodes[i]).iCanHaz("type"+"2".repeat(two)) === type) {result = true}
-    }
-  return result;
-}
-
-//check if all nodes share some ancestor
-function have_same_ancestors(nodes, depth) {
-  var result = true;
-  var ancestor = "parent"+".parent".repeat(depth-1);
-  for (var i=0; i<nodes.length-1; i++) {
-    if (Bro(nodes[i]).iCanHaz(ancestor) !== Bro(nodes[i+1]).iCanHaz(ancestor)) {result = false}
-  }
-  return result;
-}
-
-//check if all nodes are of same type or type 2 (if two=1)
-function have_same_type(nodes, two) {
-  var two = two || 0;
-  var type = "type"+"2".repeat(two);
-  var result=true;
-  for (var i=0; i<nodes.length-1; i++) {//making sure all elemnts are of the same type
-    if (Bro(nodes[i]).iCanHaz(type) !== Bro(nodes[i+1]).iCanHaz(type)) {result = false}
-  }
-  return result;
-}
-
-function have_same_text(nodes) {
-  var result = true;
-  for (var i=0; i<nodes.length-1; i++) {//making sure all elemnts have the same text
-    if (nodes[i].text !== nodes[i+1].text) {result = false}
-  }
-  return result;
-}
-
-//check if terms have single factor
-function have_single_factor(nodes) {
-  var result = true;
-  for (var i=0; i<nodes.length; i++) {//making sure all elemnts have one factor
-    var child_cnt = 1;
-    if (nodes[i].children[0] !== undefined) {
-      if (nodes[i].children[0].type2 === "op") {
-        child_cnt++;
-      }
-    }
-    if (nodes[i].children.length !== child_cnt) {result = false}
-  }
-  return result;
-}
-
-//check if all term nodes have the same denominator
-function have_same_denom(nodes) {
-  var result = true;
-  for (var i=0; i<nodes.length-1; i++) {
-    var index1 = nodes[i].children.length-1;
-    var index2 = nodes[i+1].children.length-1;
-    var facttype1 = Bro(nodes[i]).iCanHaz("children."+index1.toString()+".type2");
-    var facttype2 = Bro(nodes[i+1]).iCanHaz("children."+index2.toString()+".type2");
-    if (facttype1 === "frac" && facttype1 === "frac") {
-      if (nodes[i].children[index1].children[1].text !== nodes[i+1].children[index2].children[1].text) {result = false;}
-    }
-  }
-  return result && have_single_factor(nodes);
-}
-
-//check if all terms are the same (ignoring whether sign is present)
-function are_same_terms(nodes) {
-  var result = true;
-  for (var i=0; i<nodes.length-1; i++) {
-    var term_text1 = selected_nodes[i].text,
-        term_text2 = selected_nodes[i+1].text;
-    if (nodes[i].type === "term" && nodes[i+1].type === "term") {
-      if (Bro(nodes[i]).iCanHaz("children.0.type2") === "op") {
-        term_text1 = term_text1.slice(1);
-      }
-      if (Bro(nodes[i+1]).iCanHaz("children.0.type2") === "op") {
-        term_text2 = term_text2.slice(1);
-      }
-    }
-
-    if (term_text1 !== term_text2) {result = false}
-  }
-  return result;
-}
-//
-
-// function equiv_nodes(node1, node2) {
-//
-// }
-
-//get previous node
-function get_prev(nodes) {
-  if (!Array.isArray(nodes)) {nodes = [nodes];}
-  var node = nodes[0];
-  var array = node.model.id.split("/");
-  array[array.length-1] = (parseInt(array[array.length-1])-1).toString();
-  var new_id = array.join("/");
-  var chosen_node;
-  math_root.walk(function (node) {
-    if (node.model.id === new_id) {chosen_node = node; return false;}
-  });
-  return chosen_node;
-}
-
-//get next node
-function get_next(nodes) {
-  if (!Array.isArray(nodes)) {nodes = [nodes];}
-  var node = nodes[nodes.length-1];
-  var array = node.model.id.split("/");
-  array[array.length-1] = (parseInt(array[array.length-1])+1).toString();
-  var new_id = array.join("/");
-  var chosen_node;
-  math_root.walk(function (node) {
-    if (node.model.id === new_id) {chosen_node = node; return false;}
-  });
-  return chosen_node;
-}
-
-//get all next nodes
-function get_all_next(node) {
-  var next_nodes = [];
-  var array = node.model.id.split("/");
-  var init = parseInt(array[array.length-1], 10);
-  var max = node.parent.children.length;
-  for (var i = init+1; i <= max; i++) {
-    array[array.length-1] = i;
-    var new_id = array.join("/");
-    var node;
-    math_root.walk(function (node1) {
-      if (node1.model.id === new_id) {node = node1; return false;}
-    });
-    next_nodes.push(node);
-  };
-  return next_nodes;
-}
-
-//does it have a visible sign?
-function has_op(obj) {
-  if (obj.first().text() === "+" || obj.first().text() === "−") {
-    return true;
-  } else {
-    return false;
-  }
-}
-
-// TREE -> LATEX. Create a LaTeX string from a tree, and substitute the text of node_arr with that contained in str_arr. Useful for manipulations
-function parse_mtstr(root, node_arr, str_arr) {
-  var poly_str = "";
-  var i = 0, j = 0;
-  //console.log(node_arr);
-  while (i < root.children.length) {
-    var term_text="";
-    var child = root.children[i];
-    //console.log("child")
-    //console.log(child);
-    node_selected = false;
-    for (var k=0; k<node_arr.length; k++) {
-      if (child.model.id === node_arr[k].model.id) {
-        node_selected = true;
-        term_text = str_arr[k];
-        break;
-      }
-    }
-    if (node_selected) {i++; poly_str+=term_text; continue;}
-    //console.log(child.children);
-    j = 0;
-    while (j < child.children.length) {
-      var factor_text="";
-      var frac_text = [], exp_text = [], binom_text = [], diff_text = "", int_text = [];
-      var grandchild = child.children[j];
-      //console.log("grandchild");
-      //console.log(grandchild);
-      node_selected = false;
-      for (var k=0; k<node_arr.length; k++) {
-        if (grandchild.model.id === node_arr[k].model.id) {
-          node_selected = true;
-          factor_text = str_arr[k];
-          break;
-        }
-      }
-      if (node_selected) {j++; term_text+=factor_text; continue;}
-      if (grandchild.type === "rel") {
-        poly_str+=grandchild.text;
-      } else if (grandchild.type2 === "op") {
-        term_text+=grandchild.text;
-      } else if (grandchild.type === "text") {
-        term_text+="\\text{" + grandchild.text.replace(/[^\x00-\x7F]/g, " ") + "}"; //change strange whitespaces to standard whitespace
-      } else {
-        switch (grandchild.type2) {
-          case "normal":
-            factor_text+=grandchild.text;
-            break;
-          case "group":
-            factor_text = "(" + parse_mtstr(grandchild, node_arr, str_arr) + ")";
-            break;
-          case "diff":
-          case "frac":
-            frac_text[0] = parse_mtstr(grandchild.children[0], node_arr, str_arr);
-            frac_text[1] = parse_mtstr(grandchild.children[1], node_arr, str_arr);
-            for (var l=0; l<2; l++) {
-              for (var k=0; k<node_arr.length; k++) {
-                if (grandchild.children[l].model.id === node_arr[k].model.id) {
-                  frac_text[l] = str_arr[k];
-                  break;
-                }
-              }
-            }
-            factor_text = "\\frac{" + frac_text[0] + "}{" + frac_text[1] + "}";
-            break;
-          case "diff":
-            diff_text = parse_mtstr(grandchild.children[0], node_arr, str_arr);
-            for (var k=0; k<node_arr.length; k++) {
-              if (grandchild.children[0].model.id === node_arr[k].model.id) {
-                frac_text[0] = str_arr[k];
-                break;
-              }
-            }
-            factor_text = "\\frac{d}{d" + diff_text + "}"
-            break;
-          case "binom":
-            binom_text[0] = parse_mtstr(grandchild.children[0], node_arr, str_arr);
-            binom_text[1] = parse_mtstr(grandchild.children[1], node_arr, str_arr);
-            for (var l=0; l<2; l++) {
-              for (var k=0; k<node_arr.length; k++) {
-                if (grandchild.children[l].model.id === node_arr[k].model.id) {
-                  binom_text[l] = str_arr[k];
-                  break;
-                }
-              }
-            }
-            factor_text = "\\binom{" + binom_text[0] + "}{" + binom_text[1] + "}"
-            break;
-          case "int":
-            int_text[0] = parse_mtstr(grandchild.children[0], node_arr, str_arr);
-            int_text[1] = parse_mtstr(grandchild.children[1], node_arr, str_arr);
-            for (var l=0; l<2; l++) {
-              for (var k=0; k<node_arr.length; k++) {
-                if (grandchild.children[l].model.id === node_arr[k].model.id) {
-                  int_text[l] = str_arr[k];
-                  break;
-                }
-              }
-            }
-            factor_text = "\\int_{" + int_text[1] + "}^{" + int_text[0] + "}"
-            break;
-          case "sqrt":
-            factor_text = "\\sqrt{" + parse_mtstr(grandchild, node_arr, str_arr) + "}";
-            break;
-          case "exp":
-            exp_text[0] = grandchild.children[0].text;
-            exp_text[1] = parse_mtstr(grandchild.children[1], node_arr, str_arr);
-            for (var l=0; l<2; l++) {
-              for (var k=0; k<node_arr.length; k++) {
-                if (grandchild.children[l].model.id === node_arr[k].model.id) {
-                  exp_text[l] = str_arr[k];
-                  break;
-                }
-              }
-            }
-            factor_text = exp_text[0] + "^{" + exp_text[1] + "}";
-            break;
-          case "group_exp":
-            exp_text[0] = parse_mtstr(grandchild.children[0], node_arr, str_arr);
-            exp_text[1] = parse_mtstr(grandchild.children[1], node_arr, str_arr);
-            //console.log(grandchild.children);
-            for (var l=0; l<2; l++) {
-              for (var k=0; k<node_arr.length; k++) {
-                if (grandchild.children[l].model.id === node_arr[k].model.id) {
-                  exp_text[l] = str_arr[k];
-                  break;
-                }
-              }
-            }
-            factor_text = "(" + exp_text[0] + ")" + "^{" + exp_text[1] + "}";
-            break;
-        }
-        term_text+=factor_text;
-      }
-      j++;
-    };
-    i++;
-    poly_str+=term_text;
-    //console.log(poly_str);
-  };
-
-  return poly_str;
-}
-
-//do some preparation to str_arr before calling parse_mtstr
-function replace_in_mtstr(nodes, str_arr) {
-  if (nodes.__proto__.length !== 0) {
-    nodes = [nodes];
-  }
-  if (typeof str_arr === "string") {
-    var str = str_arr;
-    str_arr = [];
-    for (i=0; i<nodes.length; i++) {
-      if (i === 0) {str_arr.push(str);}
-      else {str_arr.push("");}
-    }
-  }
-  return parse_mtstr(math_root, nodes, str_arr);
-}
-
-//MANIPULATIVES
-//HTML -> TREE
-//This creates a tree by going through the terms in an expression, and going through its factors. Factors that can contain whole expressions within them are then recursively analyzed in the same way.
-//This is tied to the way KaTeX renders maths. A good thing would be to do this for MathML, as it's likely to be a standard in the future.
-function parse_poly(root, poly, parent_id, is_container) {
-  var poly_str = "";
-  var term_cnt = 0;
-  var factor_cnt = 0;
-  var i = 0;
-  var factor_obj, factor, op, term_obj=$(), factor_id, term_id, inside, nom_str, denom_str, prev_factor_id, inside_text, base_obj, power_obj, base, power, child1, child2;
-  var numerator, denominator;
-  var term = tree.parse({id: parent_id.toString() + "/" + (term_cnt+1).toString()});
-  term.text = "";
-  term.type = "term";
-  root.addChild(term);
-  var things = is_container ? poly.children() : poly;
-  while (i < things.length) {
-    var thing = things.filter(":eq("+i+")");
-    factor_obj = thing;
-    factor_id = parent_id.toString() + "/" + (term_cnt+1).toString() + "/" + (factor_cnt+1).toString();
-    term_id = parent_id.toString() + "/" + (term_cnt+1).toString();
-    //deal with elements GROUPED by brackets
-    if (thing.is(".mopen"))
-    {
-      do {
-        factor_obj = factor_obj.add(factor_obj.next());
-      } while (!(factor_obj.filter(".mopen").length-factor_obj.filter(".mclose").length === 0));
-      factor = tree.parse({id: factor_id, obj: factor_obj});
-      factor.type = "factor";
-      factor.type2 = "group";
-      term.addChild(factor);
-      term_obj = term_obj.add(factor_obj);
-      factor_cnt++;
-      i += factor_obj.length;
-      inside = factor_obj.not(factor_obj.first()).not(factor_obj.last());
-      if (!factor_obj.last().is(".mclose:has(.vlist)")) { //check it's not grouped exponential
-        inside_text = parse_poly(factor, inside, factor_id, false);
-        factor.text = "(" + inside_text + ")";
-      }
-      factor_text = factor.text;
-    }
-    //if not grouped, deal with individual element
-    //if number, group numbers into factor
-    if (/^\d$/.test(thing.text()))
-    {
-      factor_text = "";
-      asd=0;
-      factor_text+=factor_obj.text();
-      while (/^\d$/.test(factor_obj.last().next().text())) {
-        factor_obj = factor_obj.add(factor_obj.last().next());
-        factor_text+=factor_obj.last().text();
-        asd++;
-      }
-      factor = tree.parse({id: factor_id, obj: factor_obj});
-      factor.type = "factor";
-      factor.type2 = "normal";
-      factor.text = factor_text;
-      term.addChild(factor);
-      term_obj = term_obj.add(factor_obj);
-      factor_cnt++;
-      i += factor_obj.length;
-    }
-    //normal factor
-    if (!(/^\d$/.test(thing.text())) && (!thing.is(".mbin, .mopen, .mclose, .mrel") || thing.text() === "!"))
-    {
-      factor = tree.parse({id: factor_id, obj: factor_obj});
-      factor.type = "factor";
-      factor.type2 = "normal";
-      if (!thing.is(":has(*)"))
-      {
-        factor.text = thing.text();
-        if (factor.text === "−")
-        {
-          factor.type2 = "op";
-          factor.text = "-";
-        }
-        else if (factor.text === "+")
-        {
-          factor.type2 = "op";
-          factor.text = "+";}
-        factor_text = factor.text;
-        // console.log(factor.text);
-      }
-      term.addChild(factor);
-      term_obj = term_obj.add(thing);
-      factor_cnt++;
-      i++;
-    }
-    //operators that begin new term
-    else if (thing.is(".mbin, .mrel") && (thing.text() === "+" || thing.text() === "−" || thing.text() === "="))
-    {
-      term.model.obj = term_obj;
-      poly_str+=term.text;
-      term_cnt++;
-      factor_cnt = 0;
-      factor_id = parent_id.toString() + "/" + (term_cnt+1).toString() + "/" + (factor_cnt+1).toString();
-      term_id = parent_id.toString() + "/" + (term_cnt+1).toString();
-      op = tree.parse({id: factor_id, obj: thing});
-      term = tree.parse({id: term_id});
-      root.addChild(term);
-      term_obj = $();
-      term.text = "";
-      factor_text = "";
-      term.type = "term";
-      if (thing.is(".mbin"))
-      {
-        term.addChild(op);
-        op.type = "factor";
-        op.type2 = "op";
-        op.text = (thing.text() === "−") ? "-" : "+"
-        term_obj = term_obj.add(thing);
-        term.text+=op.text;
-        factor_cnt++;
-      }
-      else if (thing.is(".mrel"))
-      {
-        term.type = "rel";
-        term.model.obj = thing;
-        term.addChild(op);
-        op.type = "rel";
-        op.text = thing.text();
-        term.text+=op.text;
-        poly_str+=term.text;
-        term_cnt++;
-        factor_cnt = 0;
-        factor_id = parent_id.toString() + "/" + (term_cnt+1).toString() + "/" + (factor_cnt+1).toString();
-        term_id = parent_id.toString() + "/" + (term_cnt+1).toString();
-        term = tree.parse({id: term_id});
-        root.addChild(term);
-        term_obj = $();
-        term.text = "";
-        term.type = "term";
-      }
-      i++;
-    }
-    //other operators
-    else if (thing.is(".mbin, .mrel") && (thing.text() === "⋅"))
-    {
-      factor = tree.parse({id: factor_id, obj: factor_obj});
-      factor.type = "factor";
-      factor.type2 = "op";
-      factor.optype = "mult";
-      factor.text = "\\cdot ";
-      term.addChild(factor);
-      term_obj = term_obj.add(thing);
-      factor_cnt++;
-      i++;
-    }
-
-    //PARSING CHILDREN: deal with things with children, recursivelly.
-    if (factor_obj.is(":has(*)")) {
-      if (thing.children(".mfrac").length !== 0 && thing.children(".mfrac").children(".vlist").children().length === 4) {//fractions. it had 'thing.is(".minner") ||''  in it but not sure why
-        if (thing.text().search(/^\\frac\{d\}\{d[a-z]\}$/) === 1) {
-          factor.type2 = "diff";
-          var variable = thing.closest_n_descendents(".mord", 2).first().children();
-          variable = variable.not(variable.first());
-          var var_str = parse_poly(factor, variable, factor_id, false);
-          factor.text = "\\frac{d}{d" + var_str + "}";
-        } else {
-          factor.type2 = "frac";
-          denominator = thing.closest_n_descendents(".mord", 2).first();
-          numerator = thing.closest_n_descendents(".mord", 2).last();
-          child1 = tree.parse({id: factor_id + "/" + "1", obj: numerator});
-          child1.type = "numerator";
-          child2 = tree.parse({id: factor_id + "/" + "2", obj: denominator});
-          child2.type = "denominator";
-          factor.addChild(child1);
-          factor.addChild(child2);
-          nom_str = parse_poly(child1, numerator, factor_id + "/" + "1", true);
-          child1.text = nom_str;
-          denom_str = parse_poly(child2, denominator, factor_id + "/" + "2", true);
-          child2.text = denom_str;
-          factor.text = "\\frac{" + nom_str + "}{" + denom_str + "}";
-        }
-      } else if (thing.is(".sqrt")) {//square roots
-        factor.type2 = "sqrt";
-        inside = thing.find(".mord").first();
-        factor.text = "\\sqrt{" + parse_poly(factor, inside, factor_id, true) + "}";
-      } else if (thing.is(":has(.vlist)") && !thing.is(".accent") && thing.children(".mfrac").length === 0 && thing.children(".op-symbol").length === 0) {//exponentials
-        base_obj = thing.find(".mord").first();
-        power_obj = thing.closest_n_descendents(".vlist", 1);
-        var inside2 = power_obj.find(".mord").first();
-        base = tree.parse({id: factor_id + "/" + "1", obj: base_obj});
-        base.type = "base";
-        base.text = parse_poly(base, base_obj, factor_id + "/" + "1", false);
-        power = tree.parse({id: factor_id + "/" + "2", obj: power_obj});
-        power.type = "power";
-        power.text = parse_poly(power, inside2, factor_id + "/" + "2", true);
-        factor.addChild(base);
-        factor.addChild(power);
-        factor.type2 = "exp";
-        factor.text = base.text + "^{" + power.text + "}";//needs the standard power format in latex
-      } else if (factor_obj.last().is(".mclose:has(.vlist)")) {//exponentiated group
-        factor.type2 = "group_exp";
-        base_obj = inside;
-        base = tree.parse({id: factor_id + "/" + "1", obj: base_obj});
-        base.type = "base";
-        base.text = parse_poly(base, inside, factor_id + "/" + "1", false);
-        power_obj = factor_obj.last().find(".vlist").first();
-        power = tree.parse({id: factor_id + "/" + "2", obj: power_obj});
-        power.type = "power";
-        inside = power_obj.find(".mord").first();
-        power.text = parse_poly(power, inside, factor_id + "/" + "2", true);
-        factor.addChild(base);
-        factor.addChild(power);
-        factor.text = "(" + base.text + ")" + "^{" + power.text + "}";
-      } else if (thing.is(".text")) { //text
-        factor.type = "text";
-        factor.text = thing.text();
-      } else if (thing.is(".accent")) { //accent
-        factor.type2 = "normal";
-        factor.text = "\\hat{" + thing.text().replace(/[^\x00-\x7F]/g, "").slice(0, -1) + "}"; //I guess there are more types of accent, but I'll add them latter.
-      } else if (thing.children(".mfrac").length !== 0 && thing.children(".mfrac").children(".vlist").children().length === 3) {
-        factor.type2 = "binom";
-        denominator = thing.closest_n_descendents(".mord", 2).first();
-        numerator = thing.closest_n_descendents(".mord", 2).last();
-        child1 = tree.parse({id: factor_id + "/" + "1", obj: numerator});
-        child1.type = "available";
-        child2 = tree.parse({id: factor_id + "/" + "2", obj: denominator});
-        child2.type = "chosen";
-        factor.addChild(child1);
-        factor.addChild(child2);
-        nom_str = parse_poly(child1, numerator, factor_id + "/" + "1", true);
-        child1.text = nom_str;
-        denom_str = parse_poly(child2, denominator, factor_id + "/" + "2", true);
-        child2.text = denom_str;
-        factor.text = "\\binom{" + nom_str + "}{" + denom_str + "}"
-      } else if (thing.is(":has(.vlist)") && thing.children(".op-symbol").length !== 0) {//operator
-        if (thing.children().first().text() === "∫") {//integral
-          factor.type2 = "int";
-          var upper_limit = thing.children().last().closest_n_descendents(".mord", 2).last();
-          var lower_limit = thing.children().last().closest_n_descendents(".mord", 2).first();
-          child1 = tree.parse({id: factor_id + "/" + "1", obj: upper_limit});
-          child1.type = "sup";
-          child2 = tree.parse({id: factor_id + "/" + "2", obj: lower_limit});
-          child2.type = "sub";
-          factor.addChild(child1);
-          factor.addChild(child2);
-          up_str = parse_poly(child1, upper_limit, factor_id + "/" + "1", true);
-          child1.text = up_str;
-          low_str = parse_poly(child2, lower_limit, factor_id + "/" + "2", true);
-          child2.text = low_str;
-          factor.text = "\\int_{" + low_str + "}^{" + up_str + "}"
-        }
-
-      }
-      factor_text = factor.text;
-    }
-    for (symbol in symbols.math) {
-        if (factor_text === symbols.math[symbol].replace && factor_text !== "k") { //k is a special case. there is a special symbol in latex, but user will often not mean that..
-          factor.text = symbol + " ";
-          factor_text = factor.text;
-        }
-    }
-    term.text+=factor_text;
-    if (i === things.length) {term.model.obj = term_obj; poly_str+=term.text;}
-  };
-  return poly_str;
-}
-//this function prepares and renders the function with LaTeX, it also calls parse_poly to create the tree
-function prepare(math) {
-
-
-  math = math.replace(/\\frac{}/g, "\\frac{1}")
-        // .replace(/ /g, "") some operators require the space, for exampl a \cdot b
-        .replace(/\(\+/g, "(")
-        .replace(/^\+/, "")
-        .replace(/=$/, "=0")
-        .replace(/=+/, "=")
-        .replace(/0\+/g, "")
-        .replace(/0-/g, "-")
-        .replace(/^=/, "0=")
-        .replace(/\^{}/g, "")
-        .replace(/\+/g, '--').replace(/(--)+-/g, '-').replace(/--/g, '+');
-
-  var math_el = document.getElementById("math");
-  katex.render(math, math_el, { displayMode: true });
-  math_str_el.val(math);
-  mathquill.latex(math);
-
-  var root_poly = $("#math .base");
-
-  tree = new TreeModel();
-
-  math_root = tree.parse({});
-  math_root.model.id = "0";
-  //KaTeX offers MathML semantic elements on the HTML, could that be used?
-
-  parse_poly(math_root, root_poly, 0, true);
-
-  math_root.walk(function (node) {
-    if (node.type2 === "frac" && node.children[1].text === "") {prepare(replace_in_mtstr(node, node.children[0].text));}
-  });
-
-  if (!playing) {
-    if (current_index < math_str.length) {
-      remove_from_history(current_index);
-      math_str[current_index] = math;
-      add_to_history(current_index, current_index-1);
-    } else {
-      current_index = math_str.push(math)-1;
-      add_to_history(current_index, current_index-1);
-    }
-  }
-
-  active_in_history(current_index);
-
-  if (recording) {
-    var ids = [];
-    for (var i=0; i<selected_nodes.length; i++) {
-      ids.push(selected_nodes[i].model.id);
-    }
-    selected_nodes_id_rec.push(ids);
-    math_str_rec.push(math);
-  }
-
-  create_events(manip, depth);
-
-  //repositioning equals so that it's always in the same place. put in fixed value.
-  $equals = $("#math .base").find(".mrel");
-  if ($equals.length !== 0) {
-    new_equals_position = $equals.offset();
-    if (equals_position.left !== 0) {h_eq_shift += equals_position.left-new_equals_position.left;}
-    if (equals_position.top !== 0) {v_eq_shift += equals_position.top-new_equals_position.top;}
-    math_el.setAttribute("style", "left:"+h_eq_shift.toString()+"px;"+"top:"+v_eq_shift.toString()+"px;");
-    equals_position = $equals.offset();
-  }
-  //useful variables
-  beginning_of_equation = math_root.children[0].model.obj.offset();
-  width_last_term = tot_width(math_root.children[math_root.children.length-1].model.obj, true, true);
-  end_of_equation = math_root.children[math_root.children.length-1].model.obj.offset();
-  end_of_equation.left += width_last_term;
-}
-
-//initial render
-// var initial_math_str = "ax^{2}+bx+c=0";
-var initial_math_str = "\\frac{v^{2}}{r}=\\frac{GMmr}{r^{2}}";
-// $(document).ready(() =>prepare(initial_math_str));
-
-$(document).ready(() => prepare(initial_math_str));
-
-// let toplel = (x) => x*x
-//
-// console.log(toplel(2))
 
 //MANIPULATIONS
 
 //change side
-document.getElementById("change_side").onclick = change_side;
-document.getElementById("tb-change_side").onclick = change_side;
-function change_side() {
+export function change_side() {
   var new_term;
   equals_position = $equals.offset();
   equals_node = math_root.first(function (node) {
@@ -1548,7 +188,7 @@ function change_side() {
         new_math_str = replace_in_mtstr(selected_nodes, "");
         math_HS = new_math_str.split("="); //HS=hand sides
         if (include_in_frac) {
-          new_math_str = math_HS[0] + "=" + "\\frac{" + after_eq_nodes[0].children[0].children[0].text + selected_text + "}{" + after_eq_nodes[0].children[0].children[1].text + "}";
+          new_math_str = math_HS[0].replace(/\\frac{([ -~]+)}{}/, "$1") + "=" + "\\frac{" + after_eq_nodes[0].children[0].children[0].text + selected_text + "}{" + after_eq_nodes[0].children[0].children[1].text + "}";
         } else {
           new_math_str = math_HS[0] + "=" + selected_text + math_HS[1] ;
         }
@@ -1574,16 +214,18 @@ function change_side() {
         $equals.nextAll().animate({top: $selected.outerHeight(includeMargin=true)/2}, step_duration);
         v_offset+=$selected.outerHeight(includeMargin=true)/2;
       }
-      $selected.animate({left:-h_offset, top:v_offset}, step_duration).promise().done(function() {
+      $selected.animate({left:-h_offset, top:-v_offset}, step_duration).promise().done(function() {
         new_math_str = replace_in_mtstr(selected_nodes, "");
         math_HS = new_math_str.split("="); //HS=hand sides
         if (include_in_frac) {
-          new_math_str = "\\frac{" + before_eq_nodes[0].children[0].children[0].text + selected_text + "}{" + before_eq_nodes[0].children[0].children[1].text + "}" + "=" + math_HS[1];
+          new_math_str = "\\frac{" + before_eq_nodes[0].children[0].children[0].text + selected_text + "}{" + before_eq_nodes[0].children[0].children[1].text + "}" + "=" + math_HS[1].replace(/\\frac{([ -~]+)}{}/, "$1");
         } else {
           new_math_str = math_HS[0] + selected_text + "=" + math_HS[1];
         }
+        console.log(new_math_str);
         current_index++;
-        new_math_str = new_math_str.replace(/\\frac{([ -~]+)}{}/, "$1").replace(/=$/, "=1").replace(/^=/, "1=");
+        new_math_str = new_math_str.replace(/=$/, "=1").replace(/^=/, "1=");
+        console.log(new_math_str);
         prepare(new_math_str);
       });
     }
@@ -1641,9 +283,7 @@ function change_side() {
 };
 
 //move term within expression, or factor within term
-document.getElementById("move_right").onclick = move_right;
-document.getElementById("tb-move_right").onclick = move_right;
-function move_right(){
+export function move_right(){
   //moving factor or term
   if ($selected.next().filter(".mrel").length === 0)
   {
@@ -1683,9 +323,7 @@ function move_right(){
   if (recording) {add_to_manip_rec(4);}
 }
 
-document.getElementById("move_left").onclick = move_left;
-document.getElementById("tb-move_left").onclick = move_left;
-function move_left() {
+export function move_left() {
   //moving factor or term
   if ($selected.prev().filter(".mrel").length === 0)
   {
@@ -1729,9 +367,7 @@ function move_left() {
 }
 
 //move up and down in a fraction
-document.getElementById("move_up").onclick = move_up;
-document.getElementById("tb-move_up").onclick = move_up;
-function move_up() {
+export function move_up() {
   var same_parents = have_same_ancestors(selected_nodes, 1),
     same_type2 = have_same_type(selected_nodes,1),
     same_type = have_same_type(selected_nodes);
@@ -1818,9 +454,7 @@ function move_up() {
   if (recording) {add_to_manip_rec(2);}
 }
 
-document.getElementById("move_down").onclick = move_down;
-document.getElementById("tb-move_down").onclick = move_down;
-function move_down() {
+export function move_down() {
 
   var same_parents = have_same_ancestors(selected_nodes, 1);
 
@@ -1907,8 +541,7 @@ function move_down() {
 }
 
 // document.getElementById("split").onclick = split;
-document.getElementById("tb-split").onclick = split;
-function split() {
+export function split() {
   var same_factor = true,
     // same_parents = have_same_ancestors(selected_nodes, 1),
     // same_grandparents = have_same_ancestors(selected_nodes, 2),
@@ -1968,8 +601,7 @@ function split() {
 }
 
 // document.getElementById("merge").onclick = merge;
-document.getElementById("tb-merge").onclick = merge;
-function merge() {
+export function merge() {
   var same_factor = true,
     same_parents = have_same_ancestors(selected_nodes, 1),
     // same_grandparents = have_same_ancestors(selected_nodes, 2),
@@ -1994,9 +626,7 @@ function merge() {
 }
 
 //distributing in stuff
-document.getElementById("distribute-in").onclick = distribute_in;
-document.getElementById("tb-distribute-in").onclick = distribute_in;
-function distribute_in() {
+export function distribute_in() {
   var same_factor = true,
     same_parents = have_same_ancestors(selected_nodes, 1),
     same_grandparents = have_same_ancestors(selected_nodes, 2),
@@ -2159,9 +789,7 @@ function distribute_in() {
 }
 
 //merging stuff
-document.getElementById("collect-out").onclick = collect_out;
-document.getElementById("tb-collect-out").onclick = collect_out;
-function collect_out() {
+export function collect_out() {
   var same_parents = have_same_ancestors(selected_nodes, 1),
   same_grandparents = have_same_ancestors(selected_nodes, 2),
   same_type = have_same_type(selected_nodes),
@@ -2414,8 +1042,7 @@ function collect_out() {
 }
 
 //unbracket
-document.getElementById("unbracket").onclick = unbracket;
-function unbracket() {
+export function unbracket() {
   //animation?
   var new_term="";
   new_term += selected_text.replace(/^\(|\)$/g, "");
@@ -2427,9 +1054,7 @@ function unbracket() {
 }
 
 //evaulate simple sum or multiplication
-document.getElementById("eval").onclick = eval;
-document.getElementById("tb-eval").onclick = eval;
-function eval() {
+export function evaluate() {
   for (var i=0; i<selected_nodes.length-1; i++) { //making sure, all elements are of the same parent
     if (selected_nodes[i].parent !== selected_nodes[i+1].parent) {return;}
   }
@@ -2445,9 +1070,7 @@ function eval() {
 }
 
 //operate with an operator
-document.getElementById("operate").onclick = operate;
-document.getElementById("tb-operate").onclick = operate;
-function operate() {
+export function operate() {
   if (selected_nodes.length === 1 && selected_nodes[0].type2 === "diff") {
     var variable = selected_nodes[0].children[0].text;
     var expression = "";
@@ -2479,7 +1102,7 @@ $("#add_both_sides").keyup(function (e) {
           add_both_sides(thing1);
     }
 });
-function add_both_sides(thing) {
+export function add_both_sides(thing) {
   console.log("ho");
   math_HS = math_str[current_index].split("=");
   new_math_str = math_HS[0] + thing + "=" +math_HS[1] + thing;
@@ -2497,7 +1120,7 @@ $("#replace").keyup(function (e) {
         replace(thing);
     }
 });
-function replace(text) {
+export function replace(text) {
   $selected.animate({"font-size": 0, opacity: 0}, step_duration/2)
     .css('overflow', 'visible')
     .promise()
@@ -2520,8 +1143,7 @@ function replace(text) {
 }
 
 //remove something. Used for: cancelling something on both sides, or cancelling something on a fraction, among other things
-document.getElementById("remove").onclick = remove;
-function remove() {
+export function remove() {
   $selected.animate({"font-size": 0, opacity: 0}, step_duration)
     .css('overflow', 'visible')
     .promise()
@@ -2534,8 +1156,8 @@ function remove() {
   if (recording) {add_to_manip_rec(11);}
 }
 
-document.getElementById("tb-cancel-out").onclick = cancel_out;
-function cancel_out() {
+//cancel out factors in a fraction. TODO: also be able to cancel terms.
+export function cancel_out() {
   var same_factor = true,
     same_parents = have_same_ancestors(selected_nodes, 1),
     same_grandparents = have_same_ancestors(selected_nodes, 2),
@@ -2581,9 +1203,7 @@ function cancel_out() {
 }
 
 //flip equation
-document.getElementById("flip_equation").onclick = flip_equation;
-document.getElementById("tb-flip_equation").onclick = flip_equation;
-function flip_equation() {
+export function flip_equation() {
   var offset1 = tot_width($equals.prevAll(), true, false) + tot_width($equals, true, false);
   var offset2 = tot_width($equals.nextAll(), true, false) + tot_width($equals, true, false);
   $equals.prevAll().animate({left:offset1}, step_duration);
@@ -2598,5 +1218,3 @@ function flip_equation() {
   if (recording || playing) {recording_index++;}
   if (recording) {add_to_manip_rec(15);}
 }
-
-});

@@ -1,5 +1,7 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
+import * as manip from '../../maths/manipulations.js';
+import * as hist from './history';
 
 export default class Tools extends React.Component {
   render() {
@@ -30,64 +32,64 @@ export default class Tools extends React.Component {
   				</li>
   				<li className="list-group-item">
   					<span> Depth:
-  						<input type="number" min="1" step="1" value="1" className="traverse" id="depth"/>
+  						<input type="number" min="1" step="1" defaultValue="1" className="traverse" id="depth"/>
   					</span>
   				</li>
   			</div>
   			<h4>Manipulations</h4>
   			<div>
   				<li className="list-group-item">
-  					<button type="button" className="btn btn-default" id="undo">
+  					<button type="button" className="btn btn-default" id="undo" onClick={hist.undo}>
   						Undo
   					</button>
-  					<button type="button" className="btn btn-default" id="redo">
+  					<button type="button" className="btn btn-default" id="redo" onClick={hist.redo}>
   						Redo
   					</button>
   				</li>
   				<li className="list-group-item">
-  					<button type="button" className="btn btn-default" id="flip_equation">
+  					<button type="button" className="btn btn-default" id="flip_equation" onClick={manip.flip_equation}>
   						Flip equation
   					</button>
-  					<button type="button" className="btn btn-default" id="change_side">
+  					<button type="button" className="btn btn-default" id="change_side" onClick={manip.change_sign}>
   						Change side
   					</button>
   				</li>
   				<li className="list-group-item">
-  					<button type="button" className="btn btn-default" id="move_up">
+  					<button type="button" className="btn btn-default" id="move_up" onClick={manip.move_up}>
   							<span className="glyphicon glyphicon-arrow-up"></span>
   					</button>
   					<div className="row">
-  						<button type="button" className="btn btn-default" id="move_left">
+  						<button type="button" className="btn btn-default" id="move_left" onClick={manip.move_left}>
   							<span className="glyphicon glyphicon-arrow-left"></span>
   						</button>
   						<span>Move selection</span>
-  						<button type="button" className="btn btn-default" id="move_right">
+  						<button type="button" className="btn btn-default" id="move_right" onClick={manip.move_right}>
   							<span className="glyphicon glyphicon-arrow-right"></span>
   						</button>
   					</div>
-  					<button type="button" className="btn btn-default" id="move_down">
+  					<button type="button" className="btn btn-default" id="move_down" onClick={manip.move_down}>
   							<span className="glyphicon glyphicon-arrow-down"></span>
   					</button>
   				</li>
   				<li className="list-group-item">
-  					<button type="button" className="btn btn-default" id="distribute-in">
+  					<button type="button" className="btn btn-default" id="distribute-in" onClick={manip.distribute_in}>
   						Distribute in
   					</button>
-  					<button type="button" className="btn btn-default" id="collect-out">
+  					<button type="button" className="btn btn-default" id="collect-out" onClick={manip.collect_out}>
   						Collect out
   					</button>
   				</li>
-  				<button type="button" className="list-group-item" id="eval">
+  				<button type="button" className="list-group-item" id="eval" onClick={manip.evaluate}>
   					Evaluate/Simplify
   				</button>
-  				<button type="button" className="list-group-item" id="operate">
+  				<button type="button" className="list-group-item" id="operate" onClick={manip.operate}>
   					Operate
   				</button>
   				<li className="list-group-item">
   					<label>Append to both sides: <input id="add_both_sides" size="20" placeholder="Type LaTeX here" /></label>
   				</li>
   				<li className="list-group-item">
-  					<label>Replace selection with: <input id="replace" size="20" placeholder="Type LaTeX here" onChange={console.log() /*replace(this.	value)*/} /></label>
+  					<label>Replace selection with: <input id="replace" size="20" placeholder="Type LaTeX here" onChange={()=> {} /*manip.replace(this.value)*/} /></label>
   					<span>Replace individually <input type="checkbox" name="multi_select" id="replace_ind"/></span>
   				</li>
   				<button type="button" className="list-group-item" id="remove">

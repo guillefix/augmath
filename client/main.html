@@ -14,6 +14,7 @@
 
 	}
   </style>
+
 </head>
 
 <body>
@@ -51,8 +52,40 @@
 <!--testing-->
 <!-- <div class="container-fluid">
   <div id="qunit"></div>
-</div>
-<script src="js/next/final/tests.js"></script> -->
+</div> -->
+<!-- <script src="js/next/final/tests.js"></script> -->
 
+<script>
+//GLOBAL VARIABLES
+var h_eq_shift=0,
+  v_eq_shift=0,
+  equals_position = {left: 0, top: 100},
+  manip = "term",
+  depth = 1,
+  multi_select = false,
+  var_select = false,
+  replace_ind = false,
+  step_duration = 700,
+  TEST,
+  inner_select = false,
+  math_root,
+  $selected = $(),
+  selected_nodes = [],
+  selected_text = "",
+  math_str = [],
+  //for recording
+  current_index = 0,
+  selected_nodes_id_rec = [],
+  math_str_rec = [],
+  recording = false,
+  recording_index = 0,
+  manipulation_rec = [],
+  playing = false,
+  //for multi-equation
+  equations = [];
+
+  var math_str_el;
+  var mathquill;
+</script>
 
 </body>
