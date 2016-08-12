@@ -8,7 +8,9 @@ export default class Tools extends React.Component {
   //   super();
   //   this.state = {manip}
   // }
-
+  replaceSelection() {
+    manip.replace(this.replaceSelectInput.value, this.props.state.replace_ind)
+  }
   render() {
     return <div>
       <ul id="tools" className="list-group text-center">
@@ -25,15 +27,15 @@ export default class Tools extends React.Component {
   						<option value="denominator">Denominator</option>
   						<option value="available">Available (binom)</option>
   						<option value="chosen">Chosen (binom)</option>
-  						<option value="sup">Superscript</option>
-  						<option value="sub">Subscript</option>
+  						<option value="sups">Superscript</option>
+  						<option value="subs">Subscript</option>
   					</select>
   				</span>
   				</li>
   				<li className="list-group-item">
-  					<span>Select multiple <input type="checkbox" name="multi_select" id="multi_select"/></span>
+  					<span>Select multiple <input type="checkbox" name="multi_select" id="multi_select" onChange={()=>this.props.updateState({multi_select: !this.props.state.multi_select})}/></span>
   					<br/>
-  					<span>Select variable <input type="checkbox" name="multi_select" id="var_select"/></span>
+  					<span>Select variable <input type="checkbox" name="var_select" id="var_select" onChange={()=>this.props.updateState({var_select: !this.props.state.var_select})}/></span>
   				</li>
   				<li className="list-group-item">
   					<span> Depth:
@@ -94,13 +96,13 @@ export default class Tools extends React.Component {
   					<label>Append to both sides: <input id="add_both_sides" size="20" placeholder="Type LaTeX here" /></label>
   				</li>
   				<li className="list-group-item">
-  					<label>Replace selection with: <input id="replace" size="20" placeholder="Type LaTeX here" onChange={()=> {} /*manip.replace(this.value)*/} /></label>
-  					<span>Replace individually <input type="checkbox" name="multi_select" id="replace_ind"/></span>
+  					<label>Replace selection with: <input id="replace" size="20" ref={(ref) => this.replaceSelectInput = ref} placeholder="Type LaTeX here" onKeyUp={(e)=> {if (e.keyCode == 13) this.replaceSelection()}} /></label>
+  					<span>Replace individually <input type="checkbox" name="replace_ind" id="replace_ind" onChange={()=>this.props.updateState({replace_ind: !this.props.state.var_select})}/></span>
   				</li>
-  				<button type="button" className="list-group-item" id="remove">
+  				<button type="button" className="list-group-item" id="remove" onClick={manip.remove}>
   					Remove
   				</button>
-  				<button type="button" className="list-group-item" id="unbracket">
+  				<button type="button" className="list-group-item" id="unbracket" onClick={manip.unbracket}>
   					Unbracket
   				</button>
   			</div>

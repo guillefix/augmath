@@ -6,12 +6,15 @@ import {add_to_history, active_in_history, remove_from_history, select_in_histor
 import Bro from 'brototype';
 // import Algebrite from 'algebrite';
 import algebra from 'algebra.js'
+import math from 'mathjs'
+
+import {eqCoords, selection} from '../startup/client/App.js';
 
 //USEFUL FUNCTIONS
 
 //remove and create events handlers that happen when user clicks a manipulative
 export function remove_events(type, depth) {
-  console.log("test");
+  // console.log("test");
   var $selectable = $();
   math_root.walk(function (node) {
     if (node.model.id !== "0" && node.type === type && getIndicesOf("/", node.model.id).length === depth) {
@@ -21,86 +24,48 @@ export function remove_events(type, depth) {
   $selectable.off();
 }
 
-export function create_events(type, depth) {
-  var  index;
-  //reset stuff
-  math_root.walk(function (node) {
-    node.selected = false;
-  });
-  $(".selected").toggleClass("selected");
-  selected_nodes = [];
-  selected_text = "";
-  //DRAG AND DROP. Goes here because I should group stuff depending on which manipulative is selectable really
-  $(".base").attr('id', 'sortable');
-  $("#sortable").sortable({
-    forceHelperSize: true,
-    placeholder: "sortable-placeholder"
-        });
-  $( "#sortable" ).droppable({
-      drop: function( event, ui ) {
 
-        window.setTimeout(rerender, 50); //probably not a very elegant solution
-
-        function rerender() {
-          var root_poly = $("#math .base");
-
-          tree = new TreeModel();
-
-          math_root = tree.parse({});
-          math_root.model.id = "0";
-          //KaTeX offers MathML semantic elements on the HTML, could that be used?
-
-          parse_poly(math_root, root_poly, 0, true);
-
-          var newmath = parse_mtstr(math_root, [], []);
-
-          prepare(newmath);
-        }
-
-      }
-    });
-
-  math_root.walk(function (node) {
-    if (node.model.id !== "0" && node.type === type && getIndicesOf("/", node.model.id).length === depth) {
-        node.model.obj.on("click", function() {select_node(node);});
-        node.model.obj.css({"display":"inline-block"});
-      }
-  });
-  //Draggable.create(".mord", {type:"x,y", edgeResistance:0.65, throwProps:true});
-}
-
-
-export function select_node(node) {
+export function select_node(node, multi_select=false, var_select=false) {
   $this = node.model.obj;
   $this.toggleClass("selected");
+  // console.log(node);
   node.selected = !node.selected;
+  // console.log(node.selected);
+  // console.log(node, node.selected);
   if (!multi_select) {
     math_root.walk(function (node2) {
-      if (node2 !== node) {node2.selected = false;}
-    });
-    $(".base *").filter(".selected").not($this).toggleClass("selected");
-  }
-  if (var_select) {
-    math_root.walk(function (node2) {
-      if (node.selected && !node2.selected && node2.text === node.text) {
-        node2.selected = true;
-        node2.model.obj.toggleClass("selected");
+      if (node2.model.id !== node.model.id && node2.selected) {
+        node2.selected = false;
+        node2.model.obj.removeClass("selected")
       }
     });
   }
-  selected_nodes = [];
-  selected_text = "";
+  if (var_select) {
+    math_root.walk(function (node2) {
+      let has_matching_children = false
+      node2.walk(function (node3) {
+        if (node3.model.id !== node2.model.id && node3.text === node.text) has_matching_children = true;
+      });
+      if (node2.model.id !== node.model.id && node2.text === node.text && !has_matching_children) {
+        // console.log(node2.text, node2.selected);
+        node2.selected = node.selected;
+        node.selected ? node2.model.obj.addClass("selected") : node2.model.obj.removeClass("selected");
+      }
+    });
+  }
+  selection.selected_nodes = [];
+  selection.selected_text = "";
   math_root.walk(function (node) {
-    if (node.selected) {selected_nodes.push(node); selected_text += node.text;}
+    if (node.selected) {selection.selected_nodes.push(node); selection.selected_text += node.text;}
   });
   if (var_select) {
-    selected_text = node.text;
+    selection.selected_text = node.text;
   }
-  $selected = $(".selected");
-  selected_width = tot_width($selected, true);
-  selected_position = $selected.offset();
+  selection.$selected = $(".selected");
+  selected_width = tot_width(selection.$selected, true);
+  selected_position = selection.$selected.offset();
   var replace_el = document.getElementById("replace");
-  replace_el.value = selected_text;
+  replace_el.value = selection.selected_text;
 }
 
 //get all the indices of searchStr within str
@@ -134,11 +99,13 @@ export function cleanIndices(arr, str) {
 
 //convert a string from LaTeX to the format used by Algebrite. TODO: THIS SHOULD BE IMPROVED A LOT. OR JUST STORE AN ASCIIMATH COPY OF MATH_STR...
 export function latex_to_ascii(str) {
-  str.replace(/\\sqrt\{([-a-z0-9]+)\}/g, "sqrt($1)");
+  str = str.replace(/\\cdot/g, "*")
+  str = str.replace(/\\sqrt\{([-a-z0-9]+)\}/g, "sqrt($1)");
   str = str.replace(/\}\{/g, ")/(").replace(/\\frac{/g, "(").replace(/\}/g, ")");
   str = str.split("").join("*");
   str = str.replace(/\*?\+\*?/g, "+")
-    .replace(/([0-9])\*([0-9])/g, "$1$2")
+    .replace(/[ \*]+/g, "*")
+    .replace(/([0-9])\*([0-9])/g, "$1*$2")
     .replace(/\*?-\*?/g, "-")
     .replace(/\*?=\*?/g, "=")
     .replace(/\*?\(\*?/g, "(")
@@ -148,6 +115,7 @@ export function latex_to_ascii(str) {
     .replace(/\*\^\*\{\*(\-?[0-9]+)\)/g, "^($1)")
     .replace(/\^\*\{\*(\-?[0-9]+)\)/g, "^($1)")
     .replace(/\*\^\*\{(\-?[0-9]+)\)/g, "^($1)");
+  console.log(str);
   return str;
 }
 
@@ -155,7 +123,10 @@ export function latex_to_ascii(str) {
 
 export function ascii_to_latex(str) {
   var exp = new algebra.Expression(str);
-  return exp.toTex().replace(/\^([a-z0-9])/g, "^{$1}").replace(/\^\(([-a-z0-9]+)\)/g, "^{$1}");
+  return exp.toTex()
+    .replace(/\^([a-z0-9])/g, "^{$1}")
+    .replace(/\^\(([-a-z0-9]+)\)/g, "^{$1}")
+    .replace(/([a-z0-9])\/([a-z0-9])/g,"\\frac{$1}{$2}");
 }
 
 //evaluate an expression with Algebrite
@@ -237,12 +208,14 @@ export function exponentiate(nodes, overall, power, distInFrac) {
     switch (nodes[i].type2) {
       case "exp":
       case "group_exp":
+        // console.log("called exponentiate with exp or group_exp", nodes[i]);
         var new_pow;
         if (power === "-1") { //if power is -1 then change sign of power
           new_pow = change_sign(nodes[i].children[1].children);
         }
         else {
-          new_pow = math.eval(power + "*" + nodes[i].children[1]);
+          console.log("power", power, "nodes[i].children[1]", nodes[i].children[1].text);
+          new_pow = math.eval(power + "*" + nodes[i].children[1].text);
         }
         if (new_pow === "1") {
           new_pow = "";
@@ -403,8 +376,8 @@ export function have_same_denom(nodes) {
 export function are_same_terms(nodes) {
   var result = true;
   for (var i=0; i<nodes.length-1; i++) {
-    var term_text1 = selected_nodes[i].text,
-        term_text2 = selected_nodes[i+1].text;
+    var term_text1 = selection.selected_nodes[i].text,
+        term_text2 = selection.selected_nodes[i+1].text;
     if (nodes[i].type === "term" && nodes[i+1].type === "term") {
       if (Bro(nodes[i]).iCanHaz("children.0.type2") === "op") {
         term_text1 = term_text1.slice(1);
@@ -483,12 +456,10 @@ export function has_op(obj) {
 export function parse_mtstr(root, node_arr, str_arr) {
   var poly_str = "";
   var i = 0, j = 0;
-  //console.log(node_arr);
+  console.log(root, node_arr, str_arr);
   while (i < root.children.length) {
     var term_text="";
     var child = root.children[i];
-    //console.log("child")
-    //console.log(child);
     node_selected = false;
     for (var k=0; k<node_arr.length; k++) {
       if (child.model.id === node_arr[k].model.id) {
@@ -498,14 +469,12 @@ export function parse_mtstr(root, node_arr, str_arr) {
       }
     }
     if (node_selected) {i++; poly_str+=term_text; continue;}
-    //console.log(child.children);
     j = 0;
+    // console.log(child);
     while (j < child.children.length) {
       var factor_text="";
       var frac_text = [], exp_text = [], binom_text = [], diff_text = "", int_text = [];
       var grandchild = child.children[j];
-      //console.log("grandchild");
-      //console.log(grandchild);
       node_selected = false;
       for (var k=0; k<node_arr.length; k++) {
         if (grandchild.model.id === node_arr[k].model.id) {
@@ -583,7 +552,7 @@ export function parse_mtstr(root, node_arr, str_arr) {
             factor_text = "\\sqrt{" + parse_mtstr(grandchild, node_arr, str_arr) + "}";
             break;
           case "exp":
-            exp_text[0] = grandchild.children[0].text;
+            exp_text[0] = parse_mtstr(grandchild.children[0], node_arr, str_arr);
             exp_text[1] = parse_mtstr(grandchild.children[1], node_arr, str_arr);
             for (var l=0; l<2; l++) {
               for (var k=0; k<node_arr.length; k++) {
@@ -609,6 +578,40 @@ export function parse_mtstr(root, node_arr, str_arr) {
             }
             factor_text = "(" + exp_text[0] + ")" + "^{" + exp_text[1] + "}";
             break;
+          case "subs":
+            exp_text[0] = parse_mtstr(grandchild.children[0], node_arr, str_arr);
+            exp_text[1] = parse_mtstr(grandchild.children[1], node_arr, str_arr);
+            for (var l=0; l<2; l++) {
+              for (var k=0; k<node_arr.length; k++) {
+                if (grandchild.children[l].model.id === node_arr[k].model.id) {
+                  exp_text[l] = str_arr[k];
+                  break;
+                }
+              }
+            }
+            factor_text = exp_text[0] + "_{" + exp_text[1] + "}";
+            break;
+          case "log":
+            let log_text = [];
+            console.log(grandchild);
+            if (grandchild.children.length === 1) {
+              log_text[0] = parse_mtstr(grandchild.children[0], node_arr, str_arr); //only body
+            } else if (grandchild.children.length === 1) {
+              log_text[1] = parse_mtstr(grandchild.children[0], node_arr, str_arr); //base
+              log_text[0] = parse_mtstr(grandchild.children[1], node_arr, str_arr); //body
+            }
+            for (var l=0; l<log_text.length; l++) {
+              for (var k=0; k<node_arr.length; k++) {
+                if (grandchild.children[l].model.id === node_arr[k].model.id) {
+                  log_text[l] = str_arr[k];
+                  break;
+                }
+              }
+            }
+            let base_txt = "_{" + log_text[1] + "}"
+            factor_text = "\\log" + base_txt.repeat(log_text.length-1) + "{" + log_text[0] + "}";
+            break;
+
         }
         term_text+=factor_text;
       }
@@ -638,7 +641,6 @@ export function replace_in_mtstr(nodes, str_arr) {
   return parse_mtstr(math_root, nodes, str_arr);
 }
 
-//MANIPULATIVES
 //HTML -> TREE
 //This creates a tree by going through the terms in an expression, and going through its factors. Factors that can contain whole expressions within them are then recursively analyzed in the same way.
 //This is tied to the way KaTeX renders maths. A good thing would be to do this for MathML, as it's likely to be a standard in the future.
@@ -701,12 +703,12 @@ export function parse_poly(root, poly, parent_id, is_container) {
       i += factor_obj.length;
     }
     //normal factor
-    if (!(/^\d$/.test(thing.text())) && (!thing.is(".mbin, .mopen, .mclose, .mrel") || thing.text() === "!"))
+    if (!(/^\d$/.test(thing.text())) && (!thing.is(".mbin, .mopen, .mclose, .mrel, .mop") || thing.text() === "!"))
     {
       factor = tree.parse({id: factor_id, obj: factor_obj});
       factor.type = "factor";
       factor.type2 = "normal";
-      if (!thing.is(":has(*)"))
+      if (!thing.is(":has(*)")) //if thing doesn't have children. If it does, we deal with them below!
       {
         factor.text = thing.text();
         if (factor.text === "−")
@@ -773,7 +775,7 @@ export function parse_poly(root, poly, parent_id, is_container) {
       }
       i++;
     }
-    //other operators
+    //multiplication operator
     else if (thing.is(".mbin, .mrel") && (thing.text() === "⋅"))
     {
       factor = tree.parse({id: factor_id, obj: factor_obj});
@@ -781,15 +783,31 @@ export function parse_poly(root, poly, parent_id, is_container) {
       factor.type2 = "op";
       factor.optype = "mult";
       factor.text = "\\cdot ";
+      factor_text = factor.text;
       term.addChild(factor);
       term_obj = term_obj.add(thing);
       factor_cnt++;
       i++;
     }
+    //logs
+    else if (thing.is(".mop") && (thing.children().filter(".mop").text() === "log" || thing.text() === "log"))
+    {
+      factor_obj.css("position", "relative"); //so that animations work with log element..
+      factor_obj = factor_obj.add(thing.next());
+      factor = tree.parse({id: factor_id, obj: factor_obj});
+      factor.type = "factor";
+      factor.type2 = "log";
+      term.addChild(factor);
+      term_obj = term_obj.add(factor_obj);
+      factor_cnt++;
+      i=i+2; //because logs include the next HTML element too, as the body of the log!
+    }
 
     //PARSING CHILDREN: deal with things with children, recursivelly.
     if (factor_obj.is(":has(*)")) {
-      if (thing.children(".mfrac").length !== 0 && thing.children(".mfrac").children(".vlist").children().length === 4) {//fractions. it had 'thing.is(".minner") ||''  in it but not sure why
+      //fractions
+      if (thing.children(".mfrac").length !== 0 && thing.children(".mfrac").children(".vlist").children().length === 4)
+      {
         if (thing.text().search(/^\\frac\{d\}\{d[a-z]\}$/) === 1) {
           factor.type2 = "diff";
           var variable = thing.closest_n_descendents(".mord", 2).first().children();
@@ -812,11 +830,17 @@ export function parse_poly(root, poly, parent_id, is_container) {
           child2.text = denom_str;
           factor.text = "\\frac{" + nom_str + "}{" + denom_str + "}";
         }
-      } else if (thing.is(".sqrt")) {//square roots
+      }
+      //square roots
+      else if (thing.is(".sqrt"))
+      {
         factor.type2 = "sqrt";
         inside = thing.find(".mord").first();
         factor.text = "\\sqrt{" + parse_poly(factor, inside, factor_id, true) + "}";
-      } else if (thing.is(":has(.vlist)") && !thing.is(".accent") && thing.children(".mfrac").length === 0 && thing.children(".op-symbol").length === 0) {//exponentials
+      }
+      //exponentials
+      else if (thing.is(":has(.vlist)") && !thing.is(".mop") && !thing.is(".accent") && thing.children(".mfrac").length === 0 && thing.children(".op-symbol").length === 0 && thing.closest_n_descendents(".vlist",1).children(":not(.baseline-fix)").css("top").slice(0,1) === "-")
+      {
         base_obj = thing.find(".mord").first();
         power_obj = thing.closest_n_descendents(".vlist", 1);
         var inside2 = power_obj.find(".mord").first();
@@ -830,7 +854,10 @@ export function parse_poly(root, poly, parent_id, is_container) {
         factor.addChild(power);
         factor.type2 = "exp";
         factor.text = base.text + "^{" + power.text + "}";//needs the standard power format in latex
-      } else if (factor_obj.last().is(".mclose:has(.vlist)")) {//exponentiated group
+      }
+      //exponentiated group
+      else if (factor_obj.last().is(".mclose:has(.vlist)"))
+      {
         factor.type2 = "group_exp";
         base_obj = inside;
         base = tree.parse({id: factor_id + "/" + "1", obj: base_obj});
@@ -844,13 +871,39 @@ export function parse_poly(root, poly, parent_id, is_container) {
         factor.addChild(base);
         factor.addChild(power);
         factor.text = "(" + base.text + ")" + "^{" + power.text + "}";
-      } else if (thing.is(".text")) { //text
+      }
+      //text
+      else if (thing.is(".text"))
+      {
         factor.type = "text";
         factor.text = thing.text();
-      } else if (thing.is(".accent")) { //accent
+      }
+      //accent
+      else if (thing.is(".accent"))
+      {
         factor.type2 = "normal";
         factor.text = "\\hat{" + thing.text().replace(/[^\x00-\x7F]/g, "").slice(0, -1) + "}"; //I guess there are more types of accent, but I'll add them latter.
-      } else if (thing.children(".mfrac").length !== 0 && thing.children(".mfrac").children(".vlist").children().length === 3) {
+      }
+      //subscript
+      else if (thing.is(":has(.vlist)") && !thing.is(".mop") && !thing.is(".accent") && thing.children(".mfrac").length === 0 && thing.children(".op-symbol").length === 0 && thing.closest_n_descendents(".vlist",1).children(":not(.baseline-fix)").css("top").slice(0,1) !== "-")
+      {
+        let base_obj = thing.find(".mord").first();
+        let sub_obj = thing.closest_n_descendents(".vlist", 1);
+        var inside2 = sub_obj.find(".mord").first();
+        let base = tree.parse({id: factor_id + "/" + "1", obj: base_obj});
+        base.type = "base";
+        base.text = parse_poly(base, base_obj, factor_id + "/" + "1", false);
+        let sub = tree.parse({id: factor_id + "/" + "2", obj: sub_obj});
+        sub.type = "subscript";
+        sub.text = parse_poly(sub, inside2, factor_id + "/" + "2", true);
+        factor.addChild(base);
+        factor.addChild(sub);
+        factor.type2 = "subs";
+        factor.text = base.text + "_{" + sub.text + "}";
+      }
+      //binomial coefficient
+      else if (thing.children(".mfrac").length !== 0 && thing.children(".mfrac").children(".vlist").children().length === 3)
+      {
         factor.type2 = "binom";
         denominator = thing.closest_n_descendents(".mord", 2).first();
         numerator = thing.closest_n_descendents(".mord", 2).last();
@@ -865,8 +918,13 @@ export function parse_poly(root, poly, parent_id, is_container) {
         denom_str = parse_poly(child2, denominator, factor_id + "/" + "2", true);
         child2.text = denom_str;
         factor.text = "\\binom{" + nom_str + "}{" + denom_str + "}"
-      } else if (thing.is(":has(.vlist)") && thing.children(".op-symbol").length !== 0) {//operator
-        if (thing.children().first().text() === "∫") {//integral
+      }
+      //operator
+      else if (thing.is(":has(.vlist)") && thing.children(".op-symbol").length !== 0)
+      {
+        //integral
+        if (thing.children().first().text() === "∫")
+        {
           factor.type2 = "int";
           var upper_limit = thing.children().last().closest_n_descendents(".mord", 2).last();
           var lower_limit = thing.children().last().closest_n_descendents(".mord", 2).first();
@@ -884,8 +942,28 @@ export function parse_poly(root, poly, parent_id, is_container) {
         }
 
       }
+      //logs
+      else if (thing.is(".mop") && (thing.children().filter(".mop").text() === "log" || thing.text() === "log"))
+      {
+        base_obj = thing.children().filter(".vlist").children().not(".baseline-fix").children(".reset-textstyle").children();
+        let log_text = "\\log"
+        if (base_obj.length > 0) {
+          base = tree.parse({id: factor_id + "/" + "1", obj: base_obj});
+          base.type = "base";
+          base.text = parse_poly(base, base_obj, factor_id + "/" + "1", true);
+          factor.addChild(base);
+          log_text += "_{" + base.text + "}";
+        }
+        let body_obj = thing.next();
+        let body = tree.parse({id: factor_id + "/" + "2", obj: body_obj});
+        body.type = "body";
+        body.text = parse_poly(body, body_obj, factor_id + "/" + "2", true);
+        factor.addChild(body);
+        factor.text = log_text + "{" + body.text + "}";
+      }
       factor_text = factor.text;
     }
+    //change symbols unicode to latex
     for (symbol in symbols.math) {
         if (factor_text === symbols.math[symbol].replace && factor_text !== "k") { //k is a special case. there is a special symbol in latex, but user will often not mean that..
           factor.text = symbol + " ";
@@ -896,79 +974,4 @@ export function parse_poly(root, poly, parent_id, is_container) {
     if (i === things.length) {term.model.obj = term_obj; poly_str+=term.text;}
   };
   return poly_str;
-}
-//this function prepares and renders the function with LaTeX, it also calls parse_poly to create the tree
-export function prepare(math) {
-
-
-  math = math.replace(/\\frac{}/g, "\\frac{1}")
-        // .replace(/ /g, "") some operators require the space, for exampl a \cdot b
-        .replace(/\(\+/g, "(")
-        .replace(/^\+/, "")
-        .replace(/=$/, "=0")
-        .replace(/=+/, "=")
-        .replace(/0\+/g, "")
-        .replace(/0-/g, "-")
-        .replace(/^=/, "0=")
-        .replace(/\^{}/g, "")
-        .replace(/\+/g, '--').replace(/(--)+-/g, '-').replace(/--/g, '+');
-
-  var math_el = document.getElementById("math");
-  katex.render(math, math_el, { displayMode: true });
-  math_str_el.val(math);
-  mathquill.latex(math);
-
-  var root_poly = $("#math .base");
-
-  tree = new TreeModel();
-
-  window.math_root = tree.parse({}); //make global with window.
-  console.log(math_root);
-  math_root.model.id = "0";
-  //KaTeX offers MathML semantic elements on the HTML, could that be used?
-
-  parse_poly(math_root, root_poly, 0, true);
-
-  math_root.walk(function (node) {
-    if (node.type2 === "frac" && node.children[1].text === "") {prepare(replace_in_mtstr(node, node.children[0].text));}
-  });
-
-  if (!playing) {
-    if (current_index < math_str.length) {
-      remove_from_history(current_index);
-      math_str[current_index] = math;
-      add_to_history(current_index, current_index-1);
-    } else {
-      current_index = math_str.push(math)-1;
-      add_to_history(current_index, current_index-1);
-    }
-  }
-
-  active_in_history(current_index);
-
-  if (recording) {
-    var ids = [];
-    for (var i=0; i<selected_nodes.length; i++) {
-      ids.push(selected_nodes[i].model.id);
-    }
-    selected_nodes_id_rec.push(ids);
-    math_str_rec.push(math);
-  }
-
-  create_events(manip, depth);
-
-  //repositioning equals so that it's always in the same place. put in fixed value.
-  window.$equals = $("#math .base").find(".mrel");
-  if ($equals.length !== 0) {
-    window.new_equals_position = $equals.offset();
-    if (equals_position.left !== 0) {h_eq_shift += equals_position.left-new_equals_position.left;}
-    if (equals_position.top !== 0) {v_eq_shift += equals_position.top-new_equals_position.top;}
-    math_el.setAttribute("style", "left:"+h_eq_shift.toString()+"px;"+"top:"+v_eq_shift.toString()+"px;");
-    window.equals_position = $equals.offset();
-  }
-  //useful variables
-  window.beginning_of_equation = math_root.children[0].model.obj.offset();
-  window.width_last_term = tot_width(math_root.children[math_root.children.length-1].model.obj, true, true);
-  window.end_of_equation = math_root.children[math_root.children.length-1].model.obj.offset();
-  window.end_of_equation.left += width_last_term;
 }

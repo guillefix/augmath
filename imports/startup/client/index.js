@@ -43,10 +43,6 @@ Meteor.startup(() => {
 
   ReactDOM.render(<App />, document.getElementById('app'));
 
-  window.math_str_el = $("#MathInput input");
-
-  math_str_el.hide();
-
   //SELECTION control
 
   $(function() {
@@ -55,113 +51,6 @@ Meteor.startup(() => {
       heightStyle: "content"
     });
     $( "#tabs" ).tabs();
-  });
-
-  // var manip_el = $("#manip"), depth_el = $("#depth");
-  // manip_el.on("change", function () {
-  //   remove_events(manip, depth);
-  //   manip = this.value;
-  //   create_events(manip, depth);
-  //   if (manip === "factor") {
-  //     depth_el[0].value = "2";
-  //     remove_events(manip, depth);
-  //     depth = parseInt(depth_el[0].value, 10);
-  //     create_events(manip, depth);
-  //   } else if (manip === "power"
-  //     || manip === "available"
-  //     || manip === "chosen"
-  //     || manip === "numerator"
-  //     || manip === "denominator"
-  //     || manip === "sup"
-  //     || manip === "sub") {
-  //     depth_el[0].value = "3";
-  //     remove_events(manip, depth);
-  //     depth = parseInt(depth_el[0].value, 10);
-  //     create_events(manip, depth);
-  //   } else if (manip === "term") {
-  //     depth_el[0].value = "1";
-  //     remove_events(manip, depth);
-  //     depth = parseInt(depth_el[0].value, 10);
-  //     create_events(manip, depth);
-  //   }
-  // });
-  // depth_el.on("change", function () {remove_events(manip, depth); depth = parseInt(this.value, 10); create_events(manip, depth);});
-  $("#multi_select").on("click", function () {multi_select = document.getElementById("multi_select").checked;});
-  $("#replace_ind").on("click", function () {replace_ind = document.getElementById("replace_ind").checked;});
-  $("#var_select").on("click", function () {var_select = document.getElementById("var_select").checked; if (var_select) {multi_select = false;}});
-
-  $(document).on( "keyup", function (e) { //right
-      if (e.keyCode == 39) {
-        if (selected_nodes && selected_nodes.length > 0) {
-          var index = parseInt(selected_nodes[0].model.id.split("/")[selected_nodes[0].model.id.split("/").length-1]); //no +1 because the tree index is 1 based not 0 based
-            var new_node = selected_nodes[0].parent.children[index] || undefined;
-            if (new_node) {
-              if (new_node.type !== selected_nodes[0].type) {
-                remove_events(manip, depth);
-                manip = new_node.type;
-                manip_el.val(manip);
-                create_events(manip, depth);
-              }
-              select_node(new_node);
-            }
-          }
-      }
-  });
-  $(document).on( "keyup", function (e) { //left
-      if (e.keyCode == 37) {
-        if (selected_nodes && selected_nodes.length > 0) {
-          var index = parseInt(selected_nodes[0].model.id.split("/")[selected_nodes[0].model.id.split("/").length-1])-2;
-            var new_node = selected_nodes[0].parent.children[index] || undefined;
-            if (new_node) {
-              if (new_node.type !== selected_nodes[0].type) {
-                remove_events(manip, depth);
-                manip = new_node.type;
-                manip_el.val(manip);
-                create_events(manip, depth);
-              }
-              select_node(new_node);
-            }
-          }
-      }
-  });
-  $(document).on( "keyup", function (e) { //down
-      if (e.keyCode == 40) {
-        if (selected_nodes && selected_nodes.length > 0) {
-          if (selected_nodes[0].children.length > 0) {
-            remove_events(manip, depth);
-            var new_node = selected_nodes[0].children[0];
-            manip = new_node.type;
-            manip_el.val(manip);
-            depth++;
-            depth_el.val(depth);
-            create_events(manip, depth);
-            select_node(new_node);
-          }
-        }
-      }
-  });
-  $(document).on( "keyup", function (e) { //up
-      if (e.keyCode == 38) {
-        if (selected_nodes && selected_nodes.length > 0) {
-          if (selected_nodes[0].parent !== math_root) {
-            var new_node = selected_nodes[0].parent;
-            remove_events(manip, depth);
-            manip = new_node.type;
-            manip_el.val(manip);
-            depth--;
-            depth_el.val(depth);
-          create_events(manip, depth);
-            select_node(new_node);
-          }
-        }
-      }
-  });
-
-  $(document).on( "keyup", function (e) { //ctrl+m for multiselect
-      if (e.keyCode == 77 && e.ctrlKey) {
-        $("#multi_select").prop("checked", !multi_select);
-        multi_select = document.getElementById("multi_select").checked;
-      }
   });
 
   //to prevent event bubbling when in input
@@ -303,8 +192,4 @@ Meteor.startup(() => {
     var eq = math_str_el.get()[0].value;
       add_equation(eq);
   });
-
-  //initial render
-  var initial_math_str = "\\frac{v^{2}}{r}=\\frac{GMm}{r^{2}}";
-  prepare(initial_math_str)
 });

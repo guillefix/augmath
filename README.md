@@ -6,7 +6,7 @@ Note: the meteor hosting has stopped working for now, I will find a new hosting 
 
 ##Vision
 
-See [here](http://guillefix.me/augmath.html)
+See [here](http://guillefix.me/augmath.html). A recent demo can be seen [here](https://www.youtube.com/watch?v=9fwOiLsuXSI&feature=youtu.be)
 
 ##Usage
 Here's a quick demo of most of the current manipulations:
