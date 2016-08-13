@@ -11,6 +11,9 @@ export default class Tools extends React.Component {
   replaceSelection() {
     manip.replace(this.replaceSelectInput.value, this.props.state.replace_ind)
   }
+  // componentDidMount() {
+  //   console.log(this.refs.zoomslider);
+  // }
   render() {
     return <div>
       <ul id="tools" className="list-group text-center">
@@ -122,6 +125,12 @@ export default class Tools extends React.Component {
   				</button>
   				<button type="button" className="list-group-item" id="next_step">
   					Next Step
+  				</button>
+  			</div>
+        <h4>Settings</h4>
+  			<div>
+  				<button type="button" className="list-group-item" id="make_json">
+  					<label htmlFor="zoom-slider">Zoom</label> <input name="zoom-slider" id="zoom-slider" type="range" min="1" max="100" step="3" defaultValue="14" onChange={this.props.updateZoom}/>
   				</button>
   			</div>
   		</ul>

@@ -5,9 +5,10 @@ import katex from 'katex';
 import EquationsPanel from './equations-panel.js';
 import * as manips from '../../maths/manipulations.js';
 import * as hist from './history';
-import {select_node, remove_events, parse_poly, tot_width, replace_in_mtstr, getIndicesOf} from "../../maths/functions";
+import {select_node, remove_events, parse_poly, tot_width, replace_in_mtstr, getIndicesOf, parse_mtstr} from "../../maths/functions";
 import {add_to_history, active_in_history, remove_from_history} from "./history.js"
 import TreeModel from '../../TreeModel-min.js';
+import 'nestedSortable';
 
 //these objects hold some useful variables used in the (still not pure functions) functions in manipulations.js and functions.js
 
@@ -34,7 +35,8 @@ export default class App extends React.Component {
       multi_select: false,
       var_select: false,
       replace_ind: false,
-      current_index: 0};
+      current_index: 0,
+      eqZoom: 14};
   }
   update(newStr, render) {
     this.setState({mathStr: newStr})
@@ -169,7 +171,7 @@ export default class App extends React.Component {
     tree = new TreeModel();
 
     window.math_root = tree.parse({});
-    console.log(math_root);
+    // console.log(math_root);
     math_root.model.id = "0";
     //KaTeX offers MathML semantic elements on the HTML, could that be used?
 
@@ -217,6 +219,8 @@ export default class App extends React.Component {
     // eqCoords.width_last_term = tot_width(math_root.children[math_root.children.length-1].model.obj, true, true);
     eqCoords.end_of_equation = math_root.children[math_root.children.length-1].model.obj.offset();
     eqCoords.end_of_equation.left += eqCoords.width_last_term;
+
+    $(math_el).css("font-size", this.state.eqZoom.toString()+"px")
   }
   create_events(type, depth) {
     // console.log("creating events", type,depth);
@@ -230,14 +234,70 @@ export default class App extends React.Component {
     selection.selected_text = "";
     //DRAG AND DROP. Goes here because I should group stuff depending on which manipulative is selectable really
     $(".base").attr('id', 'sortable');
-    $("#sortable").sortable({
-      forceHelperSize: true,
-      placeholder: "sortable-placeholder"
+    math_root.walk(function (node) {
+        if (node.type === "factor" && node.model.id.split("/").length === 6) {
+          // console.log(node.parent.parent);
+          let obj = node.parent.parent.model.obj;
+          obj.addClass("sortable")
+          obj.sortable({
+            forceHelperSize: true,
+            placeholder: "sortable-placeholder",
+            connectWith: "#sortable,.sortable"
           });
-    $( "#sortable" ).droppable({
+        }
+    });
+    // $("#sortable").sortable({
+    //  forceHelperSize: true,
+    //  placeholder: "sortable-placeholder",
+    // });
+
+    // $("#sortable").nestedSortable({
+    //   // forceHelperSize: true,
+    //   // placeholder: "sortable-placeholder",
+    //   listType: 'span',
+    //   items: 'span.mord',
+    //   isAllowed(placeholder, placeholderParent, currentItem) {
+    //     let hasparent = typeof placeholderParent !== "undefined";
+    //     if (hasparent && placeholderParent.is(".mord:has(> .mord)")) {
+    //       console.log(placeholderParent);
+    //     }
+    //     return hasparent ? placeholderParent.is(".mord:has(> .mord)") : false;
+    //   },
+    //   // relocate( event, ui ) {
+    //   //
+    //   //   window.setTimeout(rerender, 50); //probably not a very elegant solution
+    //   //
+    //   //   function rerender() {
+    //   //     var root_poly = $("#math .base");
+    //   //
+    //   //     tree = new TreeModel();
+    //   //
+    //   //     math_root = tree.parse({});
+    //   //     math_root.model.id = "0";
+    //   //     //KaTeX offers MathML semantic elements on the HTML, could that be used?
+    //   //
+    //   //     parse_poly(math_root, root_poly, 0, true);
+    //   //
+    //   //     let newmath = parse_mtstr(math_root, [], []);
+    //   //
+    //   //     console.log(newmath);
+    //   //
+    //   //     thisApp.prepare(newmath);
+    //   //   }
+    //   //
+    //   // }
+    //   // connectWith: "#sortable,.sortable"
+    //   // over: (event, ui) => {
+    //   //   console.log(ui);
+    //   //   ui.placeholder.next().css("color","blue")
+    //   //   ui.item.css("color","green")
+    //   // }
+    // });
+    let thisApp = this;
+    $( "#sortable,.sortable" ).droppable({
         drop: function( event, ui ) {
 
-          window.setTimeout(rerender, 50); //probably not a very elegant solution
+          window.setTimeout(rerender, 100); //probably not a very elegant solution
 
           function rerender() {
             var root_poly = $("#math .base");
@@ -250,14 +310,13 @@ export default class App extends React.Component {
 
             parse_poly(math_root, root_poly, 0, true);
 
-            var newmath = parse_mtstr(math_root, [], []);
+            let newmath = parse_mtstr(math_root, [], []);
 
-            prepare(newmath);
+            thisApp.prepare(newmath);
           }
 
         }
-      });
-    let thisApp = this;
+    });
     math_root.walk(function (node) {
       if (node.model.id !== "0" && node.type === type && getIndicesOf("/", node.model.id).length === depth) {
           // console.log(node);
@@ -268,11 +327,17 @@ export default class App extends React.Component {
     });
     //Draggable.create(".mord", {type:"x,y", edgeResistance:0.65, throwProps:true});
   }
+  updateZoom(e) {
+    // this.refs.toolsPane.refs.zoomslider
+    this.setState({eqZoom: e.target.value})
+    // console.log(e.target.value);
+    $("#math").css("font-size", e.target.value.toString()+"px")
+  }
   render() {
     return (
       <div>
         <div className="col-md-3 toolbar">
-          <Tools ref={(ref) => this.toolsPane = ref} state={this.state} updateState={this.updateState} updateSelect={this.updateSelect} manip={this.state.manip} depth={this.state.depth} />
+          <Tools updateZoom={this.updateZoom.bind(this)} ref={(ref) => this.toolsPane = ref} state={this.state} updateState={this.updateState} updateSelect={this.updateSelect} manip={this.state.manip} depth={this.state.depth} />
         </div>
         <div className="col-md-6">
           <Toolbar />

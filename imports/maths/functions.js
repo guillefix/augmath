@@ -115,7 +115,7 @@ export function latex_to_ascii(str) {
     .replace(/\*\^\*\{\*(\-?[0-9]+)\)/g, "^($1)")
     .replace(/\^\*\{\*(\-?[0-9]+)\)/g, "^($1)")
     .replace(/\*\^\*\{(\-?[0-9]+)\)/g, "^($1)");
-  console.log(str);
+  // console.log(str);
   return str;
 }
 
@@ -214,7 +214,7 @@ export function exponentiate(nodes, overall, power, distInFrac) {
           new_pow = change_sign(nodes[i].children[1].children);
         }
         else {
-          console.log("power", power, "nodes[i].children[1]", nodes[i].children[1].text);
+          // console.log("power", power, "nodes[i].children[1]", nodes[i].children[1].text);
           new_pow = math.eval(power + "*" + nodes[i].children[1].text);
         }
         if (new_pow === "1") {
@@ -456,7 +456,7 @@ export function has_op(obj) {
 export function parse_mtstr(root, node_arr, str_arr) {
   var poly_str = "";
   var i = 0, j = 0;
-  console.log(root, node_arr, str_arr);
+  // console.log(root, node_arr, str_arr);
   while (i < root.children.length) {
     var term_text="";
     var child = root.children[i];
@@ -593,7 +593,7 @@ export function parse_mtstr(root, node_arr, str_arr) {
             break;
           case "log":
             let log_text = [];
-            console.log(grandchild);
+            // console.log(grandchild);
             if (grandchild.children.length === 1) {
               log_text[0] = parse_mtstr(grandchild.children[0], node_arr, str_arr); //only body
             } else if (grandchild.children.length === 1) {

@@ -209,8 +209,9 @@ $( document ).ready(function() {
   });
 
   QUnit.test("manipulations.merge", function( assert ) {
-    //Merge factors into fraction
+    //Merge fractions into fraction
     test_manip(assert, merge, "ac\\frac{a}{b}\\frac{cd\\sqrt{k}}{xx}", "ac\\frac{acd\\sqrt{k}}{bxx}",  ["0/1/3", "0/1/4"]);
+    test_manip(assert, merge, "x^{4}\\frac{1}{4}\\frac{1}{z^{2}}", "x^{4}\\frac{1\\cdot1}{4z^{2}}",  ["0/1/2", "0/1/3"]);
   });
 
   QUnit.test("manipulations.split", function( assert ) {
