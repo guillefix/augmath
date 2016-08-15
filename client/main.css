@@ -42,6 +42,12 @@
 	width: 45px;
 }
 
+.TKAdjustableNumber {
+	position:relative;
+	color: #46f;
+	border-bottom: 1px dashed #46f;
+}
+
 .bottom-buffer {
 	margin-bottom:20px;
 }

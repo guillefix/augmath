@@ -2,6 +2,7 @@ import React from 'react';
 import ReactDOM from 'react-dom';
 import * as manip from '../../maths/manipulations.js';
 import * as hist from './history';
+// import Tangle from './Tangle'
 
 export default class Tools extends React.Component {
   // constructor() {
@@ -11,9 +12,21 @@ export default class Tools extends React.Component {
   replaceSelection() {
     manip.replace(this.replaceSelectInput.value, this.props.state.replace_ind)
   }
-  // componentDidMount() {
-  //   console.log(this.refs.zoomslider);
-  // }
+  componentDidMount() {
+  //   let initDepth = this.props.depth;
+  //   let manip = this.props.manip
+  //   let updateSelect = this.props.updateSelect;
+  //   let tangle = new Tangle (ReactDOM.findDOMNode(this.refs.depth_parent), {
+  //     initialize: function () { this.depth = initDepth; },
+  //     update:     function () { updateSelect(false, manip, this.depth) }
+  //   });
+  $("#depth").numbers({
+    min: 0,
+    step: 1,
+    integer: true,
+    growth: 10,
+  });
+  }
   render() {
     return <div>
       <ul id="tools" className="list-group text-center">
@@ -21,7 +34,7 @@ export default class Tools extends React.Component {
   			<div>
   				<li className="list-group-item">
   					<span>Manipulative:
-  					<select className="traverse" id="manip" ref={(ref) => this.manipSelect = ref} value={this.props.manip} onChange={() => this.props.updateSelect(true)}>
+  					<select className="traverse" id="manip" value={this.props.manip} onChange={(e) => this.props.updateSelect(true, e.target.value)}>
   						<option value="term">Term</option>
   						<option value="factor">Factor</option>
   						<option value="power">Power</option>
@@ -40,9 +53,19 @@ export default class Tools extends React.Component {
   					<br/>
   					<span>Select variable <input type="checkbox" name="var_select" id="var_select" onChange={()=>this.props.updateState({var_select: !this.props.state.var_select})}/></span>
   				</li>
-  				<li className="list-group-item">
-  					<span> Depth:
-  						<input type="number" min="1" step="1" value={this.props.depth} className="traverse" id="depth" ref={(ref) => this.depthSelect = ref} onChange={ () => this.props.updateSelect()}/>
+  				<li className="list-group-item" ref="depth_parent">
+  					<span> Depth: &nbsp;
+  						{/*<input type="number" min="1" step="1" value={this.props.depth} className="traverse" id="depth" onChange={ (e) => this.props.updateSelect(false, this.props.manip, parseInt(e.target.value))}/>*/}
+              {/*<span className="TKAdjustableNumber" data-var="depth"></span>*/}
+              <span className="adjustable_number TKAdjustableNumber" id="depth" onMouseDown={ (e) => {
+                  let el = e.target;
+                  let props = this.props;
+                  $(document).mouseup(()=>{
+                    // console.log("hi",parseInt(el.innerHTML));
+                    props.updateSelect(false, props.manip, parseInt(el.innerHTML));
+                    $(document).off("mouseup");
+                  });
+                }}>{this.props.depth}</span>
   					</span>
   				</li>
   			</div>

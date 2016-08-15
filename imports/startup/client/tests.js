@@ -191,6 +191,8 @@ $( document ).ready(function() {
     //BASIC DISTRIBUTE IN
     test_manip(assert, distribute_in, "a(x+y)", "ax+ay",  ["0/1/1", "0/1/2"]);
 
+    test_manip(assert, distribute_in, "(x-3)^{2}-(x+2)3x+x+2", "(x-3)^{2}-(x3x+x3\\cdot 2)+x+2",  ["0/2/4", "0/2/3", "0/2/2"]);
+
     //DISTRIBUTE IN with one one-factor term
     test_manip(assert, distribute_in, "p(1+\\frac{ac}{a+c})=1", "p+p\\frac{ac}{a+c}=1", ["0/1/1", "0/1/2"]);
 
@@ -222,6 +224,11 @@ $( document ).ready(function() {
   QUnit.test("manipulations.evaluate", function( assert ) {
     //merge two exponentials
     test_manip(assert, evaluate, "a^{-1}a^{-1}", "a^{-2}",  ["0/1/1", "0/1/2"]);
+
+    //merge two terms
+    test_manip(assert, evaluate, "x^{2}-3x^{2}+9-6x-6x+x+2", "-2 x^{2}+9-6x-6x+x+2",  ["0/2", "0/1"]);
+    test_manip(assert, evaluate, "-2x^{2}+9-12x+x+2", "-2x^{2}+9-11 x+2",  ["0/3", "0/4"]);
+    test_manip(assert, evaluate, "-2x^{2}+9-11 x+2", "-2x^{2}+11-11x",  ["0/2", "0/4"]);
   });
 
   QUnit.test("manipulations.cancel_out", function( assert ) {

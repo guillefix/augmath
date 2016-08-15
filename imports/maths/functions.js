@@ -1,6 +1,6 @@
 import jQuery from 'jquery';
 import katex from 'katex';
-import TreeModel from '../TreeModel-min.js';
+// import TreeModel from '../TreeModel-min.js';
 import {symbols} from './symbols.js';
 import {add_to_history, active_in_history, remove_from_history, select_in_history} from '../startup/client/history';
 import Bro from 'brototype';
@@ -53,10 +53,14 @@ export function select_node(node, multi_select=false, var_select=false) {
       }
     });
   }
-  selection.selected_nodes = [];
+  if (!multi_select) {
+    selection.selected_nodes = [];
+  }
   selection.selected_text = "";
+  selection.selected_nodes.push(node);
+  // selection.selected_text += node.text;
   math_root.walk(function (node) {
-    if (node.selected) {selection.selected_nodes.push(node); selection.selected_text += node.text;}
+    if (node.selected) {selection.selected_text += node.text;}
   });
   if (var_select) {
     selection.selected_text = node.text;
@@ -99,13 +103,13 @@ export function cleanIndices(arr, str) {
 
 //convert a string from LaTeX to the format used by Algebrite. TODO: THIS SHOULD BE IMPROVED A LOT. OR JUST STORE AN ASCIIMATH COPY OF MATH_STR...
 export function latex_to_ascii(str) {
-  str = str.replace(/\\cdot/g, "*")
   str = str.replace(/\\sqrt\{([-a-z0-9]+)\}/g, "sqrt($1)");
   str = str.replace(/\}\{/g, ")/(").replace(/\\frac{/g, "(").replace(/\}/g, ")");
   str = str.split("").join("*");
   str = str.replace(/\*?\+\*?/g, "+")
     .replace(/[ \*]+/g, "*")
-    .replace(/([0-9])\*([0-9])/g, "$1*$2")
+    .replace(/([0-9])\*([0-9])/g, "$1$2")
+    .replace(/\\cdot/g, "*")
     .replace(/\*?-\*?/g, "-")
     .replace(/\*?=\*?/g, "=")
     .replace(/\*?\(\*?/g, "(")
@@ -123,19 +127,26 @@ export function latex_to_ascii(str) {
 
 export function ascii_to_latex(str) {
   var exp = new algebra.Expression(str);
-  return exp.toTex()
+  console.log(exp);
+  let result = exp.toTex()
     .replace(/\^([a-z0-9])/g, "^{$1}")
     .replace(/\^\(([-a-z0-9]+)\)/g, "^{$1}")
     .replace(/([a-z0-9])\/([a-z0-9])/g,"\\frac{$1}{$2}");
+  if (str.slice(0,1) === "-") result = "-" + result;
+  return result
 }
 
 //evaluate an expression with Algebrite
 export function eval_expression(expression) {
+  console.log("eval_expression", expression);
   var new_term;
   expression = latex_to_ascii(expression) //doesn't work with some expressions, as usual
+  console.log("expression", expression);
   if (expression.search(/[a-z\(\)]/) > -1) {
     var new_str = Algebrite.simplify(expression).toString();
+    console.log("new_str", new_str);
     new_term = ascii_to_latex(new_str);
+    console.log("new_term", new_term);
     // try {
     //   new_term = CQ(expression).simplify().toLaTeX().replace("\\cdot", ""); //removing cdot format
     // }
@@ -149,7 +160,7 @@ export function eval_expression(expression) {
     // }
 
   } else {
-    new_term = math.eval(expression).toString();
+    new_term = "+" + math.eval(expression).toString();
   }
   return new_term;
 }
@@ -248,15 +259,34 @@ export function exponentiate(nodes, overall, power, distInFrac) {
 
 //TODO: Use exponentiate to extend features of changin side for power
 
-export function multiply_grouped_nodes(nodes) {
-  var result = "";
-  for (var i = 0; i < nodes.length; i++) {
-    if (nodes[i].children.length > 1) {
-      result += "(" + nodes[i].text + ")";
+export function multiply(nodes) {
+  console.log(nodes);
+  let text = "";
+  let signs = "";
+  for (var i=0; i<nodes.length; i++) {
+    console.log(text, nodes[i]);
+    // console.log("hi");
+    if ((nodes[i].type === "numerator" || nodes[i].type === "denominator") && nodes[i].children.length > 1) {
+      "(" + nodes[i].text + ")";
+    } else if (nodes[i].text.search(/[+-]/) === 0) {
+      signs += nodes[i].text.slice(0, 1);
+      let no_sign = nodes[i].text.slice(1, nodes[i].text.length);
+      console.log(text, no_sign);
+      if (/^[0-9]+.*/.test(no_sign) && /.*[0-9]+$/.test(text) ) {
+        text += "\\cdot " + no_sign;
+      } else {
+        text += no_sign;
+      }
+    } else if (nodes[i].text === "1" && nodes.length > 1) {
+      text += "";
+    } else if (/^[0-9]+.*/.test(nodes[i].text) && /.*[0-9]+$/.test(text) ){
+      text += "\\cdot " + nodes[i].text;
     } else {
-      result += nodes[i].text;
+      text += nodes[i].text;
     }
   }
+  sign = signs.replace(/\+/g, '--').replace(/(--)+-/g, '-').replace(/--/g, '+');
+  let result = sign + text
   return result;
 }
 

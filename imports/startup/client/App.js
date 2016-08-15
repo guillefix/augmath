@@ -54,10 +54,11 @@ export default class App extends React.Component {
     window.replace_ind = this.state.replace_ind;
     this.create_events(this.state.manip, this.state.depth)
   }
-  updateSelect(resetManip = false) {
-    newManip = ReactDOM.findDOMNode(this.toolsPane.manipSelect).value;
-    newDepth = parseInt(ReactDOM.findDOMNode(this.toolsPane.depthSelect).value);
-    remove_events(this.state.manip, this.state.depth);
+  updateSelect(resetManip = false, newManip = this.state.manip, newDepth = this.state.depth) {
+    // console.log(newManip,newDepth);
+    // newManip = ReactDOM.findDOMNode(this.toolsPane.manipSelect).value;
+    // newDepth = parseInt(ReactDOM.findDOMNode(this.toolsPane.depthSelect).value);
+    if (math_root !== undefined) remove_events(this.state.manip, this.state.depth);
     if (resetManip) {
       switch(newManip) {
         case "factor":
@@ -70,7 +71,7 @@ export default class App extends React.Component {
           newDepth = 3
       }
     }
-    this.create_events(newManip, newDepth);
+    if (math_root !== undefined) this.create_events(newManip, newDepth);
     this.setState({manip: newManip, depth: newDepth});
   }
   componentDidMount() {
@@ -80,7 +81,7 @@ export default class App extends React.Component {
     // console.log(this.math_str_el);
     this.refs.MathInput.math_str_el.hide();
     //initial render
-    let initial_math_str = "\\frac{v^{2}}{r}=\\frac{GMm}{r^{2}}";
+    let initial_math_str = "\\frac{v^{2}}{r}=\\frac{GMm}{r^{2}}+3abcd";
     this.prepare(initial_math_str)
     window.prepare = this.prepare.bind(this)
     window.prepare = this.prepare.bind(this)
@@ -141,7 +142,7 @@ export default class App extends React.Component {
         if (e.keyCode == 77 && e.ctrlKey) {
           $("#multi_select").prop("checked", !thisApp.state.multi_select);
           thisApp.setState({multi_select: !thisApp.state.multi_select});
-          console.log(thisApp.state.multi_select);
+          // console.log(thisApp.state.multi_select);
         }
     });
   }
@@ -173,6 +174,7 @@ export default class App extends React.Component {
     window.math_root = tree.parse({});
     // console.log(math_root);
     math_root.model.id = "0";
+    math_root.model.obj = root_poly;
     //KaTeX offers MathML semantic elements on the HTML, could that be used?
 
     parse_poly(math_root, root_poly, 0, true);
@@ -233,18 +235,50 @@ export default class App extends React.Component {
     selection.selected_nodes = [];
     selection.selected_text = "";
     //DRAG AND DROP. Goes here because I should group stuff depending on which manipulative is selectable really
-    $(".base").attr('id', 'sortable');
+    // $(".base").attr('id', 'sortable');
+    $(".sortable").removeClass("sortable")
+    $( ".sortable" ).disableSelection();
     math_root.walk(function (node) {
-        if (node.type === "factor" && node.model.id.split("/").length === 6) {
-          // console.log(node.parent.parent);
-          let obj = node.parent.parent.model.obj;
+      let obj;
+      // console.log("hello here", type, depth);
+      if (node.type === type && node.model.id.split("/").length === depth+1 && typeof node.model.obj !== "undefined") {
+        node.model.obj.data('node', node)
+        // console.log(node.parent.parent);
+        if (type === "factor") {
+          obj = node.parent.parent.model.obj;
           obj.addClass("sortable")
           obj.sortable({
             forceHelperSize: true,
             placeholder: "sortable-placeholder",
-            connectWith: "#sortable,.sortable"
+            connectWith: ".sortable"
+          });
+        } else if (type === "term") {
+          obj = node.parent.model.obj;
+          obj.addClass("sortable")
+          obj.sortable({
+            forceHelperSize: true,
+            placeholder: "sortable-placeholder",
+            connectWith: ".sortable",
+            helper(e, item) {
+              // console.log(item);
+              // console.log(e);
+              let term_objs = item.data('node').model.obj.clone();
+              let helper_obj = $("<span></span>").append(term_objs);
+              helper_obj.data('node',item.data('node'));
+              return helper_obj
+            },
+            start(e, ui) {
+              ui.item.data('node').model.obj.css("display", "none");
+            },
+            stop(e, ui) {
+              // console.log(ui.item.data('node'));
+              let elements = ui.item.data('node').model.obj.clone();
+              ui.item.after(elements);
+              ui.item.data('node').model.obj.remove();
+            }
           });
         }
+      }
     });
     // $("#sortable").sortable({
     //  forceHelperSize: true,
@@ -294,7 +328,7 @@ export default class App extends React.Component {
     //   // }
     // });
     let thisApp = this;
-    $( "#sortable,.sortable" ).droppable({
+    $( ".sortable" ).droppable({
         drop: function( event, ui ) {
 
           window.setTimeout(rerender, 100); //probably not a very elegant solution
@@ -306,6 +340,7 @@ export default class App extends React.Component {
 
             math_root = tree.parse({});
             math_root.model.id = "0";
+            math_root.model.obj = root_poly;
             //KaTeX offers MathML semantic elements on the HTML, could that be used?
 
             parse_poly(math_root, root_poly, 0, true);
@@ -328,7 +363,6 @@ export default class App extends React.Component {
     //Draggable.create(".mord", {type:"x,y", edgeResistance:0.65, throwProps:true});
   }
   updateZoom(e) {
-    // this.refs.toolsPane.refs.zoomslider
     this.setState({eqZoom: e.target.value})
     // console.log(e.target.value);
     $("#math").css("font-size", e.target.value.toString()+"px")

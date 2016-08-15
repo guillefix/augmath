@@ -1,4 +1,4 @@
-import {replace_in_mtstr, tot_width, rationalize, eval_expression, ascii_to_latex, latex_to_ascii, getIndicesOf, cleanIndices, change_sign, exponentiate, multiply_grouped_nodes, flip_fraction, add_brackets, are_of_type, any_of_type, have_same_ancestors, have_same_type, have_same_text, have_single_factor, have_same_denom, are_same_terms, get_prev, get_next, get_all_next, has_op, parse_mtstr, parse_poly} from "./functions";
+import {replace_in_mtstr, tot_width, rationalize, eval_expression, ascii_to_latex, latex_to_ascii, getIndicesOf, cleanIndices, change_sign, exponentiate, multiply, flip_fraction, add_brackets, are_of_type, any_of_type, have_same_ancestors, have_same_type, have_same_text, have_single_factor, have_same_denom, are_same_terms, get_prev, get_next, get_all_next, has_op, parse_mtstr, parse_poly} from "./functions";
 
 import {eqCoords, selection} from '../startup/client/App.js';
 
@@ -661,31 +661,23 @@ export function distribute_in() {
   }
 
   //distribute in
-  if (selection.selected_nodes[0].type === "factor" && same_type && same_parents && grouped.length === 1)
+  if (selection.selected_nodes[0].type === "factor" && same_type && same_parents && grouped.length > 0)
   {
     var factors_text = "";
-      for (var i=0; i<selection.selected_nodes.length; i++) {
-        if(selection.selected_nodes[i].type2 === "group") {
-          continue;
-        } else {
-          factors_text+=selection.selected_nodes[i].text;
-        }
+      // console.log(selection.selected_nodes);
+      for (var i=0; i<selection.selected_nodes.length-1; i++) { //THE last factor is the one over which I should distribute.
+        factors_text+=selection.selected_nodes[i].text;
       }
-      console.log(factors_text);
-    var grouped_node = grouped[0];
+    var grouped_node = grouped[grouped.length-1];
+    // console.log("distribute in", factors_text, grouped_node);
     selection.$selected.animate({"font-size": 0, opacity: 0}, step_duration) //IMPROVE ANIMATION (FOR EXAMPLE CLONE)
       .css('overflow', 'visible')
       .promise()
       .done(function() {
         var text = "";
         for (var i=0; i<grouped_node.children.length; i++) {
-          if (grouped_node.children[i].text.search(/[+-]/) === 0) {
-            text += grouped_node.children[i].text.slice(0, 1) + factors_text + grouped_node.children[i].text.slice(1, grouped_node.children[i].text.length);
-          } else if (grouped_node.children[i].text === "1") {
-            text += factors_text;
-          } else {
-            text += factors_text + grouped_node.children[i].text;
-          }
+          let temp_node = {text: factors_text, children: [], type: "temp"}
+          text += multiply([temp_node, grouped_node.children[i]])
         }
         if (selection.selected_nodes[0].parent.children.length > selection.selected_nodes.length) {
           var new_text = "(" + text + ")"
@@ -694,13 +686,14 @@ export function distribute_in() {
         }
         new_math_str = replace_in_mtstr(selection.selected_nodes, new_text);
         current_index++;
-      prepare(new_math_str);
+        // console.log(text, new_math_str);
+        prepare(new_math_str);
       });
   }
   //split fractions into terms when selecting factors
   else if (selection.selected_nodes[0].type2 === "frac" && same_type2)
   {
-    console.log("THIEHTIHE");
+    console.log("split fractions into terms when selecting factors");
     //ANIMATION? SHOULD CLONE THE denominator AND MOVE TO THE RIGHT PLACES
     var new_terms = [];
     for (var i=0; i<selection.selected_nodes.length; i++) {
@@ -951,7 +944,7 @@ export function collect_out() {
         denominator_nodes.push(selection.selected_nodes[i].children[selection.selected_nodes[i].children.length-1].children[1]); //doing the selection.selected_nodes[i].children.length-1 in case there's an op.
       }
     }
-    var denominator_text = multiply_grouped_nodes(denominator_nodes);
+    var denominator_text = multiply(denominator_nodes);
     var numerator_text = "";
     var j = 0;
     for (var i=0; i<selection.selected_nodes.length; i++) {
@@ -961,7 +954,7 @@ export function collect_out() {
         denominator_nodes.splice(j,1)
         var new_nodes = [selection.selected_nodes[i].children[selection.selected_nodes[i].children.length-1].children[0]].concat(denominator_nodes);
         denominator_nodes = temp_denom_nodes;
-        numerator_text += multiply_grouped_nodes(new_nodes);
+        numerator_text += multiply(new_nodes);
         j++;
       } else {
         numerator_text += selection.selected_nodes[i].text + denominator_text;

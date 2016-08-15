@@ -1,0 +1,23 @@
+/* Verdict Styles */
+
+/*
+ * CHANGE ME!
+ */
+.adjustable-number {
+	color: #F2A622;
+	border-bottom: 1px dashed #F2A622;
+}
+
+/* Options Toggling */
+.options-toggle {
+	color: #46f;
+	border-bottom: 1px dashed #F2A622;
+	cursor: pointer;
+}
+
+/* Boolean Toggling */
+.toggle {
+	color: #F2A622;
+	border-bottom: 1px dashed #F2A622;
+	cursor: pointer;
+}
