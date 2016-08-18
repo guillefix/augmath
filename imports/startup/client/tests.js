@@ -1,15 +1,26 @@
 import {change_side, move_right, move_left, move_up, move_down, split, merge, distribute_in, collect_out, unbracket, evaluate, operate, add_both_sides, replace, remove, cancel_out, flip_equation} from "../../../imports/maths/manipulations.js";
-import {select_node} from "../../maths/functions";
+import {select_node, clear_math, math_str_to_tree, replace_in_mtstr, tot_width} from "../../maths/functions";
 import Bro from 'brototype'
 import {symbols} from '../../maths/symbols.js';
+import store from './store';
+import * as act from './actions/action-creators';
+import * as manips from '../../maths/manipulations.js';
+
+
+const { dispatch } = store;
 
 //Oh man tests do really rock
+step_duration=0; //is doing this ok?
 
 function test_manip(assert, manip, math_str_init, math_str_exp, node_ids) {
-  prepare(math_str_init);
+  // confirm("kek")
+  let done = assert.async();
+  step_duration=0;
+  const state = store.getState();
+  dispatch(act.addToHist(math_str_init, state.current_index))
 
   let var_select=false;
-  let multi_select;
+  let multi_select=false;
 
   if (node_ids.length > 1) {multi_select=true;}
 
@@ -19,23 +30,57 @@ function test_manip(assert, manip, math_str_init, math_str_exp, node_ids) {
     });
     select_node(node, multi_select, var_select);
   }
-  console.log("node_ids", node_ids);
-  step_duration=0; //is doing this ok?
-  manip();
-  multi_select=false;
+  // console.log("node_ids", node_ids);
+  // dispatch(act.manipulate(manip))
+  console.log("manip", manip);
+  let promise, eqCoords = {};
+
+  let vars = {};
+
+  eqCoords.beginning_of_equation = math_root.children[0].model.obj.offset();
+  eqCoords.width_last_term = tot_width(math_root.children[math_root.children.length-1].model.obj, true, true);
+  eqCoords.end_of_equation = math_root.children[math_root.children.length-1].model.obj.offset();
+  eqCoords.end_of_equation.left += eqCoords.width_last_term;
+  eqCoords.equals_position = $equals.offset();
+
+  vars.eqCoords = eqCoords;
+
+  promise = manips[manip].call(vars);
+  console.log("promise", promise);
+  if (typeof promise !== "undefined") {
+    promise.then((data) => {
+      data = clear_math(data);
+      console.log("data coming", data);
+      assert.equal(data, math_str_exp);
+      done();
+    })
+  } else {
+    assert.equal(math_str_init, math_str_exp);
+    done();
+  }
+
+  // multi_select=false;
   //Reminder of how to asynchronous tests if needed
   // var done = assert.async();
   // setTimeout(function() {
   //   assert.equal(math_str_el.val(), "bx+ax^{2}+c=0");
   //   done();
   // }, 10);
-  assert.equal($("#MathInput input").val(), math_str_exp);
+  // let unsubscribe
+  // unsubscribe = store.subscribe(() => {
+  //   const state = store.getState();
+  //   if (!state.doing_manip) {
+  //     assert.equal(state.mathHist[state.current_index], math_str_exp);
+  //     unsubscribe();
+  //     done();
+  //   }
+  // });
 }
 
 $( document ).ready(function() {
 
   QUnit.test("tree", function( assert ) {
-    prepare("ax^{2}+bx+c=0");
+    dispatch(act.addToHist("ax^{2}+bx+c=0", 0))
     assert.equal(math_root.children.length, 5);
     assert.equal(math_root.children[0].text, "ax^{2}");
     assert.equal(math_root.children[0].type, "term");
@@ -50,7 +95,7 @@ $( document ).ready(function() {
       assert.equal(math_root.children[0].children[1].children[1].type, "power");
     assert.equal(math_root.children[1].text, "+bx");
 
-    prepare("\\frac{ax^{2}+bx+c}{\\frac{a}{b}}");
+    dispatch(act.addToHist("\\frac{ax^{2}+bx+c}{\\frac{a}{b}}", 0))
     assert.equal(math_root.children.length, 1);
     assert.equal(math_root.children[0].children[0].type2, "frac");
     assert.equal(math_root.children[0].children[0].children[0].text, "ax^{2}+bx+c");
@@ -61,179 +106,179 @@ $( document ).ready(function() {
 
   QUnit.test("manipulations.change_side", function( assert ) {
     //change terms of side
-    test_manip(assert, change_side, "ax^{2}+bx+c=0", "bx+c=-ax^{2}",  ["0/1"]);
+    test_manip(assert, "change_side", "ax^{2}+bx+c=0", "bx+c=-ax^{2}",  ["0/1"]);
     //change multiple terms of side
-    test_manip(assert, change_side, "ax^{2}+bx+c=0", "c=-ax^{2}-bx",  ["0/1", "0/2"]);
+    test_manip(assert, "change_side", "ax^{2}+bx+c=0", "c=-ax^{2}-bx",  ["0/1", "0/2"]);
     //change terms of side from RHS
-    test_manip(assert, change_side, "ax^{2}+bx+c=\\frac{ex^{2}}{abcd\\sqrt{32}}", "ax^{2}+bx+c-\\frac{ex^{2}}{abcd\\sqrt{32}}=0",  ["0/5"]);
+    test_manip(assert, "change_side", "ax^{2}+bx+c=\\frac{ex^{2}}{abcd\\sqrt{32}}", "ax^{2}+bx+c-\\frac{ex^{2}}{abcd\\sqrt{32}}=0",  ["0/5"]);
 
     //change operator (sign) of side
-    test_manip(assert, change_side, "-ax^{2}c=bx", "ax^{2}c=-bx",  ["0/1/1"]);
+    test_manip(assert, "change_side", "-ax^{2}c=bx", "ax^{2}c=-bx",  ["0/1/1"]);
     //DON'T change operator (sign) of side
-    test_manip(assert, change_side, "-ax^{2}+bx+c=0", "-ax^{2}+bx+c=0",  ["0/1/1"]);
+    test_manip(assert, "change_side", "-ax^{2}+bx+c=0", "-ax^{2}+bx+c=0",  ["0/1/1"]);
     //change operator (sign) of side from RHS
-    test_manip(assert, change_side, "ax^{2}c=-bx", "-ax^{2}c=bx",  ["0/3/1"]);
+    test_manip(assert, "change_side", "ax^{2}c=-bx", "-ax^{2}c=bx",  ["0/3/1"]);
 
     //change factor of side
-    test_manip(assert, change_side, "ax^{2}(k+bx+c)=\\sqrt{2}", "a(k+bx+c)=\\frac{\\sqrt{2}}{x^{2}}",  ["0/1/2"]);
+    test_manip(assert, "change_side", "ax^{2}(k+bx+c)=\\sqrt{2}", "a(k+bx+c)=\\frac{\\sqrt{2}}{x^{2}}",  ["0/1/2"]);
     //change factor (when in numerator) of side
-    test_manip(assert, change_side, "\\frac{ax^{2}}{(k+bx+c)}=\\sqrt{2}", "\\frac{a}{(k+bx+c)}=\\frac{\\sqrt{2}}{x^{2}}",  ["0/1/1/1/1/2"]);
+    test_manip(assert, "change_side", "\\frac{ax^{2}}{(k+bx+c)}=\\sqrt{2}", "\\frac{a}{(k+bx+c)}=\\frac{\\sqrt{2}}{x^{2}}",  ["0/1/1/1/1/2"]);
     //change numerator of side
-    test_manip(assert, change_side, "\\frac{ax^{2}+33e}{(k+bx+c)}=\\sqrt{2}", "\\frac{1}{(k+bx+c)}=\\frac{\\sqrt{2}}{ax^{2}+33e}",  ["0/1/1/1"]);
+    test_manip(assert, "change_side", "\\frac{ax^{2}+33e}{(k+bx+c)}=\\sqrt{2}", "\\frac{1}{(k+bx+c)}=\\frac{\\sqrt{2}}{ax^{2}+33e}",  ["0/1/1/1"]);
     //change single-term numerator of side when selecting that term
-    test_manip(assert, change_side, "\\frac{33e}{(k+bx+c)}=\\sqrt{2}", "\\frac{1}{(k+bx+c)}=\\frac{\\sqrt{2}}{33e}",  ["0/1/1/1/1"]);
+    test_manip(assert, "change_side", "\\frac{33e}{(k+bx+c)}=\\sqrt{2}", "\\frac{1}{(k+bx+c)}=\\frac{\\sqrt{2}}{33e}",  ["0/1/1/1/1"]);
     //change factor of side from RHS
-    test_manip(assert, change_side, "ax^{2}(k+bx+c)=\\sqrt{2}", "\\frac{ax^{2}(k+bx+c)}{\\sqrt{2}}=1",  ["0/3/1"]);
+    test_manip(assert, "change_side", "ax^{2}(k+bx+c)=\\sqrt{2}", "\\frac{ax^{2}(k+bx+c)}{\\sqrt{2}}=1",  ["0/3/1"]);
 
     //change denominator of side
-    test_manip(assert, change_side, "\\frac{ax^{2}+33e}{(k+bx+c)}=\\sqrt{2}", "ax^{2}+33e=(k+bx+c)\\sqrt{2}",  ["0/1/1/2"]);
+    test_manip(assert, "change_side", "\\frac{ax^{2}+33e}{(k+bx+c)}=\\sqrt{2}", "ax^{2}+33e=(k+bx+c)\\sqrt{2}",  ["0/1/1/2"]);
     //change denominator of side from RHS
-    test_manip(assert, change_side, "\\sqrt{2}=\\frac{ax^{2}+33e}{(k+bx+c)}", "\\sqrt{2}(k+bx+c)=ax^{2}+33e",  ["0/3/1/2"]);
+    test_manip(assert, "change_side", "\\sqrt{2}=\\frac{ax^{2}+33e}{(k+bx+c)}", "\\sqrt{2}(k+bx+c)=ax^{2}+33e",  ["0/3/1/2"]);
     //change factor (in denominator) of side
-    test_manip(assert, change_side, "\\frac{2^{2}\\pi ^{2}}{T^{2}}=\\frac{GM}{r^{3}}", "2^{2}\\pi ^{2}=\\frac{GMT^{2}}{r^{3}}",  ["0/1/1/2/1/1"]);
+    test_manip(assert, "change_side", "\\frac{2^{2}\\pi ^{2}}{T^{2}}=\\frac{GM}{r^{3}}", "2^{2}\\pi ^{2}=\\frac{GMT^{2}}{r^{3}}",  ["0/1/1/2/1/1"]);
 
     //change power of side
-    test_manip(assert, change_side, "(ax^{2}(k+bx+c))^{33}=\\sqrt{2}", "(ax^{2}(k+bx+c))=(\\sqrt{2})^{\\frac{1}{33}}",  ["0/1/1/2"]);
+    test_manip(assert, "change_side", "(ax^{2}(k+bx+c))^{33}=\\sqrt{2}", "(ax^{2}(k+bx+c))=(\\sqrt{2})^{\\frac{1}{33}}",  ["0/1/1/2"]);
     //change power of side to a side with multiple terms
-    test_manip(assert, change_side, "(ax^{2}(k+bx+c))^{33}=\\sqrt{2}+abcd", "(ax^{2}(k+bx+c))=(\\sqrt{2}+abcd)^{\\frac{1}{33}}",  ["0/1/1/2"]);
+    test_manip(assert, "change_side", "(ax^{2}(k+bx+c))^{33}=\\sqrt{2}+abcd", "(ax^{2}(k+bx+c))=(\\sqrt{2}+abcd)^{\\frac{1}{33}}",  ["0/1/1/2"]);
     //change fractional power of side from RHS
-    test_manip(assert, change_side, "(ax^{2}(k+bx+c))=(\\sqrt{2})^{\\frac{1}{33}}", "(ax^{2}(k+bx+c))^{33}=(\\sqrt{2})",  ["0/3/1/2"]);
-
+    test_manip(assert, "change_side", "(ax^{2}(k+bx+c))=(\\sqrt{2})^{\\frac{1}{33}}", "(ax^{2}(k+bx+c))^{33}=(\\sqrt{2})",  ["0/3/1/2"]);
+    // console.log("keeeeeeeeeekkekekekekekekekekek");
     //TODO: FOR power. NEED TO ADD option for selecting factor or term within power, just like for fractions..
 
   });
 
   QUnit.test("manipulations.move_right", function( assert ) {
     //Move term right
-    test_manip(assert, move_right, "ax^{2}+bx_{c}+c=0", "bx_{c}+ax^{2}+c=0",  ["0/1"]);
+    test_manip(assert, "move_right", "ax^{2}+bx_{c}+c=0", "bx_{c}+ax^{2}+c=0",  ["0/1"]);
     //Move normal factor right
-    test_manip(assert, move_right, "ax^{2}+bx+c=0", "x^{2}a+bx+c=0",  ["0/1/1"]);
+    test_manip(assert, "move_right", "ax^{2}+bx+c=0", "x^{2}a+bx+c=0",  ["0/1/1"]);
     //Move numerical factor right
-    test_manip(assert, move_right, "33 \\cdot 44z = 1", "44\\cdot 33z=1",  ["0/1/1"]);
+    test_manip(assert, "move_right", "33 \\cdot 44z = 1", "44\\cdot 33z=1",  ["0/1/1"]);
     //Move numerical factor in fraction right
-    test_manip(assert, move_right, "\\frac{33\\cdot 44}{z}=1",  "\\frac{44\\cdot 33}{z}=1", ["0/1/1/1/1/1"]);
+    test_manip(assert, "move_right", "\\frac{33\\cdot 44}{z}=1",  "\\frac{44\\cdot 33}{z}=1", ["0/1/1/1/1/1"]);
   });
 
   QUnit.test("manipulations.move_left", function( assert ) {
     //Move term left
-    test_manip(assert, move_left, "bx+ax^{2}+c=0", "ax^{2}+bx+c=0",  ["0/2"]);
+    test_manip(assert, "move_left", "bx+ax^{2}+c=0", "ax^{2}+bx+c=0",  ["0/2"]);
     //Move normal factor left
-    test_manip(assert, move_left, "ax^{2}+bx+c=0", "x^{2}a+bx+c=0",  ["0/1/2"]);
+    test_manip(assert, "move_left", "ax^{2}+bx+c=0", "x^{2}a+bx+c=0",  ["0/1/2"]);
     //Move numerical factor left
-    test_manip(assert, move_left, "44\\cdot 33z=1", "33\\cdot 44z=1",  ["0/1/3"]);
+    test_manip(assert, "move_left", "44\\cdot 33z=1", "33\\cdot 44z=1",  ["0/1/3"]);
     //Move numerical factor in fraction left
-    test_manip(assert, move_left, "\\frac{44\\cdot 33}{z}=1", "\\frac{33\\cdot 44}{z}=1",  ["0/1/1/1/1/3"]);
+    test_manip(assert, "move_left", "\\frac{44\\cdot 33}{z}=1", "\\frac{33\\cdot 44}{z}=1",  ["0/1/1/1/1/3"]);
   });
 
   //move up in fraction
   QUnit.test("manipulations.move_up", function( assert ) {
     //Move factors in single term in denominator up
-    test_manip(assert, move_up, "\\frac{ex^{2}}{abcd\\sqrt{33}}+bx+c=1+1-bx", "\\frac{c^{-1}ex^{2}}{abd\\sqrt{33}}+bx+c=1+1-bx",  ["0/1/1/2/1/3"]);
+    test_manip(assert, "move_up", "\\frac{ex^{2}}{abcd\\sqrt{33}}+bx+c=1+1-bx", "\\frac{c^{-1}ex^{2}}{abd\\sqrt{33}}+bx+c=1+1-bx",  ["0/1/1/2/1/3"]);
     //Move all factors in single term in denominator up
-    test_manip(assert, move_up, "1=\\frac{x}{yz}", "1=y^{-1}z^{-1}x",  ["0/3/1/2/1/1","0/3/1/2/1/2"]);
+    test_manip(assert, "move_up", "1=\\frac{x}{yz}", "1=y^{-1}z^{-1}x",  ["0/3/1/2/1/1","0/3/1/2/1/2"]);
     //Move all fractions in single term in denominator up
-    test_manip(assert, move_up, "1=\\frac{x}{\\frac{2}{3}\\frac{5}{4}}", "1=\\frac{3}{2}\\frac{4}{5}x",  ["0/3/1/2/1/1","0/3/1/2/1/2"]);
+    test_manip(assert, "move_up", "1=\\frac{x}{\\frac{2}{3}\\frac{5}{4}}", "1=\\frac{3}{2}\\frac{4}{5}x",  ["0/3/1/2/1/1","0/3/1/2/1/2"]);
     //Move single term in denominator
-    test_manip(assert, move_up, "\\frac{xa}{aax(lel)^{2}}=\\tau", "a^{-1}a^{-1}x^{-1}(lel)^{-2}xa=\\tau ", ["0/1/1/2/1"])
+    test_manip(assert, "move_up", "\\frac{xa}{aax(lel)^{2}}=\\tau", "a^{-1}a^{-1}x^{-1}(lel)^{-2}xa=\\tau ", ["0/1/1/2/1"])
     //Move fraction up
-    test_manip(assert, move_up, "\\frac{v^{2}}{r}=\\frac{1}{\\frac{GMm}{r}}", "\\frac{v^{2}}{r}=\\frac{r}{GMm}", ["0/3/1/2/1/1"])
+    test_manip(assert, "move_up", "\\frac{v^{2}}{r}=\\frac{1}{\\frac{GMm}{r}}", "\\frac{v^{2}}{r}=\\frac{r}{GMm}", ["0/3/1/2/1/1"])
   });
 
   //move down in fraction
   QUnit.test("manipulations.move_down", function( assert ) {
     //Move factor down
-    test_manip(assert, move_down, "\\frac{ex^{2}}{abcd\\sqrt{32}}+bx+c=1+1-bx", "\\frac{ex^{2}}{abcd\\sqrt{32}}+\\frac{x}{b^{-1}}+c=1+1-bx",  ["0/2/2"]);
+    test_manip(assert, "move_down", "\\frac{ex^{2}}{abcd\\sqrt{32}}+bx+c=1+1-bx", "\\frac{ex^{2}}{abcd\\sqrt{32}}+\\frac{x}{b^{-1}}+c=1+1-bx",  ["0/2/2"]);
   });
 
   QUnit.test("manipulations.collect_out", function( assert ) {
     //BASIC FACTOR OUT
-    test_manip(assert, collect_out, "ax_{c}+ay_{dd}", "a(x_{c}+y_{dd})",  ["0/1/1", "0/2/2"]);
+    test_manip(assert, "collect_out", "ax_{c}+ay_{dd}", "a(x_{c}+y_{dd})",  ["0/1/1", "0/2/2"]);
 
     //FACTOR OUT with one one-factor term
-    test_manip(assert, collect_out, "p+\\frac{ac}{a+c}p=1", "p(1+\\frac{ac}{a+c})=1",  ["0/1/1", "0/2/3"]);
+    test_manip(assert, "collect_out", "p+\\frac{ac}{a+c}p=1", "p(1+\\frac{ac}{a+c})=1",  ["0/1/1", "0/2/3"]);
 
     //FACTOR OUT with one one-factor term AGAIN
-    test_manip(assert, collect_out, "-\\omega^{2} B e^{i\\phi} + i \\beta \\omega B e^{i\\phi} + B e^{i\\phi} = \\Gamma", "Be^{i\\phi }(-\\omega ^{2}+i\\beta \\omega +1)=\\Gamma ",  ["0/1/3", "0/1/4", "0/2/5", "0/2/6", "0/3/2", "0/3/3"]);
+    test_manip(assert, "collect_out", "-\\omega^{2} B e^{i\\phi} + i \\beta \\omega B e^{i\\phi} + B e^{i\\phi} = \\Gamma", "Be^{i\\phi }(-\\omega ^{2}+i\\beta \\omega +1)=\\Gamma ",  ["0/1/3", "0/1/4", "0/2/5", "0/2/6", "0/3/2", "0/3/3"]);
 
     //FACTOR OUT with containing terms not being directly their parents. TODO: NEED TO CODE THIS IN
     // test_manip(assert, merge, "\\frac{c(a+k-1)}{a+c}p-\\frac{c(a+k)}{a+c}p", "c(\\frac{(a+k-1)}{a+c}p-\\frac{(a+k)}{a+c}p)",  ["0/1/1/1/1/1", "0/2/2/1/1/1"]);
 
     //FACTOR OUT more than one factor per term.
-    test_manip(assert, collect_out, "abx+ayb", "ab(x+y)",  ["0/1/1", "0/1/2", "0/2/2", "0/2/4"]);
+    test_manip(assert, "collect_out", "abx+ayb", "ab(x+y)",  ["0/1/1", "0/1/2", "0/2/2", "0/2/4"]);
 
     //Merge equal factors into exp 1
-    test_manip(assert, collect_out, "abxx+ayb", "abx^{2}+ayb",  ["0/1/3", "0/1/4"]);
+    test_manip(assert, "collect_out", "abxx+ayb", "abx^{2}+ayb",  ["0/1/3", "0/1/4"]);
 
     //Merge equal factors into exp 2
     // test_manip(assert, merge, "abxbx+ayb", "ab^{2}  x^{2}+ayb",  ["0/1/2", "0/1/3", "0/1/4", "0/1/5"]); //USE EVALUATE FOR THIS
 
     //Merge equal terms into term
-    test_manip(assert, collect_out, "ac+abb+abb+ac", "ac+2abb+ac",  ["0/2", "0/3"]);
+    test_manip(assert, "collect_out", "ac+abb+abb+ac", "ac+2abb+ac",  ["0/2", "0/3"]);
 
     //Merge fraction terms into fraction
-    test_manip(assert, collect_out, "ac+\\frac{a}{b}+\\frac{cd}{b}", "ac+\\frac{a+cd}{b}",  ["0/2", "0/3"]);
+    test_manip(assert, "collect_out", "ac+\\frac{a}{b}+\\frac{cd}{b}", "ac+\\frac{a+cd}{b}",  ["0/2", "0/3"]);
 
     //Merge terms into fraction (using Algebrite)
-    test_manip(assert, collect_out, "ac+\\frac{a}{b}+\\frac{cd}{eb}", "ac+\\frac{aeb+cdb}{beb}",  ["0/2", "0/3"]);
+    test_manip(assert, "collect_out", "ac+\\frac{a}{b}+\\frac{cd}{eb}", "ac+\\frac{aeb+cdb}{beb}",  ["0/2", "0/3"]);
 
     //Merge exponentials with same base
-    test_manip(assert, collect_out, "acu^{\\frac{2}{3}}u^{3}", "acu^{\\frac{2}{3}+3}",  ["0/1/3", "0/1/4"]);
+    test_manip(assert, "collect_out", "acu^{\\frac{2}{3}}u^{3}", "acu^{\\frac{2}{3}+3}",  ["0/1/3", "0/1/4"]);
 
     //Merge exponentials with same power
-    test_manip(assert, collect_out, "acu^{\\frac{2}{3}}(u+v)^{\\frac{2}{3}}", "ac(u(u+v))^{\\frac{2}{3}}",  ["0/1/3", "0/1/4"]);
+    test_manip(assert, "collect_out", "acu^{\\frac{2}{3}}(u+v)^{\\frac{2}{3}}", "ac(u(u+v))^{\\frac{2}{3}}",  ["0/1/3", "0/1/4"]);
 
     //Merge sqrts into sqrt
-    test_manip(assert, collect_out, "ac\\sqrt{uu+v}\\sqrt{x}", "ac\\sqrt{(uu+v)x}",  ["0/1/3", "0/1/4"]);
+    test_manip(assert, "collect_out", "ac\\sqrt{uu+v}\\sqrt{x}", "ac\\sqrt{(uu+v)x}",  ["0/1/3", "0/1/4"]);
 
   });
 
   QUnit.test("manipulations.distribute_in", function( assert ) {
     //BASIC DISTRIBUTE IN
-    test_manip(assert, distribute_in, "a(x+y)", "ax+ay",  ["0/1/1", "0/1/2"]);
+    test_manip(assert, "distribute_in", "a(x+y)", "ax+ay",  ["0/1/1", "0/1/2"]);
 
-    test_manip(assert, distribute_in, "(x-3)^{2}-(x+2)3x+x+2", "(x-3)^{2}-(x3x+x3\\cdot 2)+x+2",  ["0/2/4", "0/2/3", "0/2/2"]);
+    test_manip(assert, "distribute_in", "(x-3)^{2}-(x+2)3x+x+2", "(x-3)^{2}-(x3x+x3\\cdot 2)+x+2",  ["0/2/4", "0/2/3", "0/2/2"]);
 
     //DISTRIBUTE IN with one one-factor term
-    test_manip(assert, distribute_in, "p(1+\\frac{ac}{a+c})=1", "p+p\\frac{ac}{a+c}=1", ["0/1/1", "0/1/2"]);
+    test_manip(assert, "distribute_in", "p(1+\\frac{ac}{a+c})=1", "p+p\\frac{ac}{a+c}=1", ["0/1/1", "0/1/2"]);
 
     //DISTRIBUTE IN more than one factor per term.
-    test_manip(assert, distribute_in, "ab(x+y)", "abx+aby", ["0/1/1", "0/1/2", "0/1/3"]);
+    test_manip(assert, "distribute_in", "ab(x+y)", "abx+aby", ["0/1/1", "0/1/2", "0/1/3"]);
 
     //DISTRIBUTE power in
-    test_manip(assert, distribute_in, "(ab(x+y))^{33x}", "a^{33x}b^{33x}(x+y)^{33x}", ["0/1/1"]);
+    test_manip(assert, "distribute_in", "(ab(x+y))^{33x}", "a^{33x}b^{33x}(x+y)^{33x}", ["0/1/1"]);
 
     //Split exponential with terms into several exponentials
-    test_manip(assert, distribute_in, "(ab(x+y))^{33x+y}", "(ab(x+y))^{33x}(ab(x+y))^{+y}", ["0/1/1/2"]);
+    test_manip(assert, "distribute_in", "(ab(x+y))^{33x+y}", "(ab(x+y))^{33x}(ab(x+y))^{+y}", ["0/1/1/2"]);
 
     //distribute power in fraction
-    test_manip(assert, distribute_in, "1=(\\frac{2}{3})^{-1}(\\frac{5}{4})^{-1}x", "1=\\frac{2^{-1}}{3^{-1}}(\\frac{5}{4})^{-1}x", ["0/3/1"]);
+    test_manip(assert, "distribute_in", "1=(\\frac{2}{3})^{-1}(\\frac{5}{4})^{-1}x", "1=\\frac{2^{-1}}{3^{-1}}(\\frac{5}{4})^{-1}x", ["0/3/1"]);
 
   });
 
   QUnit.test("manipulations.merge", function( assert ) {
     //Merge fractions into fraction
-    test_manip(assert, merge, "ac\\frac{a}{b}\\frac{cd\\sqrt{k}}{xx}", "ac\\frac{acd\\sqrt{k}}{bxx}",  ["0/1/3", "0/1/4"]);
-    test_manip(assert, merge, "x^{4}\\frac{1}{4}\\frac{1}{z^{2}}", "x^{4}\\frac{1\\cdot1}{4z^{2}}",  ["0/1/2", "0/1/3"]);
+    test_manip(assert, "merge", "ac\\frac{a}{b}\\frac{cd\\sqrt{k}}{xx}", "ac\\frac{acd\\sqrt{k}}{bxx}",  ["0/1/3", "0/1/4"]);
+    test_manip(assert, "merge", "x^{4}\\frac{1}{4}\\frac{1}{z^{2}}", "x^{4}\\frac{1\\cdot1}{4z^{2}}",  ["0/1/2", "0/1/3"]);
   });
 
   QUnit.test("manipulations.split", function( assert ) {
     //Merge factors into fraction
-    test_manip(assert, split, "ac\\frac{acd\\sqrt{k}}{bxx}", "ac\\frac{cd\\sqrt{k}}{xx}\\frac{a}{b}",  ["0/1/3/1/1/2", "0/1/3/1/1/3", "0/1/3/1/1/4", "0/1/3/2/1/2", "0/1/3/2/1/3"]);
+    test_manip(assert, "split", "ac\\frac{acd\\sqrt{k}}{bxx}", "ac\\frac{cd\\sqrt{k}}{xx}\\frac{a}{b}",  ["0/1/3/1/1/2", "0/1/3/1/1/3", "0/1/3/1/1/4", "0/1/3/2/1/2", "0/1/3/2/1/3"]);
   });
 
   QUnit.test("manipulations.evaluate", function( assert ) {
     //merge two exponentials
-    test_manip(assert, evaluate, "a^{-1}a^{-1}", "a^{-2}",  ["0/1/1", "0/1/2"]);
+    test_manip(assert, "evaluate", "a^{-1}a^{-1}", "a^{-2}",  ["0/1/1", "0/1/2"]);
 
     //merge two terms
-    test_manip(assert, evaluate, "x^{2}-3x^{2}+9-6x-6x+x+2", "-2 x^{2}+9-6x-6x+x+2",  ["0/2", "0/1"]);
-    test_manip(assert, evaluate, "-2x^{2}+9-12x+x+2", "-2x^{2}+9-11 x+2",  ["0/3", "0/4"]);
-    test_manip(assert, evaluate, "-2x^{2}+9-11 x+2", "-2x^{2}+11-11x",  ["0/2", "0/4"]);
+    test_manip(assert, "evaluate", "x^{2}-3x^{2}+9-6x-6x+x+2", "-2 x^{2}+9-6x-6x+x+2",  ["0/2", "0/1"]);
+    test_manip(assert, "evaluate", "-2x^{2}+9-12x+x+2", "-2x^{2}+9-11 x+2",  ["0/3", "0/4"]);
+    test_manip(assert, "evaluate", "-2x^{2}+9-11 x+2", "-2x^{2}+11-11x",  ["0/2", "0/4"]);
   });
 
   QUnit.test("manipulations.cancel_out", function( assert ) {
     //merge two exponentials
-    test_manip(assert, cancel_out, "\\frac{v^{2}}{r}=\\frac{GMmr}{r^{2}}", "\\frac{v^{2}}{r}=\\frac{GMm}{r}",  ["0/3/1/1/1/4", "0/3/1/2/1/1"]);
+    test_manip(assert, "cancel_out", "\\frac{v^{2}}{r}=\\frac{GMmr}{r^{2}}", "\\frac{v^{2}}{r}=\\frac{GMm}{r}",  ["0/3/1/1/1/4", "0/3/1/2/1/1"]);
   });
 
 });

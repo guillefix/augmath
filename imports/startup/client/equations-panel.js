@@ -1,5 +1,10 @@
 import React from 'react';
-import {active_in_history, select_in_history, add_to_history, remove_from_history} from './history';
+import ReactDOM from 'react-dom'
+import katex from 'katex';
+import classNames from 'classnames';
+import {updateIndex} from './actions/action-creators';
+
+import History from './history'
 
 
 export default class EquationsPanel extends React.Component {
@@ -15,10 +20,7 @@ export default class EquationsPanel extends React.Component {
           <div id="eq_list" className="list-group">
           </div>
         </div>
-        <div id="history">
-          <div id="history_list" className="list-group">
-          </div>
-        </div>
+        <History />
       </div>
     )
   }

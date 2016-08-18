@@ -2,27 +2,29 @@ import jQuery from 'jquery';
 import katex from 'katex';
 // import TreeModel from '../TreeModel-min.js';
 import {symbols} from './symbols.js';
-import {add_to_history, active_in_history, remove_from_history, select_in_history} from '../startup/client/history';
 import Bro from 'brototype';
 // import Algebrite from 'algebrite';
 import algebra from 'algebra.js'
 import math from 'mathjs'
+
+import TreeModel from '../TreeModel-min.js';
+
 
 import {eqCoords, selection} from '../startup/client/App.js';
 
 //USEFUL FUNCTIONS
 
 //remove and create events handlers that happen when user clicks a manipulative
-export function remove_events(type, depth) {
-  // console.log("test");
-  var $selectable = $();
-  math_root.walk(function (node) {
-    if (node.model.id !== "0" && node.type === type && getIndicesOf("/", node.model.id).length === depth) {
-      $selectable = $selectable.add(node.model.obj);
-      }
-  });
-  $selectable.off();
-}
+// export function remove_events(type, depth) {
+//   // console.log("test");
+//   var $selectable = $();
+//   math_root.walk(function (node) {
+//     if (node.model.id !== "0" && node.type === type && getIndicesOf("/", node.model.id).length === depth) {
+//       $selectable = $selectable.add(node.model.obj);
+//       }
+//   });
+//   $selectable.off();
+// }
 
 
 export function select_node(node, multi_select=false, var_select=false) {
@@ -66,10 +68,11 @@ export function select_node(node, multi_select=false, var_select=false) {
     selection.selected_text = node.text;
   }
   selection.$selected = $(".selected");
-  selected_width = tot_width(selection.$selected, true);
-  selected_position = selection.$selected.offset();
+  // selected_width = tot_width(selection.$selected, true);
+  selection.selected_position = selection.$selected.offset();
   var replace_el = document.getElementById("replace");
   replace_el.value = selection.selected_text;
+  // console.log(selection.selected_nodes);
 }
 
 //get all the indices of searchStr within str
@@ -656,7 +659,7 @@ export function parse_mtstr(root, node_arr, str_arr) {
 }
 
 //do some preparation to str_arr before calling parse_mtstr
-export function replace_in_mtstr(nodes, str_arr) {
+export function replace_in_mtstr(nodes, str_arr, root = math_root) {
   if (nodes.__proto__.length !== 0) {
     nodes = [nodes];
   }
@@ -668,13 +671,14 @@ export function replace_in_mtstr(nodes, str_arr) {
       else {str_arr.push("");}
     }
   }
-  return parse_mtstr(math_root, nodes, str_arr);
+  return parse_mtstr(root, nodes, str_arr);
 }
 
 //HTML -> TREE
 //This creates a tree by going through the terms in an expression, and going through its factors. Factors that can contain whole expressions within them are then recursively analyzed in the same way.
 //This is tied to the way KaTeX renders maths. A good thing would be to do this for MathML, as it's likely to be a standard in the future.
 export function parse_poly(root, poly, parent_id, is_container) {
+  let tree = new TreeModel();
   var poly_str = "";
   var term_cnt = 0;
   var factor_cnt = 0;
@@ -688,6 +692,7 @@ export function parse_poly(root, poly, parent_id, is_container) {
   var things = is_container ? poly.children() : poly;
   while (i < things.length) {
     var thing = things.filter(":eq("+i+")");
+    // console.log(thing);
     factor_obj = thing;
     factor_id = parent_id.toString() + "/" + (term_cnt+1).toString() + "/" + (factor_cnt+1).toString();
     term_id = parent_id.toString() + "/" + (term_cnt+1).toString();
@@ -1004,4 +1009,52 @@ export function parse_poly(root, poly, parent_id, is_container) {
     if (i === things.length) {term.model.obj = term_obj; poly_str+=term.text;}
   };
   return poly_str;
+}
+
+export function clear_math(math) {
+  let new_str = math.replace(/\\frac{}/g, "\\frac{1}")
+        // .replace(/ /g, "") some operators require the space, for exampl a \cdot b
+        .replace(/\+/g, '--').replace(/(--)+-/g, '-').replace(/--/g, '+')
+        .replace(/\(\+/g, "(")
+        .replace(/^\+/, "")
+        .replace(/=$/, "=0")
+        .replace(/=+/, "=")
+        .replace(/0\+/g, "")
+        .replace(/0-/g, "-")
+        .replace(/^=/, "0=")
+        .replace(/\^{}/g, "");
+  let new_root = math_str_to_tree(math);
+  new_root.walk(function (node) {
+    if (node.type2 === "frac" && node.children[1].text === "") {
+      new_str = replace_in_mtstr(node, node.children[0].text, new_root);
+      new_root = math_str_to_tree(new_str);
+    }
+  });
+  return new_str
+}
+
+export function math_str_to_tree(math) {
+  // math = clear_math(math);
+
+  let math_el = $("#math");
+  // console.log(math_el);
+  // math_el.hide();
+  katex.render(math, math_el[0], { displayMode: true });
+  // console.log(math);
+
+  var root_poly = $("#math .base");
+
+  let tree = new TreeModel();
+
+  let root = tree.parse({});
+  // console.log(math_root);
+  root.model.id = "0";
+  root.model.obj = root_poly;
+  //KaTeX offers MathML semantic elements on the HTML, could that be used?
+
+  parse_poly(root, root_poly, 0, true);
+
+  // math_el.remove();
+
+  return root;
 }

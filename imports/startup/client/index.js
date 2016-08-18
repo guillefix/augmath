@@ -1,5 +1,7 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
+import { Provider } from 'react-redux'
+import store from './store';
 import App from './App.js';
 import {prepare, select_node, create_events, remove_events} from "../../maths/functions";
 
@@ -7,7 +9,7 @@ import jQuery from 'jquery';
 import katex from 'katex';
 import TreeModel from '../../TreeModel-min.js';
 import {symbols} from '../../maths/symbols.js';
-import {active_in_history, select_in_history, add_to_history, remove_from_history} from './history';
+import {remove_from_history} from './history';
 // import Algebrite from 'algebrite';
 
 // import './tests'
@@ -41,7 +43,12 @@ Augmenting how we *do* maths using Computers
 
 Meteor.startup(() => {
 
-  ReactDOM.render(<App />, document.getElementById('app'));
+  // console.log(store.getState());
+
+  ReactDOM.render(
+    <Provider store={store}>
+      <App />
+    </Provider>, document.getElementById('app'));
 
   //SELECTION control
 
@@ -70,7 +77,7 @@ Meteor.startup(() => {
       math_str_rec = [math_str[current_index]];
       manipulation_rec.unshift({});
       selected_nodes_id_rec.unshift([]);
-      active_in_history(current_index);
+      // active_in_history(current_index);
     }
   });
   $("#play").on("click", function () {
@@ -80,7 +87,7 @@ Meteor.startup(() => {
     recording_index = 0;
     if (math_str.length === 0 && math_str_rec.length !== 0) {math_str = math_str_rec;}
     init_index = math_str.length-math_str_rec.length;
-    select_in_history(init_index);
+    // select_in_history(init_index);
     recording_index++; //recording_index will always be one ahead of the current math_str displayed as that is the appropriate manipulation to apply.
   });
   $("#next_step").on("click", function () {
@@ -159,7 +166,7 @@ Meteor.startup(() => {
   $("#prev_step").on("click", function () {//FIX THIS
     if (!(recording_index>0)) {return;}
     recording_index--;
-    select_in_history(init_index+recording_index);
+    // select_in_history(init_index+recording_index);
   });
 
   $("#make_json").on("click", function () {

@@ -1,6 +1,6 @@
-import {replace_in_mtstr, tot_width, rationalize, eval_expression, ascii_to_latex, latex_to_ascii, getIndicesOf, cleanIndices, change_sign, exponentiate, multiply, flip_fraction, add_brackets, are_of_type, any_of_type, have_same_ancestors, have_same_type, have_same_text, have_single_factor, have_same_denom, are_same_terms, get_prev, get_next, get_all_next, has_op, parse_mtstr, parse_poly} from "./functions";
+import {replace_in_mtstr, tot_width, rationalize, eval_expression, ascii_to_latex, latex_to_ascii, getIndicesOf, cleanIndices, change_sign, exponentiate, multiply, flip_fraction, add_brackets, are_of_type, any_of_type, have_same_ancestors, have_same_type, have_same_text, have_single_factor, have_same_denom, are_same_terms, get_prev, get_next, get_all_next, has_op, parse_mtstr, parse_poly, math_str_to_tree, clear_math} from "./functions";
 
-import {eqCoords, selection} from '../startup/client/App.js';
+import {selection} from '../startup/client/App.js';
 
 // import Algebrite from 'algebrite';
 
@@ -15,8 +15,10 @@ import {symbols} from './symbols.js';
 
 //change side
 export function change_side() {
+  console.log("helping vars", this);
   var new_term;
-  equals_position = $equals.offset();
+  // equals_position = $equals.offset();
+  var selected_width = tot_width(selection.$selected, true, true);
   equals_node = math_root.first(function (node) {
     if (node.children.length > 0) {
         return node.children[0].type === "rel";
@@ -26,36 +28,37 @@ export function change_side() {
     if (selection.selected_nodes[i].parent !== selection.selected_nodes[i+1].parent) {return;}
   }
 
-  console.log("selection.selected_nodes", selection.selected_nodes);
+  // console.log("selection.selected_nodes", selection.selected_nodes);
   //terms
   if (selection.selected_nodes[0].parent === math_root)
   {
     console.log("changing term of side");
-    var selected_width = tot_width(selection.$selected, true, true);
     if (selection.$selected.prevAll(".mrel").length === 0) { //before eq sign
-      offset = (eqCoords.end_of_equation.left-selected_position.left);
+      offset = (this.eqCoords.end_of_equation.left-selection.selected_position.left);
       selection.$selected.first().prevAll().animate({left:selected_width}, step_duration);
       selection.$selected = $(".selected").add($(".selected").filter(".mop").children());
-      selection.$selected.animate({left:offset}, step_duration).promise().done(function() {
-        selection.$selected = $(".selected").add($(".selected").find("*"));
-        new_term = change_sign(selection.selected_nodes);
-        new_math_str = replace_in_mtstr(selection.selected_nodes, "")+new_term;
-        current_index++;
-        prepare(new_math_str);
+      return new Promise((resolve, reject) => {
+        selection.$selected.animate({left:offset}, step_duration).promise().done(function() {
+          selection.$selected = $(".selected").add($(".selected").find("*"));
+          new_term = change_sign(selection.selected_nodes);
+          new_math_str = replace_in_mtstr(selection.selected_nodes, "")+"+"+new_term;
+          resolve(new_math_str); //this should pass it to the promise
+        });
       });
 
     } else { //after eq sign
-      offset = (equals_position.left-selected_position.left)-tot_width(selection.$selected, true, false);
+      offset = (this.eqCoords.equals_position.left-selection.selected_position.left)-tot_width(selection.$selected, true, false);
       selection.$selected.prevAll(".mrel").first().prevAll().animate({left:-selected_width}, step_duration);
       selection.$selected.last().nextAll().animate({left:-tot_width(selection.$selected, true, false)}, step_duration);
       selection.$selected = $(".selected").add($(".selected").filter(".mop").children());
-      selection.$selected.animate({left:offset}, step_duration).promise().done(function() {
-        selection.$selected = $(".selected").add($(".selected").find("*"));
-        new_term = "-" + selection.selected_text;
-        new_math_str = replace_in_mtstr(selection.selected_nodes, "");
-        new_math_str = new_math_str.replace("=", new_term+"=");
-        current_index++;
-        prepare(new_math_str);
+      return new Promise((resolve, reject) => {
+        selection.$selected.animate({left:offset}, step_duration).promise().done(function() {
+          selection.$selected = $(".selected").add($(".selected").find("*"));
+          new_term = change_sign(selection.selected_nodes);
+          new_math_str = replace_in_mtstr(selection.selected_nodes, "");
+          new_math_str = new_math_str.replace("=", "+"+new_term+"=");
+          resolve(new_math_str); //this should pass it to the promise
+        });
       });
     }
   }
@@ -73,27 +76,29 @@ export function change_side() {
     console.log("changing sign of side");
     var selected_width = tot_width(selection.$selected, true, true);
     if (selection.$selected.prevAll(".mrel").length === 0) { //before eq sign
-      offset = (equals_position.left-selected_position.left) + tot_width(equals_node.model.obj, true, true);
+      offset = (this.eqCoords.equals_position.left-selection.selected_position.left) + tot_width(equals_node.model.obj, true, true);
       $equals.nextAll().animate({left:tot_width(selection.$selected, true, false)}, step_duration);
       selection.$selected = $(".selected").add($(".selected").filter(".mop").children());
-      selection.$selected.animate({left:offset}, step_duration).promise().done(function() {
-        var RHS_terms = math_root.children.slice(parseInt(equals_node.model.id.split("/")[1]));
-        new_term = change_sign(RHS_terms);
-        new_math_str = replace_in_mtstr(selection.selected_nodes.concat(RHS_terms), "")+new_term;
-        current_index++;
-        prepare(new_math_str);
+      return new Promise((resolve, reject) => {
+          selection.$selected.animate({left:offset}, step_duration).promise().done(function() {
+          var RHS_terms = math_root.children.slice(parseInt(equals_node.model.id.split("/")[1]));
+          new_term = change_sign(RHS_terms);
+          new_math_str = replace_in_mtstr(selection.selected_nodes.concat(RHS_terms), "")+new_term;
+          resolve(new_math_str);
+        });
       });
 
     } else { //after eq sign
-      offset = (eqCoords.beginning_of_equation.left-selected_position.left)-tot_width(selection.$selected, true, false);
+      offset = (this.eqCoords.beginning_of_equation.left-selection.selected_position.left)-tot_width(selection.$selected, true, false);
       selection.$selected.last().nextAll().animate({left:-tot_width(selection.$selected, true, false)}, step_duration);
       selection.$selected = $(".selected").add($(".selected").filter(".mop").children());
-      selection.$selected.animate({left:offset}, step_duration).promise().done(function() {
-        var LHS_terms = math_root.children.slice(0, parseInt(equals_node.model.id.split("/")[1])-1);
-        new_term = change_sign(LHS_terms);
-        new_math_str = new_term+replace_in_mtstr(selection.selected_nodes.concat(LHS_terms), "");
-        current_index++;
-        prepare(new_math_str);
+      return new Promise((resolve, reject) => {
+        selection.$selected.animate({left:offset}, step_duration).promise().done(function() {
+          var LHS_terms = math_root.children.slice(0, parseInt(equals_node.model.id.split("/")[1])-1);
+          new_term = change_sign(LHS_terms);
+          new_math_str = new_term+replace_in_mtstr(selection.selected_nodes.concat(LHS_terms), "");
+          resolve(new_math_str);
+        });
       });
     }
   }
@@ -123,17 +128,18 @@ export function change_side() {
       v_offset = selection.$selected.outerHeight(includeMargin=true)/2;
       if (include_in_frac) {v_offset = 0;}
       $equals.nextAll().animate({top:-v_offset, left:tot_width(selection.$selected, true, false)/2}, step_duration);
-      selection.$selected.animate({left:h_offset, top:v_offset}, step_duration).promise().done(function() {
-        new_math_str = replace_in_mtstr(selection.selected_nodes, "");
-        math_HS = new_math_str.split("="); //HS=hand sides
-        if (include_in_frac) {
-          new_math_str = math_HS[0] + "=" + "\\frac{" + after_eq_nodes[0].children[0].children[0].text + "}{" + after_eq_nodes[0].children[0].children[1].text + selection.selected_text + "}";
-        } else {
-          new_math_str = math_HS[0] + "=" + "\\frac{" + math_HS[1] + "}{" + selection.selected_text + "}";
-        }
-        current_index++;
-        new_math_str = new_math_str.replace(/=$/, "=1").replace(/^=/, "1=");
-        prepare(new_math_str);
+      return new Promise((resolve, reject) => {
+        selection.$selected.animate({left:h_offset, top:v_offset}, step_duration).promise().done(function() {
+          new_math_str = replace_in_mtstr(selection.selected_nodes, "");
+          math_HS = new_math_str.split("="); //HS=hand sides
+          if (include_in_frac) {
+            new_math_str = math_HS[0] + "=" + "\\frac{" + after_eq_nodes[0].children[0].children[0].text + "}{" + after_eq_nodes[0].children[0].children[1].text + selection.selected_text + "}";
+          } else {
+            new_math_str = math_HS[0] + "=" + "\\frac{" + math_HS[1] + "}{" + selection.selected_text + "}";
+          }
+          new_math_str = new_math_str.replace(/=$/, "=1").replace(/^=/, "1=");
+          resolve(new_math_str);
+        });
       });
     } else if (selection.selected_nodes[0].model.id.split("/")[1] > equals_node.model.id.split("/")[1]) { //after eq sign
       LHS_width = tot_width($equals.prevAll(), false, false);
@@ -149,17 +155,18 @@ export function change_side() {
       v_offset = selection.$selected.outerHeight(includeMargin=true)/2;
       if (include_in_frac) {v_offset = 0;}
       $equals.prevAll().animate({top:-v_offset, left:tot_width(selection.$selected, true, false)/2}, step_duration);
-      selection.$selected.animate({left:-h_offset, top:v_offset}, step_duration).promise().done(function() {
-        new_math_str = replace_in_mtstr(selection.selected_nodes, "");
-        math_HS = new_math_str.split("="); //HS=hand sides
-        if (include_in_frac) {
-          new_math_str = "\\frac{" + before_eq_nodes[0].children[0].children[0].text + "}{" + before_eq_nodes[0].children[0].children[1].text + selection.selected_text + "}" + "=" + math_HS[1];
-        } else {
-          new_math_str = "\\frac{" + math_HS[0] + "}{" + selection.selected_text + "}" + "=" + math_HS[1];
-        }
-        current_index++;
-        new_math_str = new_math_str.replace(/=$/, "=1").replace(/^=/, "1=");
-        prepare(new_math_str);
+      return new Promise((resolve, reject) => {
+        selection.$selected.animate({left:-h_offset, top:v_offset}, step_duration).promise().done(function() {
+          new_math_str = replace_in_mtstr(selection.selected_nodes, "");
+          math_HS = new_math_str.split("="); //HS=hand sides
+          if (include_in_frac) {
+            new_math_str = "\\frac{" + before_eq_nodes[0].children[0].children[0].text + "}{" + before_eq_nodes[0].children[0].children[1].text + selection.selected_text + "}" + "=" + math_HS[1];
+          } else {
+            new_math_str = "\\frac{" + math_HS[0] + "}{" + selection.selected_text + "}" + "=" + math_HS[1];
+          }
+          new_math_str = new_math_str.replace(/=$/, "=1").replace(/^=/, "1=");
+          resolve(new_math_str);
+        });
       });
     }
   }
@@ -187,17 +194,18 @@ export function change_side() {
         $equals.prevAll().animate({top: selection.$selected.outerHeight(includeMargin=true)/2}, step_duration);
         v_offset+=selection.$selected.outerHeight(includeMargin=true)/2;
       }
-      selection.$selected.animate({left:h_offset, top:-v_offset}, step_duration).promise().done(function() {
-        new_math_str = replace_in_mtstr(selection.selected_nodes, "");
-        math_HS = new_math_str.split("="); //HS=hand sides
-        if (include_in_frac) {
-          new_math_str = math_HS[0].replace(/\\frac{([ -~]+)}{}/, "$1") + "=" + "\\frac{" + after_eq_nodes[0].children[0].children[0].text + selection.selected_text + "}{" + after_eq_nodes[0].children[0].children[1].text + "}";
-        } else {
-          new_math_str = math_HS[0] + "=" + selection.selected_text + math_HS[1] ;
-        }
-        current_index++;
-        new_math_str = new_math_str.replace(/\\frac{([ -~]+)}{}/, "$1").replace(/=$/, "=1").replace(/^=/, "1=");
-        prepare(new_math_str);
+      return new Promise((resolve, reject) => {
+        selection.$selected.animate({left:h_offset, top:-v_offset}, step_duration).promise().done(function() {
+          new_math_str = replace_in_mtstr(selection.selected_nodes, "");
+          math_HS = new_math_str.split("="); //HS=hand sides
+          if (include_in_frac) {
+            new_math_str = math_HS[0].replace(/\\frac{([ -~]+)}{}/, "$1") + "=" + "\\frac{" + after_eq_nodes[0].children[0].children[0].text + selection.selected_text + "}{" + after_eq_nodes[0].children[0].children[1].text + "}";
+          } else {
+            new_math_str = math_HS[0] + "=" + selection.selected_text + math_HS[1] ;
+          }
+          new_math_str = new_math_str.replace(/\\frac{([ -~]+)}{}/, "$1").replace(/=$/, "=1").replace(/^=/, "1=");
+          resolve(new_math_str);
+        });
       });
     } else if (selection.selected_nodes[0].model.id.split("/")[1] > equals_node.model.id.split("/")[1]) { //after eq sign
       LHS_width = tot_width($equals.prevAll(), false, false);
@@ -217,19 +225,20 @@ export function change_side() {
         $equals.nextAll().animate({top: selection.$selected.outerHeight(includeMargin=true)/2}, step_duration);
         v_offset+=selection.$selected.outerHeight(includeMargin=true)/2;
       }
-      selection.$selected.animate({left:-h_offset, top:-v_offset}, step_duration).promise().done(function() {
-        new_math_str = replace_in_mtstr(selection.selected_nodes, "");
-        math_HS = new_math_str.split("="); //HS=hand sides
-        if (include_in_frac) {
-          new_math_str = "\\frac{" + before_eq_nodes[0].children[0].children[0].text + selection.selected_text + "}{" + before_eq_nodes[0].children[0].children[1].text + "}" + "=" + math_HS[1].replace(/\\frac{([ -~]+)}{}/, "$1");
-        } else {
-          new_math_str = math_HS[0] + selection.selected_text + "=" + math_HS[1];
-        }
-        console.log(new_math_str);
-        current_index++;
-        new_math_str = new_math_str.replace(/=$/, "=1").replace(/^=/, "1=");
-        console.log(new_math_str);
-        prepare(new_math_str);
+      return new Promise((resolve, reject) => {
+        selection.$selected.animate({left:-h_offset, top:-v_offset}, step_duration).promise().done(function() {
+          new_math_str = replace_in_mtstr(selection.selected_nodes, "");
+          math_HS = new_math_str.split("="); //HS=hand sides
+          if (include_in_frac) {
+            new_math_str = "\\frac{" + before_eq_nodes[0].children[0].children[0].text + selection.selected_text + "}{" + before_eq_nodes[0].children[0].children[1].text + "}" + "=" + math_HS[1].replace(/\\frac{([ -~]+)}{}/, "$1");
+          } else {
+            new_math_str = math_HS[0] + selection.selected_text + "=" + math_HS[1];
+          }
+          // console.log(new_math_str);
+          new_math_str = new_math_str.replace(/=$/, "=1").replace(/^=/, "1=");
+          // console.log(new_math_str);
+          resolve(new_math_str);
+        });
       });
     }
   }
@@ -245,38 +254,40 @@ export function change_side() {
   {
     console.log("changing power of side");
     if (selection.$selected.parent().prevAll(".mrel").length === 0) { //before eq sign
-      var offset = eqCoords.end_of_equation.left - equals_position.left;
-      selection.$selected.animate({left:offset}, step_duration).promise().done(function() {
-        new_math_str = replace_in_mtstr(selection.selected_nodes, "");
-        math_HS = new_math_str.split("="); //HS=hand sides
-        if (selection.selected_nodes[0].text === "2") {
-          new_math_str = math_HS[0] + "=" + "\\sqrt{" + math_HS[1] + "}";
-        } else {
-          if (selection.selected_nodes[0].children.length === 1 && selection.selected_nodes[0].children[0].children.length ===1 && selection.selected_nodes[0].children[0].children[0].type2 === "frac") {
-            new_math_str = math_HS[0] + "=" + add_brackets(math_HS[1]) + "^{" + flip_fraction([selection.selected_nodes[0].children[0].children[0]]) + "}";
+      var offset = this.eqCoords.end_of_equation.left - this.eqCoords.equals_position.left;
+      return new Promise((resolve, reject) => {
+        selection.$selected.animate({left:offset}, step_duration).promise().done(function() {
+          new_math_str = replace_in_mtstr(selection.selected_nodes, "");
+          math_HS = new_math_str.split("="); //HS=hand sides
+          if (selection.selected_nodes[0].text === "2") {
+            new_math_str = math_HS[0] + "=" + "\\sqrt{" + math_HS[1] + "}";
           } else {
-            new_math_str = math_HS[0] + "=" + add_brackets(math_HS[1]) + "^{" + "\\frac{1}{" + selection.selected_text + "}}"; //add brackets
+            if (selection.selected_nodes[0].children.length === 1 && selection.selected_nodes[0].children[0].children.length ===1 && selection.selected_nodes[0].children[0].children[0].type2 === "frac") {
+              new_math_str = math_HS[0] + "=" + add_brackets(math_HS[1]) + "^{" + flip_fraction([selection.selected_nodes[0].children[0].children[0]]) + "}";
+            } else {
+              new_math_str = math_HS[0] + "=" + add_brackets(math_HS[1]) + "^{" + "\\frac{1}{" + selection.selected_text + "}}"; //add brackets
+            }
           }
-        }
-        current_index++;
-        prepare(new_math_str);
+          resolve(new_math_str);
+        });
       });
     } else if (selection.$selected.parent().nextAll(".mrel").length === 0) { //after eq sign
-      var offset = eqCoords.end_of_equation.left - equals_position.left;
-      selection.$selected.animate({left:-offset}, step_duration).promise().done(function() {
-        new_math_str = replace_in_mtstr(selection.selected_nodes, "");
-        math_HS = new_math_str.split("="); //HS=hand sides
-        if (selection.selected_nodes[0].text === "2") {
-          new_math_str = "\\sqrt{" + math_HS[0] + "}" + "=" + math_HS[1];
-        } else {
-          if (selection.selected_nodes[0].children.length === 1 && selection.selected_nodes[0].children[0].children.length ===1 && selection.selected_nodes[0].children[0].children[0].type2 === "frac") {
-            new_math_str = add_brackets(math_HS[0]) + "^{" + flip_fraction([selection.selected_nodes[0].children[0].children[0]]) + "}" + "=" + math_HS[1];
+      var offset = this.eqCoords.end_of_equation.left - this.eqCoords.equals_position.left;
+      return new Promise((resolve, reject) => {
+        selection.$selected.animate({left:-offset}, step_duration).promise().done(function() {
+          new_math_str = replace_in_mtstr(selection.selected_nodes, "");
+          math_HS = new_math_str.split("="); //HS=hand sides
+          if (selection.selected_nodes[0].text === "2") {
+            new_math_str = "\\sqrt{" + math_HS[0] + "}" + "=" + math_HS[1];
           } else {
-            new_math_str = add_brackets(math_HS[0]) + "^{" + "\\frac{1}{" + selection.selected_text + "}}" + "=" + math_HS[1]; //add brackets
+            if (selection.selected_nodes[0].children.length === 1 && selection.selected_nodes[0].children[0].children.length ===1 && selection.selected_nodes[0].children[0].children[0].type2 === "frac") {
+              new_math_str = add_brackets(math_HS[0]) + "^{" + flip_fraction([selection.selected_nodes[0].children[0].children[0]]) + "}" + "=" + math_HS[1];
+            } else {
+              new_math_str = add_brackets(math_HS[0]) + "^{" + "\\frac{1}{" + selection.selected_text + "}}" + "=" + math_HS[1]; //add brackets
+            }
           }
-        }
-        current_index++;
-        prepare(new_math_str);
+          resolve(new_math_str);
+        });
       });
     }
   }
@@ -313,13 +324,14 @@ export function move_right(){
       $selected_next.first().prev().animate({left:width_diff}, step_duration)
     }
     $selected_next.animate({left:-selected_width}, step_duration); //animation should take into account possibly missing operator
-    selection.$selected.animate({left:selected_next_width}, step_duration).promise().done(function() {
-      if (!has_op(selection.$selected) && selection.selected_nodes[0].type === "term") {selected_text_str = "+" + selection.selected_text;} else {selected_text_str = selection.selected_text;}
-      next_text = next_node.text;
-      if (!has_op($selected_next) && selection.selected_nodes[0].type === "term") {next_text_str = "+" + next_text;} else {next_text_str = next_text;}
-      new_math_str = replace_in_mtstr([next_node].concat(selection.selected_nodes), [selected_text_str, next_text_str]);
-      current_index++;
-      prepare(new_math_str);
+    return new Promise((resolve, reject) => {
+      selection.$selected.animate({left:selected_next_width}, step_duration).promise().done(function() {
+        if (!has_op(selection.$selected) && selection.selected_nodes[0].type === "term") {selected_text_str = "+" + selection.selected_text;} else {selected_text_str = selection.selected_text;}
+        next_text = next_node.text;
+        if (!has_op($selected_next) && selection.selected_nodes[0].type === "term") {next_text_str = "+" + next_text;} else {next_text_str = next_text;}
+        new_math_str = replace_in_mtstr([next_node].concat(selection.selected_nodes), [selected_text_str, next_text_str]);
+        resolve(new_math_str);
+      });
     });
   }
   if (recording || playing) {recording_index++;}
@@ -356,13 +368,14 @@ export function move_left() {
 
     }
     $selected_prev.animate({left:selected_width}, step_duration);
-    selection.$selected.animate({left:-selected_prev_width}, step_duration).promise().done(function() {
-      if (!has_op(selection.$selected) && selection.selected_nodes[0].type === "term") {selected_text_str = "+" + selection.selected_text;} else {selected_text_str = selection.selected_text;}
-      prev_text = prev_node.text;
-      if (!has_op($selected_prev) && selection.selected_nodes[0].type === "term") { prev_text_str = "+" + prev_text;} else {prev_text_str = prev_text;}
-      new_math_str = replace_in_mtstr([prev_node].concat(selection.selected_nodes), [selected_text_str, prev_text_str]);
-      current_index++;
-      prepare(new_math_str);
+    return new Promise((resolve, reject) => {
+      selection.$selected.animate({left:-selected_prev_width}, step_duration).promise().done(function() {
+        if (!has_op(selection.$selected) && selection.selected_nodes[0].type === "term") {selected_text_str = "+" + selection.selected_text;} else {selected_text_str = selection.selected_text;}
+        prev_text = prev_node.text;
+        if (!has_op($selected_prev) && selection.selected_nodes[0].type === "term") { prev_text_str = "+" + prev_text;} else {prev_text_str = prev_text;}
+        new_math_str = replace_in_mtstr([prev_node].concat(selection.selected_nodes), [selected_text_str, prev_text_str]);
+        resolve(new_math_str);
+      });
     });
   }
   if (recording || playing) {recording_index++;}
@@ -448,10 +461,11 @@ export function move_up() {
     numerator.model.obj.animate({left:selected_width/2+extra_selected_width/2}, step_duration);
     selection.$selected.last().nextAll().animate({left:-selected_width-extra_selected_width/2}, step_duration);
     selection.$selected.first().prevAll().animate({left:-extra_selected_width/2}, step_duration);
-    selection.$selected.animate({left:-h_offset, top:-v_offset}, step_duration).promise().done(function() {
-      new_math_str = replace_in_mtstr([numerator].concat(selection.selected_nodes), new_nom_text); //this just changes text of numerator and deletes selection.selected_nodes
-      current_index++;
-      prepare(new_math_str);
+    return new Promise((resolve, reject) => {
+      selection.$selected.animate({left:-h_offset, top:-v_offset}, step_duration).promise().done(function() {
+        new_math_str = replace_in_mtstr([numerator].concat(selection.selected_nodes), new_nom_text); //this just changes text of numerator and deletes selection.selected_nodes
+        resolve(new_math_str);
+      });
     });
   if (recording || playing) {recording_index++;}
   if (recording) {add_to_manip_rec(2);}
@@ -476,10 +490,11 @@ export function move_down() {
       denominator.model.obj.animate({left:selected_width/2+extra_selected_width/2}, step_duration);
       selection.$selected.last().nextAll().animate({left:-selected_width-extra_selected_width/2}, step_duration);
       selection.$selected.first().prevAll().animate({left:-extra_selected_width/2}, step_duration);
-      selection.$selected.animate({left:-h_offset, top:v_offset}, step_duration).promise().done(function() {
-        new_math_str = replace_in_mtstr([denominator].concat(selection.selected_nodes), new_denom_text);
-        current_index++;
-        prepare(new_math_str);
+      return new Promise((resolve, reject) => {
+        selection.$selected.animate({left:-h_offset, top:v_offset}, step_duration).promise().done(function() {
+          new_math_str = replace_in_mtstr([denominator].concat(selection.selected_nodes), new_denom_text);
+          resolve(new_math_str);
+        });
       });
     }
     if (selection.selected_nodes[0].type === "factor"
@@ -520,23 +535,23 @@ export function move_down() {
       var v_offset = selection.$selected.outerHeight()*1.5;
       selection.$selected.last().nextAll().animate({left:-selected_width-extra_selected_width/2}, step_duration);
       selection.$selected.first().prevAll().animate({left:-extra_selected_width/2}, step_duration);
-      selection.$selected.animate({left:-h_offset, top:v_offset}, step_duration).promise().done(function() {
-        new_nom_text = "";
-        new_denom_text = exponentiate(selection.selected_nodes, false, "-1");
-        var begin_i = (selection.selected_nodes[0].parent.children[0].type2 === "op") ? 1 : 0;
-        for (var i = begin_i; i <selection.selected_nodes[0].parent.children.length; i++) {
-          for (var k = selection.selected_nodes.length - 1; k >= 0; k--) {
-            if (selection.selected_nodes[0].parent.children[i].model.id !== selection.selected_nodes[k].model.id) {
-              new_nom_text+=selection.selected_nodes[0].parent.children[i].text;
-            }
+      return new Promise((resolve, reject) => {
+        selection.$selected.animate({left:-h_offset, top:v_offset}, step_duration).promise().done(function() {
+          new_nom_text = "";
+          new_denom_text = exponentiate(selection.selected_nodes, false, "-1");
+          var begin_i = (selection.selected_nodes[0].parent.children[0].type2 === "op") ? 1 : 0;
+          for (var i = begin_i; i <selection.selected_nodes[0].parent.children.length; i++) {
+            for (var k = selection.selected_nodes.length - 1; k >= 0; k--) {
+              if (selection.selected_nodes[0].parent.children[i].model.id !== selection.selected_nodes[k].model.id) {
+                new_nom_text+=selection.selected_nodes[0].parent.children[i].text;
+              }
+            };
           };
-        };
-        new_text = "\\frac{"+new_nom_text+"}{"+new_denom_text+"}";
-        new_math_str = replace_in_mtstr(selection.selected_nodes[0].parent.children.slice(begin_i), new_text);
-        current_index++;
-        prepare(new_math_str);
+          new_text = "\\frac{"+new_nom_text+"}{"+new_denom_text+"}";
+          new_math_str = replace_in_mtstr(selection.selected_nodes[0].parent.children.slice(begin_i), new_text);
+          resolve(new_math_str);
+        });
       });
-
     }
   }
   if (recording || playing) {recording_index++;}
@@ -599,8 +614,7 @@ export function split() {
     }
     var new_text = "\\frac{" + numerator_text + "}{" + denominator_text + "}" + "\\frac{" + numerator_text2 + "}{" + denominator_text2 + "}";
     new_math_str = replace_in_mtstr([selection.selected_nodes[0].parent.parent.parent], new_text);
-    current_index++;
-    prepare(new_math_str);
+    return new Promise((resolve, reject) => {resolve(new_math_str)});
   }
 }
 
@@ -627,8 +641,7 @@ export function merge() {
       }
       var new_text = "\\frac{" + numerator_text + "}{" + denominator_text + "}";
       new_math_str = replace_in_mtstr(selection.selected_nodes, new_text);
-      current_index++;
-      prepare(new_math_str);
+      return new Promise((resolve, reject) => {resolve(new_math_str)});
     }
 }
 
@@ -670,24 +683,25 @@ export function distribute_in() {
       }
     var grouped_node = grouped[grouped.length-1];
     // console.log("distribute in", factors_text, grouped_node);
-    selection.$selected.animate({"font-size": 0, opacity: 0}, step_duration) //IMPROVE ANIMATION (FOR EXAMPLE CLONE)
-      .css('overflow', 'visible')
-      .promise()
-      .done(function() {
-        var text = "";
-        for (var i=0; i<grouped_node.children.length; i++) {
-          let temp_node = {text: factors_text, children: [], type: "temp"}
-          text += multiply([temp_node, grouped_node.children[i]])
-        }
-        if (selection.selected_nodes[0].parent.children.length > selection.selected_nodes.length) {
-          var new_text = "(" + text + ")"
-        } else {
-          var new_text = text
-        }
-        new_math_str = replace_in_mtstr(selection.selected_nodes, new_text);
-        current_index++;
-        // console.log(text, new_math_str);
-        prepare(new_math_str);
+    return new Promise((resolve, reject) => {
+      selection.$selected.animate({"font-size": 0, opacity: 0}, step_duration) //IMPROVE ANIMATION (FOR EXAMPLE CLONE)
+        .css('overflow', 'visible')
+        .promise()
+        .done(function() {
+          var text = "";
+          for (var i=0; i<grouped_node.children.length; i++) {
+            let temp_node = {text: factors_text, children: [], type: "temp"}
+            text += multiply([temp_node, grouped_node.children[i]])
+          }
+          if (selection.selected_nodes[0].parent.children.length > selection.selected_nodes.length) {
+            var new_text = "(" + text + ")"
+          } else {
+            var new_text = text
+          }
+          new_math_str = replace_in_mtstr(selection.selected_nodes, new_text);
+          // console.log(text, new_math_str);
+          resolve(new_math_str);
+        });
       });
   }
   //split fractions into terms when selecting factors
@@ -708,8 +722,7 @@ export function distribute_in() {
       }
     }
     new_math_str = replace_in_mtstr(selection.selected_nodes, new_terms);
-    prepare(new_math_str);
-    current_index++;
+    return new Promise((resolve, reject) => {resolve(new_math_str)});
   }
   //split fraction into terms when selecting terms
   else if (selection.selected_nodes[0].type === "term" && selection.selected_nodes.length === 1 //because I'm not checking the subsequent stuff for a multiselection
@@ -732,8 +745,7 @@ export function distribute_in() {
       }
     }
     new_math_str = replace_in_mtstr(selection.selected_nodes, new_terms);
-    prepare(new_math_str);
-    current_index++;
+    return new Promise((resolve, reject) => {resolve(new_math_str)});
   }
   //split square root. Need to make it work with fractions
   else if (selection.selected_nodes[0].type2 === "sqrt" && selection.selected_nodes[0].children.length === 1)
@@ -745,8 +757,7 @@ export function distribute_in() {
         text+="\\sqrt{" + factors[i].text + "}";
       }
     new_math_str = replace_in_mtstr(selection.selected_nodes, text);
-    current_index++;
-    prepare(new_math_str);
+    return new Promise((resolve, reject) => {resolve(new_math_str)});
   }
   //distribute power in
   else if (selection.selected_nodes.length === 1
@@ -763,8 +774,7 @@ export function distribute_in() {
     console.log("base_factors", base_factors, "power_text", power_text);
     var text = exponentiate(base_factors, false, power_text,true);
     new_math_str = replace_in_mtstr(selection.selected_nodes, text);
-    current_index++;
-    prepare(new_math_str);
+    return new Promise((resolve, reject) => {resolve(new_math_str)});
   }
   //split exponential with terms into exponentials
   else if (selection.selected_nodes.length === 1  && selection.selected_nodes[0].children.length > 1
@@ -784,8 +794,7 @@ export function distribute_in() {
       text+=base_text + "^{" + power_terms[i].text + "}";
     }
     new_math_str = replace_in_mtstr([selection.selected_nodes[0].parent], text);
-    current_index++;
-    prepare(new_math_str);
+    return new Promise((resolve, reject) => {resolve(new_math_str)});
   }
 
   if (recording || playing) {recording_index++;}
@@ -866,28 +875,30 @@ export function collect_out() {
   if (selection.selected_nodes[0].type === "factor" && same_type && same_grandparents && same_factors && factor_texts.length > 1)
   {
     console.log("factor out");
-    selection.$selected.animate({"font-size": 0, opacity: 0}, step_duration) //AS USUAL, IMPROVE ANIMATION
-      .css('overflow', 'visible')
-      .promise()
-      .done(function() {
-        var selected_terms = [];
-        let factor_selected_text = factor_texts[0];
-        new_math_str = replace_in_mtstr(selection.selected_nodes, fact_subs);
-        var new_text = "";
-        playing = true; //so that it doesn't go into history..
-        prepare(new_math_str); //I SHOULD CREATE A FUNCTION THAT PARSES A LATEX STRING INTO A MATH_ROOT IDEALLY...
-        playing = false;
-        for (var k=0; k<term_ids.length; k++) {
-          var term = math_root.first(function (node) {
-            return node.model.id === term_ids[k]; //They will have the same id, because we have only removed children of them.
-          });
-          new_text += term.text;
-          selected_terms.push(term);
-        }
-        new_text = "+" + factor_selected_text + "(" + new_text + ")";
-        new_math_str = replace_in_mtstr(selected_terms, new_text);
-        current_index++;
-      prepare(new_math_str);
+    return new Promise((resolve, reject) => {
+      selection.$selected.animate({"font-size": 0, opacity: 0}, step_duration) //AS USUAL, IMPROVE ANIMATION
+        .css('overflow', 'visible')
+        .promise()
+        .done(function() {
+          var selected_terms = [];
+          let factor_selected_text = factor_texts[0];
+          new_math_str = replace_in_mtstr(selection.selected_nodes, fact_subs);
+          var new_text = "";
+          playing = true; //so that it doesn't go into history..
+          math_root = math_str_to_tree(clear_math(new_math_str)); //I SHOULD CREATE A FUNCTION THAT PARSES A LATEX STRING INTO A MATH_ROOT IDEALLY...
+          console.log("new math_root", math_root);
+          playing = false;
+          for (var k=0; k<term_ids.length; k++) {
+            var term = math_root.first(function (node) {
+              return node.model.id === term_ids[k]; //They will have the same id, because we have only removed children of them.
+            });
+            new_text += term.text;
+            selected_terms.push(term);
+          }
+          new_text = "+" + factor_selected_text + "(" + new_text + ")";
+          new_math_str = replace_in_mtstr(selected_terms, new_text);
+          resolve(new_math_str);
+        });
       });
   }
   //merge equal factors into exp
@@ -897,8 +908,7 @@ export function collect_out() {
     //ANIMATION??
     new_math_str = replace_in_mtstr(selection.selected_nodes, eval_expression(selection.selected_text));
     // new_math_str = replace_in_mtstr(selection.selected_nodes, selection.selected_nodes[0].text + "^{" + selection.selected_nodes.length.toString() + "}");
-    current_index++;
-    prepare(new_math_str);
+    return new Promise((resolve, reject) => {resolve(new_math_str)});
   }
   //merge equal terms into term
   else if (selection.selected_nodes[0].type === "term" && same_type && same_term && selection.selected_nodes.length > 1)
@@ -910,8 +920,7 @@ export function collect_out() {
     }
     new_math_str = replace_in_mtstr(selection.selected_nodes, "+" + selection.selected_nodes.length.toString() + term_text);
 
-    current_index++;
-    prepare(new_math_str);
+    return new Promise((resolve, reject) => {resolve(new_math_str)});
   }
   //merge fraction terms into fraction
   else if (selection.selected_nodes[0].type === "term" && same_type && single_factor && are_fracs && have_same_denom(selection.selected_nodes) && selection.selected_nodes.length > 1)
@@ -931,8 +940,7 @@ export function collect_out() {
     }
     var new_text = "+\\frac{" + numerator_text + "}{" + denominator_text + "}";
     new_math_str = replace_in_mtstr(selection.selected_nodes, new_text);
-    current_index++;
-    prepare(new_math_str);
+    return new Promise((resolve, reject) => {resolve(new_math_str)});
   }
   //merge terms into fraction
   else if (selection.selected_nodes[0].type === "term" && same_type && selection.selected_nodes.length > 1)
@@ -966,8 +974,7 @@ export function collect_out() {
     var new_text = "+\\frac{" + numerator_text + "}{" + denominator_text + "}";
     // new_text = "+" + rationalize(selection.selected_text);
     new_math_str = replace_in_mtstr(selection.selected_nodes, new_text);
-    current_index++;
-    prepare(new_math_str);
+    return new Promise((resolve, reject) => {resolve(new_math_str)});
   }
   //merge exponentials
   else if ((selection.selected_nodes[0].type2 === "exp" || selection.selected_nodes[0].type2 === "group_exp")
@@ -997,8 +1004,7 @@ export function collect_out() {
       }
       var new_text = base_text + "^{" + power_text + "}";
       new_math_str = replace_in_mtstr(selection.selected_nodes, new_text);
-      current_index++;
-      prepare(new_math_str);
+      return new Promise((resolve, reject) => {resolve(new_math_str)});
     }
     else if (same_power && !same_base)  //with common power
     {
@@ -1014,8 +1020,7 @@ export function collect_out() {
       }
       var new_text = "(" + base_text + ")" + "^{" + power_text + "}";
       new_math_str = replace_in_mtstr(selection.selected_nodes, new_text);
-      current_index++;
-      prepare(new_math_str);
+      return new Promise((resolve, reject) => {resolve(new_math_str)});
     }
   }
   //merge square roots into square root
@@ -1037,8 +1042,7 @@ export function collect_out() {
     }
     new_text+="}";
     new_math_str = replace_in_mtstr(selection.selected_nodes, new_text);
-    current_index++;
-    prepare(new_math_str);
+    return new Promise((resolve, reject) => {resolve(new_math_str)});
   }
 
   if (recording || playing) {recording_index++;}
@@ -1051,8 +1055,7 @@ export function unbracket() {
   var new_term="";
   new_term += selection.selected_text.replace(/^\(|\)$/g, "");
   new_math_str = replace_in_mtstr(selection.selected_nodes, new_term);
-  current_index++;
-  prepare(new_math_str);
+  return new Promise((resolve, reject) => {resolve(new_math_str)});
   if (recording || playing) {recording_index++;}
   if (recording) {add_to_manip_rec(9);}
 }
@@ -1063,11 +1066,12 @@ export function evaluate() {
     if (selection.selected_nodes[i].parent !== selection.selected_nodes[i+1].parent) {return;}
   }
   //equals position not too well animated
-  selection.$selected.animate({"font-size": 0, opacity: 0}, step_duration).css('overflow', 'visible').promise().done(function() {
-    new_term = eval_expression(selection.selected_text); //only works for sqrts or fracs separately, but not together
-    new_math_str = replace_in_mtstr(selection.selected_nodes, new_term);
-    current_index++;
-    prepare(new_math_str);
+  return new Promise((resolve, reject) => {
+    selection.$selected.animate({"font-size": 0, opacity: 0}, step_duration).css('overflow', 'visible').promise().done(function() {
+      new_term = eval_expression(selection.selected_text); //only works for sqrts or fracs separately, but not together
+      new_math_str = replace_in_mtstr(selection.selected_nodes, new_term);
+      resolve(new_math_str);
+    });
   });
   if (recording || playing) {recording_index++;}
   if (recording) {add_to_manip_rec(3);}
@@ -1084,12 +1088,13 @@ export function operate() {
     };
     expression = latex_to_ascii(expression);
     console.log(variable);
-    //IMPROVE ANIMATION (LOOK AT THE MECHANICAL UNIVERSE)
-    selection.$selected.animate({"font-size": 0, opacity: 0}, step_duration).css('overflow', 'visible').promise().done(function() {
-      new_term = CQ(expression).differentiate(variable).toLaTeX().replace("\\cdot", "");
-      new_math_str = replace_in_mtstr(selection.selected_nodes.concat(next_nodes), new_term);
-      current_index++;
-      prepare(new_math_str);
+    //TODO: IMPROVE ANIMATION (LOOK AT THE MECHANICAL UNIVERSE)
+    return new Promise((resolve, reject) => {
+      selection.$selected.animate({"font-size": 0, opacity: 0}, step_duration).css('overflow', 'visible').promise().done(function() {
+        new_term = CQ(expression).differentiate(variable).toLaTeX().replace("\\cdot", "");
+        new_math_str = replace_in_mtstr(selection.selected_nodes.concat(next_nodes), new_term);
+        return new_math_str;
+      });
     });
   } else {
     return;
@@ -1106,13 +1111,11 @@ $("#add_both_sides").keyup(function (e) {
           add_both_sides(thing1);
     }
 });
-export function add_both_sides(thing) {
-  console.log("ho");
-  math_HS = math_str[current_index].split("=");
+
+export function add_both_sides(thing, math_str) {
+  math_HS = math_str.split("=");
   new_math_str = math_HS[0] + thing + "=" +math_HS[1] + thing;
-  console.log(new_math_str);
-  current_index++;
-  prepare(new_math_str);
+  return new Promise((resolve, reject) => {resolve(new_math_str)});
   if (recording || playing) {recording_index++;}
   if (recording) {add_to_manip_rec(7, thing);}
 }
@@ -1125,39 +1128,41 @@ $("#replace").keyup(function (e) {
     }
 });
 export function replace(text, replace_ind=false) {
-  selection.$selected.animate({"font-size": 0, opacity: 0}, step_duration/2)
-    .css('overflow', 'visible')
-    .promise()
-    .done(function() {
-      if (replace_ind) {
-        var text_arr = [];
-        for (var i=0; i<selection.selected_nodes.length; i++) {
-          text_arr.push(text);
-        }
-      new_math_str = replace_in_mtstr(selection.selected_nodes, text_arr);
+  return new Promise((resolve, reject) => {
+    selection.$selected.animate({"font-size": 0, opacity: 0}, step_duration/2)
+      .css('overflow', 'visible')
+      .promise()
+      .done(function() {
+        if (replace_ind) {
+          var text_arr = [];
+          for (var i=0; i<selection.selected_nodes.length; i++) {
+            text_arr.push(text);
+          }
+        new_math_str = replace_in_mtstr(selection.selected_nodes, text_arr);
 
-      } else {
-        new_math_str = replace_in_mtstr(selection.selected_nodes, text);
-      }
-      current_index++;
-    prepare(new_math_str);
+        } else {
+          new_math_str = replace_in_mtstr(selection.selected_nodes, text);
+        }
+        resolve(new_math_str);
+      });
     });
-    if (recording || playing) {recording_index++;}
+  if (recording || playing) {recording_index++;}
   if (recording) {add_to_manip_rec(10, text);}
 }
 
 //remove something. Used for: cancelling something on both sides, or cancelling something on a fraction, among other things
 export function remove() {
   console.log("removing");
-  selection.$selected.animate({"font-size": 0, opacity: 0}, step_duration)
-    .css('overflow', 'visible')
-    .promise()
-    .done(function() {
-      new_math_str = replace_in_mtstr(selection.selected_nodes, "");
-      current_index++;
-    prepare(new_math_str);
+  return new Promise((resolve, reject) => {
+    selection.$selected.animate({"font-size": 0, opacity: 0}, step_duration)
+      .css('overflow', 'visible')
+      .promise()
+      .done(function() {
+        new_math_str = replace_in_mtstr(selection.selected_nodes, "");
+        resolve(new_math_str);
+      });
     });
-    if (recording || playing) {recording_index++;}
+  if (recording || playing) {recording_index++;}
   if (recording) {add_to_manip_rec(11);}
 }
 
@@ -1202,23 +1207,24 @@ export function cancel_out() {
         new_denom_strs.push("");
       }
       new_math_str = replace_in_mtstr(num_nodes.concat(denom_nodes), new_num_strs.concat(new_denom_strs));
-      prepare(new_math_str);
+      return new Promise((resolve, reject) => {resolve(new_math_str)});
     }
     //TODO: Add way to cancel terms too.
 }
 
 //flip equation
-export function flip_equation() {
+export function flip_equation(math_str) {
   var offset1 = tot_width($equals.prevAll(), true, false) + tot_width($equals, true, false);
   var offset2 = tot_width($equals.nextAll(), true, false) + tot_width($equals, true, false);
-  $equals.prevAll().animate({left:offset1}, step_duration);
-  $equals.nextAll().animate({left:-offset2}, step_duration)
-    .promise()
-    .done(function() {
-    math_HS = math_str[current_index].split("=");
-    new_math_str = math_HS[1] + "=" + math_HS[0];
-    current_index++;
-    prepare(new_math_str);
+  return new Promise((resolve, reject) => {
+    $equals.prevAll().animate({left:offset1}, step_duration);
+    $equals.nextAll().animate({left:-offset2}, step_duration)
+      .promise()
+      .done(function() {
+      math_HS = math_str.split("=");
+      new_math_str = math_HS[1] + "=" + math_HS[0];
+      resolve(new_math_str);
+    });
   });
   if (recording || playing) {recording_index++;}
   if (recording) {add_to_manip_rec(15);}
