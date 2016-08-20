@@ -30,7 +30,7 @@ import {eqCoords, selection} from '../startup/client/App.js';
 export function select_node(node, multi_select=false, var_select=false) {
   $this = node.model.obj;
   $this.toggleClass("selected");
-  // console.log(node);
+  console.log(node);
   node.selected = !node.selected;
   // console.log(node.selected);
   // console.log(node, node.selected);
@@ -263,18 +263,18 @@ export function exponentiate(nodes, overall, power, distInFrac) {
 //TODO: Use exponentiate to extend features of changin side for power
 
 export function multiply(nodes) {
-  console.log(nodes);
+  // console.log(nodes);
   let text = "";
   let signs = "";
   for (var i=0; i<nodes.length; i++) {
-    console.log(text, nodes[i]);
+    // console.log(text, nodes[i]);
     // console.log("hi");
-    if ((nodes[i].type === "numerator" || nodes[i].type === "denominator") && nodes[i].children.length > 1) {
-      "(" + nodes[i].text + ")";
+    if ((nodes[i].type === "numerator" || nodes[i].type === "denominator" || nodes[i].type === "body") && nodes[i].children.length > 1) {
+      text += "(" + nodes[i].text + ")";
     } else if (nodes[i].text.search(/[+-]/) === 0) {
       signs += nodes[i].text.slice(0, 1);
       let no_sign = nodes[i].text.slice(1, nodes[i].text.length);
-      console.log(text, no_sign);
+      // console.log(text, no_sign);
       if (/^[0-9]+.*/.test(no_sign) && /.*[0-9]+$/.test(text) ) {
         text += "\\cdot " + no_sign;
       } else {
@@ -295,10 +295,11 @@ export function multiply(nodes) {
 
 //flip fraction
 export function flip_fraction(nodes) {
-  // console.log("flipping_fracs")
+  if (!Array.isArray(nodes)) nodes = [nodes];
+  console.log("flipping_fracs", nodes)
   var new_text="";
   for (var i = 0; i < nodes.length; i++) {
-    if (nodes[i].type !== "factor") { throw "Called flip_fraction with something that isn't a factor" }
+    // if (!(nodes[i].type === "factor" || nodes[i].type === "body")) { throw "Called flip_fraction with something that isn't a factor" }
     switch (nodes[i].type2) {
       case "frac":
         if (nodes[i].children[0].text === "1") {
@@ -308,6 +309,7 @@ export function flip_fraction(nodes) {
         }
         break;
       default:
+        console.log("kekekekek");
         new_text += "\\frac{1}{" + nodes[i].text + "}";
     }
   }
@@ -424,7 +426,36 @@ export function are_same_terms(nodes) {
   }
   return result;
 }
-//
+
+//check if all nodes coincide in some custom property
+
+export function have_same_prop(nodes, prop, ignore_undefined = false) {
+  let result = true;
+  if (ignore_undefined) {
+    for (var i = 0; i < nodes.length-1; i++) {
+      if (Bro(nodes[i]).iCanHaz(prop) !== Bro(nodes[i+1]).iCanHaz(prop)) {
+        result = false;
+      }
+    }
+  } else {
+    for (var i = 0; i < nodes.length-1; i++) {
+      if (Bro(nodes[i]).iCanHaz(prop) === undefined || Bro(nodes[i]).iCanHaz(prop) !== Bro(nodes[i+1]).iCanHaz(prop)) {
+        result = false;
+      }
+    }
+  }
+  return result;
+}
+
+export function have_same_log_base(nodes) {
+  let result = true;
+  for (var i = 0; i < nodes.length-1; i++) {
+    if (nodes[i].type2 !== "log" || (nodes[i].children.length === 2 && nodes[i+1].children.length === 2 && nodes[i].children[0].text !== nodes[i+1].children[0].text) || (nodes[i].children.length !== nodes[i+1].children.length)) {
+      result = false;
+    }
+  }
+  return result;
+}
 
 // function equiv_nodes(node1, node2) {
 //
@@ -629,7 +660,7 @@ export function parse_mtstr(root, node_arr, str_arr) {
             // console.log(grandchild);
             if (grandchild.children.length === 1) {
               log_text[0] = parse_mtstr(grandchild.children[0], node_arr, str_arr); //only body
-            } else if (grandchild.children.length === 1) {
+            } else if (grandchild.children.length === 2) {
               log_text[1] = parse_mtstr(grandchild.children[0], node_arr, str_arr); //base
               log_text[0] = parse_mtstr(grandchild.children[1], node_arr, str_arr); //body
             }
@@ -1022,7 +1053,8 @@ export function clear_math(math) {
         .replace(/0\+/g, "")
         .replace(/0-/g, "-")
         .replace(/^=/, "0=")
-        .replace(/\^{}/g, "");
+        .replace(/\^{}/g, "")
+        .replace(/\\log\_\{\}/g, "\\log");
   let new_root = math_str_to_tree(math);
   new_root.walk(function (node) {
     if (node.type2 === "frac" && node.children[1].text === "") {

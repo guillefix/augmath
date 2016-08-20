@@ -1,4 +1,4 @@
-import {replace_in_mtstr, tot_width, rationalize, eval_expression, ascii_to_latex, latex_to_ascii, getIndicesOf, cleanIndices, change_sign, exponentiate, multiply, flip_fraction, add_brackets, are_of_type, any_of_type, have_same_ancestors, have_same_type, have_same_text, have_single_factor, have_same_denom, are_same_terms, get_prev, get_next, get_all_next, has_op, parse_mtstr, parse_poly, math_str_to_tree, clear_math} from "./functions";
+import {replace_in_mtstr, tot_width, rationalize, eval_expression, ascii_to_latex, latex_to_ascii, getIndicesOf, cleanIndices, change_sign, exponentiate, multiply, flip_fraction, add_brackets, are_of_type, any_of_type, have_same_ancestors, have_same_type, have_same_text, have_single_factor, have_same_denom, are_same_terms, have_same_prop, have_same_log_base, get_prev, get_next, get_all_next, has_op, parse_mtstr, parse_poly, math_str_to_tree, clear_math} from "./functions";
 
 import {selection} from '../startup/client/App.js';
 
@@ -28,7 +28,9 @@ export function change_side() {
     if (selection.selected_nodes[i].parent !== selection.selected_nodes[i+1].parent) {return;}
   }
 
+  // console.log("selection.$selected.prevAll(.mrel).length !== 0", selection.$selected);
   // console.log("selection.selected_nodes", selection.selected_nodes);
+
   //terms
   if (selection.selected_nodes[0].parent === math_root)
   {
@@ -70,7 +72,7 @@ export function change_side() {
     //and it comes from a top leve term, plus there is only one term on the side of the selected sign:
     && ((selection.$selected.prevAll(".mrel").length !== 0
         && get_prev([math_root.children[math_root.children.length-1]]).children[0].type === "rel")
-      || (selection.$selected.prevAll(".mrel").length === 0
+      || (selection.$selected.nextAll(".mrel").length !== 0
         && get_next([math_root.children[0]]).children[0].type === "rel")))
   {
     console.log("changing sign of side");
@@ -249,7 +251,7 @@ export function change_side() {
     //and it comes from a top level term, plus there is only one term on the side of the selected sign:
     && ((selection.$selected.prevAll(".mrel").length !== 0
         && get_prev([math_root.children[math_root.children.length-1]]).children[0].type === "rel")
-      || (selection.$selected.prevAll(".mrel").length === 0
+      || (selection.$selected.nextAll(".mrel").length !== 0
         && get_next([math_root.children[0]]).children[0].type === "rel")))
   {
     console.log("changing power of side");
@@ -285,6 +287,55 @@ export function change_side() {
             } else {
               new_math_str = add_brackets(math_HS[0]) + "^{" + "\\frac{1}{" + selection.selected_text + "}}" + "=" + math_HS[1]; //add brackets
             }
+          }
+          resolve(new_math_str);
+        });
+      });
+    }
+  }
+  //log base
+  else if (selection.selected_nodes[0].type === "base" && selection.selected_nodes.length === 1
+    //and it comes from a top level term, plus there is only one term on the side of the selected thing:
+    && ((selection.selected_nodes[0].parent.model.obj.prevAll(".mrel").length !== 0
+        && get_prev([math_root.children[math_root.children.length-1]]).children[0].type === "rel")
+      || (selection.selected_nodes[0].parent.model.obj.nextAll(".mrel").length !== 0
+        && get_next([math_root.children[0]]).children[0].type === "rel")))
+  {
+    //ANIMATION??
+    console.log("changing base of side");
+    let node = selection.selected_nodes[0];
+    console.log(node.parent);
+    let base_text = node.text;
+    if (node.parent.type2 === "log") {
+      if (node.children.length > 1 || node.children[0].children[0].type2 === "exp" || node.children[0].children[0].type2 === "group_exp") base_text = "(" + base_text + ")";
+    } else if (node.parent.type2 === "exp" || node.parent.type2 === "group_exp") {
+      if (node.children.length > 1) base_text = "(" + base_text + ")";
+    }
+    let body_text = node.parent.children[1].text;
+    new_math_str = replace_in_mtstr(selection.selected_nodes, "");
+    math_HS = new_math_str.split("="); //HS=hand sides
+    if (node.parent.model.obj.nextAll(".mrel").length !== 0) { //before eq sign
+      let offset = this.eqCoords.end_of_equation.left - this.eqCoords.equals_position.left;
+      return new Promise((resolve, reject) => {
+        selection.$selected.animate({left:offset}, step_duration).promise().done(function() {
+          let new_math_str;
+          if (node.parent.type2 === "log") {
+            new_math_str = body_text + "=" + base_text + "^{" + math_HS[1] + "}";
+          } else if (node.parent.type2 === "exp" || node.parent.type2 === "group_exp") {
+            new_math_str = body_text + "=\\log_{" + base_text + "}{" + math_HS[1] + "}";
+          }
+          resolve(new_math_str);
+        });
+      });
+    } else if (node.parent.model.obj.prevAll(".mrel").length !== 0) { //after eq sign
+      let offset = this.eqCoords.end_of_equation.left - this.eqCoords.equals_position.left;
+      return new Promise((resolve, reject) => {
+        selection.$selected.animate({left:-offset}, step_duration).promise().done(function() {
+          let new_math_str;
+          if (node.parent.type2 === "log") {
+            new_math_str = base_text + "^{" + math_HS[0] + "}=" + body_text;
+          } else if (node.parent.type2 === "exp" || node.parent.type2 === "group_exp") {
+            new_math_str = "\\log_{" + base_text + "}{" + math_HS[0] + "}=" + body_text;
           }
           resolve(new_math_str);
         });
@@ -561,7 +612,7 @@ export function move_down() {
 // document.getElementById("split").onclick = split;
 export function split() {
   var same_factor = true,
-    // same_parents = have_same_ancestors(selection.selected_nodes, 1),
+    same_parents = have_same_ancestors(selection.selected_nodes, 1),
     // same_grandparents = have_same_ancestors(selection.selected_nodes, 2),
     same_ggparents = have_same_ancestors(selection.selected_nodes, 3),
     same_type = have_same_type(selection.selected_nodes);
@@ -573,6 +624,7 @@ export function split() {
       && Bro(selection.selected_nodes[0]).iCanHaz("parent.parent.parent.type2") === "frac"
       && Bro(selection.selected_nodes[0]).iCanHaz("parent.parent.parent.children.0.children.length") === 1)
   {
+    console.log("split factors out of a fraction");
     //ANIMATION?
     var numerator_text = "", denominator_text = "", numerator_text2 = "", denominator_text2 = "";
     var numerator_factors = selection.selected_nodes[0].parent.parent.parent.children[0].children[0].children;
@@ -616,6 +668,44 @@ export function split() {
     new_math_str = replace_in_mtstr([selection.selected_nodes[0].parent.parent.parent], new_text);
     return new Promise((resolve, reject) => {resolve(new_math_str)});
   }
+  //split factors out of logs
+  if (selection.selected_nodes[0].type === "factor"
+      && same_type && same_ggparents
+      && Bro(selection.selected_nodes[0]).iCanHaz("parent.parent.parent.type2") === "log"
+      && (Bro(selection.selected_nodes[0]).iCanHaz("parent.parent.parent.children.length") === 1
+          && Bro(selection.selected_nodes[0]).iCanHaz("parent.parent.parent.children.0.children.length") === 1
+            ||
+          Bro(selection.selected_nodes[0]).iCanHaz("parent.parent.parent.children.length") === 2
+          && Bro(selection.selected_nodes[0]).iCanHaz("parent.parent.parent.children.1.children.length") === 1))
+  {
+    console.log("split factors out of a log");
+    //ANIMATION?
+    let log_fact = selection.selected_nodes[0].parent.parent.parent;
+    let body_factors = log_fact.children[log_fact.children.length-1].children[0].children ;
+    let body_text = multiply(body_factors.filter(x => {
+      let result = true;
+      for (var k=0; k<selection.selected_nodes.length; k++) {
+        if (x.model.id === selection.selected_nodes[k].model.id) result = false;
+      }
+      return result;
+    }));
+    let body_text2 = multiply(selection.selected_nodes);
+    let base_text = log_fact.children.length === 1 ? "" : log_fact.children[0].text;
+    var new_text = "\\log_{" + base_text + "}{" + body_text + "}+ \\log_{" + base_text + "}{" + body_text2 + "}";
+    let new_math_str;
+    if (log_fact.parent.children.length === 1) {
+      new_math_str = replace_in_mtstr([log_fact.parent], new_text);
+    } else if (log_fact.parent.children.length === 2 && (log_fact.parent.children[0].text === "-" || log_fact.parent.children[0].text === "+")) {
+      let sign = log_fact.parent.children[0].text;
+      new_text = sign + new_text;
+      new_math_str = replace_in_mtstr([log_fact.parent], new_text);
+    } else {
+      new_text = "(" + new_text + ")";
+      new_math_str = replace_in_mtstr([log_fact], new_text);
+    }
+    return new Promise((resolve, reject) => {resolve(new_math_str)});
+  }
+
 }
 
 // document.getElementById("merge").onclick = merge;
@@ -625,22 +715,45 @@ export function merge() {
     // same_grandparents = have_same_ancestors(selection.selected_nodes, 2),
     // same_ggparents = have_same_ancestors(selection.selected_nodes, 3),
     same_type = have_same_type(selection.selected_nodes),
-    same_type2 = have_same_type(selection.selected_nodes,1);
+    same_type2 = have_same_type(selection.selected_nodes,1),
+    same_log_base = have_same_log_base(selection.selected_nodes.map(x => x.children[x.children.length-1])),
+    are_logs = are_of_type(selection.selected_nodes.map(x => x.children[x.children.length-1]), "log",1),
+    same_grandparents = have_same_ancestors(selection.selected_nodes, 2);
+
     //merge fractions into fraction
-    if (selection.selected_nodes[0].type2 === "frac" && same_parents && same_type && same_type2)
+    if (selection.selected_nodes[0].type2 === "frac" && same_parents && same_type)
     {
       console.log("merge fractions into fraction");
       //ANIMATION??
-      var numerator_text = "", denominator_text = "";
-      for (var i=0; i<selection.selected_nodes.length; i++) {
-        if (i>0 && /^[0-9]+$/.test(selection.selected_nodes[i].children[0].text) && /^[0-9]+$/.test(selection.selected_nodes[i-1].children[0].text))
-          numerator_text+="\\cdot" + selection.selected_nodes[i].children[0].text;
-        else
-          numerator_text+=selection.selected_nodes[i].children[0].text;
-        denominator_text+=selection.selected_nodes[i].children[1].text;
-      }
+      let numerator_text = multiply(selection.selected_nodes.map(x => (x.type2 === "frac" ? x.children[0] : x)));
+      let denominator_text = multiply(selection.selected_nodes.filter(x => x.type2 === "frac").map(x => x.children[1]));
       var new_text = "\\frac{" + numerator_text + "}{" + denominator_text + "}";
-      new_math_str = replace_in_mtstr(selection.selected_nodes, new_text);
+      let new_math_str = replace_in_mtstr(selection.selected_nodes, new_text);
+      return new Promise((resolve, reject) => {resolve(new_math_str)});
+    }
+    //merge logs into log
+    if (are_logs && same_grandparents && same_type && same_log_base)
+    {
+      console.log("merge logs into log");
+      //ANIMATION??
+      let body_text = multiply(selection.selected_nodes.map(x => {
+        let c = x.children;
+        let first_fact = x.children[0].text;
+        let gchild = c[c.length-1];
+        let ggchild = gchild.children[gchild.children.length-1];
+        if (first_fact === "-") {
+          let new_text = flip_fraction({ ...ggchild, type2: "normal"});
+          console.log("new_text", new_text);
+          return {...ggchild, text: new_text};
+        } else {
+          return ggchild;
+        }
+      }))
+      let base_text = "";
+      let factor = selection.selected_nodes[0].children[selection.selected_nodes[0].children.length-1];
+      if (factor.children === 2) base_text += factor.children[0].text;
+      let new_text = "+\\log_{" + base_text + "}{" + body_text + "}";
+      let new_math_str = replace_in_mtstr(selection.selected_nodes, new_text);
       return new Promise((resolve, reject) => {resolve(new_math_str)});
     }
 }

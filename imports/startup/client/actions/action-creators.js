@@ -25,7 +25,7 @@ export const manipulate = (manip, manip_data = null) => ({
 })
 
 export const updateSelect = (newSelectVars, resetMtype = false) => {
-  if (resetMtype && typeof newSelectVars.manip !== "undefined") {
+  if (resetMtype && typeof newSelectVars.mtype !== "undefined") {
     let newDepth;
     switch(newSelectVars.mtype) {
       case "factor":

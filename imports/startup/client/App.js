@@ -219,30 +219,30 @@ export default class App extends React.Component {
     //   // }
     // });
 
-    // $( ".sortable" ).droppable({
-    //     drop: function( event, ui ) {
-    //
-    //       window.setTimeout(rerender, 100); //probably not a very elegant solution
-    //
-    //       function rerender() {
-    //         var root_poly = $("#math .base");
-    //
-    //         tree = new TreeModel();
-    //
-    //         math_root = tree.parse({});
-    //         math_root.model.id = "0";
-    //         math_root.model.obj = root_poly;
-    //         //KaTeX offers MathML semantic elements on the HTML, could that be used?
-    //
-    //         parse_poly(math_root, root_poly, 0, true);
-    //
-    //         let newmath = parse_mtstr(math_root, [], []);
-    //
-    //         store.dispatch(Actions.addToHist(newmath, state.current_index+1))
-    //       }
-    //
-    //     }
-    // });
+    $( ".sortable" ).droppable({
+        drop: function( event, ui ) {
+
+          window.setTimeout(rerender, 100); //probably not a very elegant solution
+
+          function rerender() {
+            var root_poly = $("#math .base");
+
+            tree = new TreeModel();
+
+            math_root = tree.parse({});
+            math_root.model.id = "0";
+            math_root.model.obj = root_poly;
+            //KaTeX offers MathML semantic elements on the HTML, could that be used?
+
+            parse_poly(math_root, root_poly, 0, true);
+
+            let newmath = parse_mtstr(math_root, [], []);
+
+            store.dispatch(Actions.addToHist(newmath, state.current_index+1))
+          }
+
+        }
+    });
     math_root.walk(function (node) {
       if (node.model.id !== "0" && node.type === type && getIndicesOf("/", node.model.id).length === depth) {
           // console.log(node);
@@ -415,7 +415,8 @@ class MQInput extends React.Component {
     return (
       <span id="mathquill"
         onKeyUp={(e) => {
-          let index = state.getState().current_index;
+          const state = store.getState();
+          let index = state.current_index;
           if (e.keyCode == 13) dispatch(Actions.addToHist(this.props.mathStr, ++index))
           else this.props.update(this.mqlatex()) }}>...</span>
     );
@@ -459,6 +460,8 @@ class MathArea extends React.Component {
           let index = state.current_index;
           store.dispatch(Actions.addToHist(data, ++index));
         })
+      } else {
+        thisComp.updateMath(state.mathHist[state.current_index]);
       }
     });
     this.equals_position = {top: 0, left: 0}
@@ -512,10 +515,10 @@ class MathArea extends React.Component {
     }
 
   }
-  componentDidUpdate(prevProps, prevState) {
-    // let math_el = ReactDOM.findDOMNode(this.refs.math);
-    this.updateMath(this.props.mathStr);
-  }
+  // componentDidUpdate(prevProps, prevState) {
+  //   // let math_el = ReactDOM.findDOMNode(this.refs.math);
+  //   this.updateMath(this.props.mathStr);
+  // }
   render() {
     return (
       <div className="row">

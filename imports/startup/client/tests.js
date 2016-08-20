@@ -32,7 +32,7 @@ function test_manip(assert, manip, math_str_init, math_str_exp, node_ids) {
   }
   // console.log("node_ids", node_ids);
   // dispatch(act.manipulate(manip))
-  console.log("manip", manip);
+  // console.log("manip", manip);
   let promise, eqCoords = {};
 
   let vars = {};
@@ -46,11 +46,11 @@ function test_manip(assert, manip, math_str_init, math_str_exp, node_ids) {
   vars.eqCoords = eqCoords;
 
   promise = manips[manip].call(vars);
-  console.log("promise", promise);
+  // console.log("promise", promise);
   if (typeof promise !== "undefined") {
     promise.then((data) => {
       data = clear_math(data);
-      console.log("data coming", data);
+      // console.log("data coming", data);
       assert.equal(data, math_str_exp);
       done();
     })
@@ -256,14 +256,23 @@ $( document ).ready(function() {
   });
 
   QUnit.test("manipulations.merge", function( assert ) {
-    //Merge fractions into fraction
+    //Merge factors into fraction
     test_manip(assert, "merge", "ac\\frac{a}{b}\\frac{cd\\sqrt{k}}{xx}", "ac\\frac{acd\\sqrt{k}}{bxx}",  ["0/1/3", "0/1/4"]);
-    test_manip(assert, "merge", "x^{4}\\frac{1}{4}\\frac{1}{z^{2}}", "x^{4}\\frac{1\\cdot1}{4z^{2}}",  ["0/1/2", "0/1/3"]);
+    test_manip(assert, "merge", "x^{4}\\frac{1}{4}\\frac{1}{z^{2}}", "x^{4}\\frac{1}{4z^{2}}",  ["0/1/2", "0/1/3"]);
+    test_manip(assert, "merge", "\\log{\\frac{1}{y}x}=z", "\\log{\\frac{x}{y}}=z",  ["0/1/1/2/1/1", "0/1/1/2/1/2"]);
+
+    //Merge logs into log
+    test_manip(assert, "merge", "\\log{x}+\\log{y}=z", "\\log{xy}=z",  ["0/1", "0/2"]);
+    test_manip(assert, "merge", "\\log_{a}{x}-\\log_{a}{y}=z", "\\log_{a}{x\\frac{1}{y}}=z",  ["0/1", "0/2"]);
+    test_manip(assert, "merge", "\\log{x}+\\log{y+z}=z", "\\log{x(y+z)}=z",  ["0/1", "0/2"]);
   });
 
   QUnit.test("manipulations.split", function( assert ) {
-    //Merge factors into fraction
+    //Split factors out of a fraction
     test_manip(assert, "split", "ac\\frac{acd\\sqrt{k}}{bxx}", "ac\\frac{cd\\sqrt{k}}{xx}\\frac{a}{b}",  ["0/1/3/1/1/2", "0/1/3/1/1/3", "0/1/3/1/1/4", "0/1/3/2/1/2", "0/1/3/2/1/3"]);
+
+    //Split factors out of a log
+    test_manip(assert, "split", "\\log{xassdaadsy}", "\\log{asads}+ \\log{xsday}",  ["0/1/1/2/1/1", "0/1/1/2/1/3", "0/1/1/2/1/5", "0/1/1/2/1/6", "0/1/1/2/1/10"]);
   });
 
   QUnit.test("manipulations.evaluate", function( assert ) {
