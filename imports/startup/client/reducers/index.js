@@ -26,7 +26,7 @@ const rootReducer = (state = {}, action) => {
     console.log("manipulating", action.manip);
     return { ...state, manip: action.manip, doing_manip: true, manip_data: action.manip_data}
   } else if (action.type === "UPDATE_SELECT") {
-    // console.log("update select", action.newSelectVars);
+    console.log("update select", action.newSelectVars);
     return { ...state, ...action.newSelectVars}
   } else if (action.type === "UPDATE_ZOOM") {
     // console.log("updazing zoom", action.newZoom);

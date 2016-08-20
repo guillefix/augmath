@@ -131,6 +131,7 @@ export default class App extends React.Component {
     $(".sortable").removeClass("sortable")
     $( ".sortable" ).disableSelection();
     math_root.walk(function (node) {
+
       let obj;
       // console.log("hello here", type, depth);
       if (node.type === type && node.model.id.split("/").length === depth+1 && typeof node.model.obj !== "undefined") {
@@ -164,7 +165,18 @@ export default class App extends React.Component {
             },
             stop(e, ui) {
               let elements = ui.item.data('node').model.obj.clone().css("display", "inherit");
-              ui.item.after(elements);
+              console.log(elements);
+              if (ui.item.next().length > 0 && ui.item.next().text() !== "+" && ui.item.next().text() !== "-" && ui.item.next().text() !== "=") {
+                console.log("kik");
+                $('<span class="mbin ui-sortable-handle" style="display: inline-block;">+</span>').insertAfter(ui.item)
+                ui.item.after(elements);
+              } else if (ui.item.prev().length > 0 && ui.item.text() !== "+" && ui.item.text() !== "-" && ui.item.text() !== "=") {
+                console.log("kek");
+                $('<span class="mbin ui-sortable-handle" style="display: inline-block;">+</span>').insertAfter(ui.item)
+                ui.item.next().after(elements);
+              } else {
+                ui.item.after(elements);
+              }
               ui.item.data('node').model.obj.remove();
             }
           });
@@ -222,9 +234,10 @@ export default class App extends React.Component {
     $( ".sortable" ).droppable({
         drop: function( event, ui ) {
 
-          window.setTimeout(rerender, 100); //probably not a very elegant solution
+          window.setTimeout(rerender, 50); //probably not a very elegant solution
 
           function rerender() {
+
             var root_poly = $("#math .base");
 
             tree = new TreeModel();
@@ -236,7 +249,11 @@ export default class App extends React.Component {
 
             parse_poly(math_root, root_poly, 0, true);
 
-            let newmath = parse_mtstr(math_root, [], []);
+            // console.log(event);
+            //
+            // let node = math_root.first((node) => node.model.obj === ui.helper);
+
+            let newmath = replace_in_mtstr([], [], math_root);
 
             store.dispatch(Actions.addToHist(newmath, state.current_index+1))
           }
@@ -448,6 +465,7 @@ class MathArea extends React.Component {
 
         if (state.manip === "replace") {
           promise = manips[state.manip](state.manip_data, state.replace_ind);
+          console.log(state.replace_ind);
         } else if (state.manip === "flip_equation") {
           promise = manips[state.manip](state.mathHist[state.current_index]);
         } else if (state.manip === "add_both_sides") {

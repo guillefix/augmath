@@ -125,7 +125,8 @@ export default class Tools extends React.Component {
   					<label>Replace selection with: <input id="replace" size="20" ref={(ref) => this.replaceSelectInput = ref} placeholder="Type LaTeX here" onKeyUp={(e)=> {if (e.keyCode == 13) dispatch(act.manipulate("replace", e.target.value))}} /></label>
   					<span>Replace individually <input type="checkbox" name="replace_ind" id="replace_ind" onChange={()=>{
                 let state = store.getState();
-                dispatch.bind(null, act.updateSelect({replace_ind: !state.replace_ind}))}}/></span>
+                console.log("!state.replace_ind", !state.replace_ind);
+                dispatch(act.updateSelect({replace_ind: !state.replace_ind}))}}/></span>
   				</li>
   				<button type="button" className="list-group-item" id="remove" onClick={dispatch.bind(null, act.manipulate("remove"))}>
   					Remove

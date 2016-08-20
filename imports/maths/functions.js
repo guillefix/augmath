@@ -42,6 +42,9 @@ export function select_node(node, multi_select=false, var_select=false) {
       }
     });
   }
+  if (!multi_select) {
+    selection.selected_nodes = [];
+  }
   if (var_select) {
     math_root.walk(function (node2) {
       let has_matching_children = false
@@ -51,12 +54,14 @@ export function select_node(node, multi_select=false, var_select=false) {
       if (node2.model.id !== node.model.id && node2.text === node.text && !has_matching_children) {
         // console.log(node2.text, node2.selected);
         node2.selected = node.selected;
-        node.selected ? node2.model.obj.addClass("selected") : node2.model.obj.removeClass("selected");
+        if (node.selected) {
+          node2.model.obj.addClass("selected");
+          selection.selected_nodes.push(node2);
+        } else {
+          node2.model.obj.removeClass("selected");
+        }
       }
     });
-  }
-  if (!multi_select) {
-    selection.selected_nodes = [];
   }
   selection.selected_text = "";
   selection.selected_nodes.push(node);
@@ -130,7 +135,7 @@ export function latex_to_ascii(str) {
 
 export function ascii_to_latex(str) {
   var exp = new algebra.Expression(str);
-  console.log(exp);
+  // console.log(exp);
   let result = exp.toTex()
     .replace(/\^([a-z0-9])/g, "^{$1}")
     .replace(/\^\(([-a-z0-9]+)\)/g, "^{$1}")
@@ -141,15 +146,15 @@ export function ascii_to_latex(str) {
 
 //evaluate an expression with Algebrite
 export function eval_expression(expression) {
-  console.log("eval_expression", expression);
+  // console.log("eval_expression", expression);
   var new_term;
   expression = latex_to_ascii(expression) //doesn't work with some expressions, as usual
-  console.log("expression", expression);
+  // console.log("expression", expression);
   if (expression.search(/[a-z\(\)]/) > -1) {
     var new_str = Algebrite.simplify(expression).toString();
-    console.log("new_str", new_str);
+    // console.log("new_str", new_str);
     new_term = ascii_to_latex(new_str);
-    console.log("new_term", new_term);
+    // console.log("new_term", new_term);
     // try {
     //   new_term = CQ(expression).simplify().toLaTeX().replace("\\cdot", ""); //removing cdot format
     // }
@@ -498,11 +503,9 @@ export function get_all_next(node) {
   for (var i = init+1; i <= max; i++) {
     array[array.length-1] = i;
     var new_id = array.join("/");
-    var node;
-    math_root.walk(function (node1) {
-      if (node1.model.id === new_id) {node = node1; return false;}
+    math_root.walk(function (node) {
+      if (node.model.id === new_id) {next_nodes.push(node); return false;}
     });
-    next_nodes.push(node);
   };
   return next_nodes;
 }
@@ -520,7 +523,7 @@ export function has_op(obj) {
 export function parse_mtstr(root, node_arr, str_arr) {
   var poly_str = "";
   var i = 0, j = 0;
-  // console.log(root, node_arr, str_arr);
+  //childs of the root node are terms
   while (i < root.children.length) {
     var term_text="";
     var child = root.children[i];
@@ -534,7 +537,7 @@ export function parse_mtstr(root, node_arr, str_arr) {
     }
     if (node_selected) {i++; poly_str+=term_text; continue;}
     j = 0;
-    // console.log(child);
+    //grandchildren are factors
     while (j < child.children.length) {
       var factor_text="";
       var frac_text = [], exp_text = [], binom_text = [], diff_text = "", int_text = [];
@@ -674,6 +677,17 @@ export function parse_mtstr(root, node_arr, str_arr) {
             }
             let base_txt = "_{" + log_text[1] + "}"
             factor_text = "\\log" + base_txt.repeat(log_text.length-1) + "{" + log_text[0] + "}";
+            break;
+          default:
+            //this should mean it is a function with some special name, like sin, cos.
+            let arg_text = parse_mtstr(grandchild.children[0], node_arr, str_arr); //argument of fun
+            for (var k=0; k<node_arr.length; k++) {
+              if (grandchild.children[0].model.id === node_arr[k].model.id) {
+                arg_text = str_arr[k];
+                break;
+              }
+            }
+            factor_text = "\\" + grandchild.type2 + "{" + arg_text + "}";
             break;
 
         }
@@ -868,33 +882,45 @@ export function parse_poly(root, poly, parent_id, is_container) {
       factor_cnt++;
       i=i+2; //because logs include the next HTML element too, as the body of the log!
     }
+    //other functions
+    else if (thing.is(".mop"))
+    {
+      factor_obj.css("position", "relative"); //so that animations work with log element..
+      factor_obj = factor_obj.add(thing.next());
+      factor = tree.parse({id: factor_id, obj: factor_obj});
+      factor.type = "factor";
+      factor.type2 = thing.text();
+      term.addChild(factor);
+      term_obj = term_obj.add(factor_obj);
+      factor_cnt++;
+      i=i+2; //because functions include the next HTML element too, as the body of the log!
+    }
 
     //PARSING CHILDREN: deal with things with children, recursivelly.
     if (factor_obj.is(":has(*)")) {
       //fractions
       if (thing.children(".mfrac").length !== 0 && thing.children(".mfrac").children(".vlist").children().length === 4)
       {
-        if (thing.text().search(/^\\frac\{d\}\{d[a-z]\}$/) === 1) {
+        factor.type2 = "frac";
+        denominator = thing.closest_n_descendents(".mord", 2).first();
+        numerator = thing.closest_n_descendents(".mord", 2).last();
+        child1 = tree.parse({id: factor_id + "/" + "1", obj: numerator});
+        child1.type = "numerator";
+        child2 = tree.parse({id: factor_id + "/" + "2", obj: denominator});
+        child2.type = "denominator";
+        factor.addChild(child1);
+        factor.addChild(child2);
+        nom_str = parse_poly(child1, numerator, factor_id + "/" + "1", true);
+        child1.text = nom_str;
+        denom_str = parse_poly(child2, denominator, factor_id + "/" + "2", true);
+        child2.text = denom_str;
+        factor.text = "\\frac{" + nom_str + "}{" + denom_str + "}";
+        if (nom_str === "d" && denom_str.search(/^d[a-z]$/) === 0) {
           factor.type2 = "diff";
-          var variable = thing.closest_n_descendents(".mord", 2).first().children();
-          variable = variable.not(variable.first());
-          var var_str = parse_poly(factor, variable, factor_id, false);
-          factor.text = "\\frac{d}{d" + var_str + "}";
-        } else {
-          factor.type2 = "frac";
-          denominator = thing.closest_n_descendents(".mord", 2).first();
-          numerator = thing.closest_n_descendents(".mord", 2).last();
-          child1 = tree.parse({id: factor_id + "/" + "1", obj: numerator});
-          child1.type = "numerator";
-          child2 = tree.parse({id: factor_id + "/" + "2", obj: denominator});
-          child2.type = "denominator";
-          factor.addChild(child1);
-          factor.addChild(child2);
-          nom_str = parse_poly(child1, numerator, factor_id + "/" + "1", true);
-          child1.text = nom_str;
-          denom_str = parse_poly(child2, denominator, factor_id + "/" + "2", true);
-          child2.text = denom_str;
-          factor.text = "\\frac{" + nom_str + "}{" + denom_str + "}";
+          // var variable = thing.closest_n_descendents(".mord", 2).first().children();
+          // variable = variable.not(variable.first());
+          // var var_str = parse_poly(factor, variable, factor_id, false);
+          // factor.text = "\\frac{d}{d" + var_str + "}";
         }
       }
       //square roots
@@ -1023,9 +1049,20 @@ export function parse_poly(root, poly, parent_id, is_container) {
         let body_obj = thing.next();
         let body = tree.parse({id: factor_id + "/" + "2", obj: body_obj});
         body.type = "body";
-        body.text = parse_poly(body, body_obj, factor_id + "/" + "2", true);
+        body.text = parse_poly(body, body_obj, factor_id + "/" + "2", body_obj.children().length > 0);
         factor.addChild(body);
         factor.text = log_text + "{" + body.text + "}";
+      }
+      //other functions
+      else if (thing.is(".mop"))
+      {
+        let fun_text = "\\" + thing.text();
+        let arg_obj = thing.next();
+        let arg = tree.parse({id: factor_id + "/" + "2", obj: arg_obj});
+        arg.type = "body";
+        arg.text = parse_poly(arg, arg_obj, factor_id + "/" + "2", arg_obj.children().length > 0);
+        factor.addChild(arg);
+        factor.text = fun_text + "{" + arg.text + "}";
       }
       factor_text = factor.text;
     }
@@ -1050,6 +1087,8 @@ export function clear_math(math) {
         .replace(/^\+/, "")
         .replace(/=$/, "=0")
         .replace(/=+/, "=")
+        .replace(/=[\+\-]/g, "=")
+        .replace(/[\+\-]=/g, "=")
         .replace(/0\+/g, "")
         .replace(/0-/g, "-")
         .replace(/^=/, "0=")

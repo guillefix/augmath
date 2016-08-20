@@ -293,7 +293,7 @@ export function change_side() {
       });
     }
   }
-  //log base
+  //log/power base
   else if (selection.selected_nodes[0].type === "base" && selection.selected_nodes.length === 1
     //and it comes from a top level term, plus there is only one term on the side of the selected thing:
     && ((selection.selected_nodes[0].parent.model.obj.prevAll(".mrel").length !== 0
@@ -1193,20 +1193,24 @@ export function evaluate() {
 //operate with an operator
 export function operate() {
   if (selection.selected_nodes.length === 1 && selection.selected_nodes[0].type2 === "diff") {
-    var variable = selection.selected_nodes[0].children[0].text;
-    var expression = "";
+    console.log("differentiating");
+    var variable = selection.selected_nodes[0].children[1].text.slice(1);
     var next_nodes = get_all_next(selection.selected_nodes[0]);
+    let expression = "";
     for (var i = 0; i < next_nodes.length; i++) {
       expression+=next_nodes[i].text;
     };
     expression = latex_to_ascii(expression);
-    console.log(variable);
+    // console.log(variable);
     //TODO: IMPROVE ANIMATION (LOOK AT THE MECHANICAL UNIVERSE)
     return new Promise((resolve, reject) => {
       selection.$selected.animate({"font-size": 0, opacity: 0}, step_duration).css('overflow', 'visible').promise().done(function() {
-        new_term = CQ(expression).differentiate(variable).toLaTeX().replace("\\cdot", "");
+        // new_term = CQ(expression).differentiate(variable).toLaTeX().replace("\\cdot", "");
+        // console.log("expression, variable", expression, variable);
+        let new_term = Algebrite.run("d(" + expression + "," + variable + ")");
+        new_term = ascii_to_latex(new_term);
         new_math_str = replace_in_mtstr(selection.selected_nodes.concat(next_nodes), new_term);
-        return new_math_str;
+        resolve(new_math_str);
       });
     });
   } else {

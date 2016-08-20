@@ -146,6 +146,9 @@ $( document ).ready(function() {
     // console.log("keeeeeeeeeekkekekekekekekekekek");
     //TODO: FOR power. NEED TO ADD option for selecting factor or term within power, just like for fractions..
 
+    //change base in log of side
+    test_manip(assert, "change_side", "z+asda=\\log_{e^{2}}{x}", "(e^{2})^{z+asda}=x",  ["0/4/1/1"]);
+
   });
 
   QUnit.test("manipulations.move_right", function( assert ) {
@@ -288,6 +291,11 @@ $( document ).ready(function() {
   QUnit.test("manipulations.cancel_out", function( assert ) {
     //merge two exponentials
     test_manip(assert, "cancel_out", "\\frac{v^{2}}{r}=\\frac{GMmr}{r^{2}}", "\\frac{v^{2}}{r}=\\frac{GMm}{r}",  ["0/3/1/1/1/4", "0/3/1/2/1/1"]);
+  });
+
+  QUnit.test("manipulations.operate", function( assert ) {
+    //merge two exponentials
+    test_manip(assert, "operate", "\\frac{d}{dx} (x^{5}+x^{3})", "5 x^{4} + 3 x^{2}",  ["0/1/1"]);
   });
 
 });
