@@ -1,7 +1,5 @@
 import {replace_in_mtstr, tot_width, rationalize, eval_expression, ascii_to_latex, latex_to_ascii, getIndicesOf, cleanIndices, change_sign, exponentiate, multiply, flip_fraction, add_brackets, are_of_type, any_of_type, have_same_ancestors, have_same_type, have_same_text, have_single_factor, have_same_denom, are_same_terms, have_same_prop, have_same_log_base, get_prev, get_next, get_all_next, has_op, parse_mtstr, parse_poly, math_str_to_tree, clear_math} from "./functions";
 
-import {selection} from '../startup/client/App.js';
-
 // import Algebrite from 'algebrite';
 
 import algebra from 'algebra.js'
@@ -10,12 +8,13 @@ import Bro from 'brototype';
 
 import {symbols} from './symbols.js';
 
-
 //MANIPULATIONS
 
 //change side
 export function change_side() {
-  console.log("helping vars", this);
+  let math_root = this.math_root;
+  let selection = this.selection;
+  // console.log("helping vars", this);
   var new_term;
   // equals_position = $equals.offset();
   var selected_width = tot_width(selection.$selected, true, true);
@@ -43,7 +42,7 @@ export function change_side() {
         selection.$selected.animate({left:offset}, step_duration).promise().done(function() {
           selection.$selected = $(".selected").add($(".selected").find("*"));
           new_term = change_sign(selection.selected_nodes);
-          new_math_str = replace_in_mtstr(selection.selected_nodes, "")+"+"+new_term;
+          new_math_str = replace_in_mtstr(math_root, selection.selected_nodes, "")+"+"+new_term;
           resolve(new_math_str); //this should pass it to the promise
         });
       });
@@ -57,7 +56,7 @@ export function change_side() {
         selection.$selected.animate({left:offset}, step_duration).promise().done(function() {
           selection.$selected = $(".selected").add($(".selected").find("*"));
           new_term = change_sign(selection.selected_nodes);
-          new_math_str = replace_in_mtstr(selection.selected_nodes, "");
+          new_math_str = replace_in_mtstr(math_root, selection.selected_nodes, "");
           new_math_str = new_math_str.replace("=", "+"+new_term+"=");
           resolve(new_math_str); //this should pass it to the promise
         });
@@ -71,9 +70,9 @@ export function change_side() {
     && selection.selected_nodes.length === 1
     //and it comes from a top leve term, plus there is only one term on the side of the selected sign:
     && ((selection.$selected.prevAll(".mrel").length !== 0
-        && get_prev([math_root.children[math_root.children.length-1]]).children[0].type === "rel")
+        && get_prev(math_root, [math_root.children[math_root.children.length-1]]).children[0].type === "rel")
       || (selection.$selected.nextAll(".mrel").length !== 0
-        && get_next([math_root.children[0]]).children[0].type === "rel")))
+        && get_next(math_root, [math_root.children[0]]).children[0].type === "rel")))
   {
     console.log("changing sign of side");
     var selected_width = tot_width(selection.$selected, true, true);
@@ -85,7 +84,7 @@ export function change_side() {
           selection.$selected.animate({left:offset}, step_duration).promise().done(function() {
           var RHS_terms = math_root.children.slice(parseInt(equals_node.model.id.split("/")[1]));
           new_term = change_sign(RHS_terms);
-          new_math_str = replace_in_mtstr(selection.selected_nodes.concat(RHS_terms), "")+new_term;
+          new_math_str = replace_in_mtstr(math_root, selection.selected_nodes.concat(RHS_terms), "")+new_term;
           resolve(new_math_str);
         });
       });
@@ -98,7 +97,7 @@ export function change_side() {
         selection.$selected.animate({left:offset}, step_duration).promise().done(function() {
           var LHS_terms = math_root.children.slice(0, parseInt(equals_node.model.id.split("/")[1])-1);
           new_term = change_sign(LHS_terms);
-          new_math_str = new_term+replace_in_mtstr(selection.selected_nodes.concat(LHS_terms), "");
+          new_math_str = new_term+replace_in_mtstr(math_root, selection.selected_nodes.concat(LHS_terms), "");
           resolve(new_math_str);
         });
       });
@@ -111,9 +110,9 @@ export function change_side() {
     || selection.selected_nodes[0].type === "numerator")
     //and it comes from a top level term, plus there is only one term on the side of the selected sign:
     && ((selection.$selected.prevAll(".mrel").length !== 0
-        && get_prev([math_root.children[math_root.children.length-1]]).children[0].type === "rel")
+        && get_prev(math_root, [math_root.children[math_root.children.length-1]]).children[0].type === "rel")
       || (selection.$selected.prevAll(".mrel").length === 0
-        && get_next([math_root.children[0]]).children[0].type === "rel")))
+        && get_next(math_root, [math_root.children[0]]).children[0].type === "rel")))
   {
     console.log("changing factor of side");
     if (selection.selected_nodes[0].model.id.split("/")[1] < equals_node.model.id.split("/")[1]) { //before eq sign
@@ -132,7 +131,7 @@ export function change_side() {
       $equals.nextAll().animate({top:-v_offset, left:tot_width(selection.$selected, true, false)/2}, step_duration);
       return new Promise((resolve, reject) => {
         selection.$selected.animate({left:h_offset, top:v_offset}, step_duration).promise().done(function() {
-          new_math_str = replace_in_mtstr(selection.selected_nodes, "");
+          new_math_str = replace_in_mtstr(math_root, selection.selected_nodes, "");
           math_HS = new_math_str.split("="); //HS=hand sides
           if (include_in_frac) {
             new_math_str = math_HS[0] + "=" + "\\frac{" + after_eq_nodes[0].children[0].children[0].text + "}{" + after_eq_nodes[0].children[0].children[1].text + selection.selected_text + "}";
@@ -159,7 +158,7 @@ export function change_side() {
       $equals.prevAll().animate({top:-v_offset, left:tot_width(selection.$selected, true, false)/2}, step_duration);
       return new Promise((resolve, reject) => {
         selection.$selected.animate({left:-h_offset, top:v_offset}, step_duration).promise().done(function() {
-          new_math_str = replace_in_mtstr(selection.selected_nodes, "");
+          new_math_str = replace_in_mtstr(math_root, selection.selected_nodes, "");
           math_HS = new_math_str.split("="); //HS=hand sides
           if (include_in_frac) {
             new_math_str = "\\frac{" + before_eq_nodes[0].children[0].children[0].text + "}{" + before_eq_nodes[0].children[0].children[1].text + selection.selected_text + "}" + "=" + math_HS[1];
@@ -198,10 +197,12 @@ export function change_side() {
       }
       return new Promise((resolve, reject) => {
         selection.$selected.animate({left:h_offset, top:-v_offset}, step_duration).promise().done(function() {
-          new_math_str = replace_in_mtstr(selection.selected_nodes, "");
+          new_math_str = replace_in_mtstr(math_root, selection.selected_nodes, "");
           math_HS = new_math_str.split("="); //HS=hand sides
           if (include_in_frac) {
             new_math_str = math_HS[0].replace(/\\frac{([ -~]+)}{}/, "$1") + "=" + "\\frac{" + after_eq_nodes[0].children[0].children[0].text + selection.selected_text + "}{" + after_eq_nodes[0].children[0].children[1].text + "}";
+          } else if (after_eq_nodes.length > 1) {
+            new_math_str = math_HS[0] + "=" + selection.selected_text + "(" + math_HS[1] + ")" ;
           } else {
             new_math_str = math_HS[0] + "=" + selection.selected_text + math_HS[1] ;
           }
@@ -229,7 +230,7 @@ export function change_side() {
       }
       return new Promise((resolve, reject) => {
         selection.$selected.animate({left:-h_offset, top:-v_offset}, step_duration).promise().done(function() {
-          new_math_str = replace_in_mtstr(selection.selected_nodes, "");
+          new_math_str = replace_in_mtstr(math_root, selection.selected_nodes, "");
           math_HS = new_math_str.split("="); //HS=hand sides
           if (include_in_frac) {
             new_math_str = "\\frac{" + before_eq_nodes[0].children[0].children[0].text + selection.selected_text + "}{" + before_eq_nodes[0].children[0].children[1].text + "}" + "=" + math_HS[1].replace(/\\frac{([ -~]+)}{}/, "$1");
@@ -250,16 +251,16 @@ export function change_side() {
     && selection.selected_nodes.length === 1
     //and it comes from a top level term, plus there is only one term on the side of the selected sign:
     && ((selection.$selected.prevAll(".mrel").length !== 0
-        && get_prev([math_root.children[math_root.children.length-1]]).children[0].type === "rel")
+        && get_prev(math_root, [math_root.children[math_root.children.length-1]]).children[0].type === "rel")
       || (selection.$selected.nextAll(".mrel").length !== 0
-        && get_next([math_root.children[0]]).children[0].type === "rel")))
+        && get_next(math_root, [math_root.children[0]]).children[0].type === "rel")))
   {
     console.log("changing power of side");
     if (selection.$selected.parent().prevAll(".mrel").length === 0) { //before eq sign
       var offset = this.eqCoords.end_of_equation.left - this.eqCoords.equals_position.left;
       return new Promise((resolve, reject) => {
         selection.$selected.animate({left:offset}, step_duration).promise().done(function() {
-          new_math_str = replace_in_mtstr(selection.selected_nodes, "");
+          new_math_str = replace_in_mtstr(math_root, selection.selected_nodes, "");
           math_HS = new_math_str.split("="); //HS=hand sides
           if (selection.selected_nodes[0].text === "2") {
             new_math_str = math_HS[0] + "=" + "\\sqrt{" + math_HS[1] + "}";
@@ -277,7 +278,7 @@ export function change_side() {
       var offset = this.eqCoords.end_of_equation.left - this.eqCoords.equals_position.left;
       return new Promise((resolve, reject) => {
         selection.$selected.animate({left:-offset}, step_duration).promise().done(function() {
-          new_math_str = replace_in_mtstr(selection.selected_nodes, "");
+          new_math_str = replace_in_mtstr(math_root, selection.selected_nodes, "");
           math_HS = new_math_str.split("="); //HS=hand sides
           if (selection.selected_nodes[0].text === "2") {
             new_math_str = "\\sqrt{" + math_HS[0] + "}" + "=" + math_HS[1];
@@ -297,9 +298,9 @@ export function change_side() {
   else if (selection.selected_nodes[0].type === "base" && selection.selected_nodes.length === 1
     //and it comes from a top level term, plus there is only one term on the side of the selected thing:
     && ((selection.selected_nodes[0].parent.model.obj.prevAll(".mrel").length !== 0
-        && get_prev([math_root.children[math_root.children.length-1]]).children[0].type === "rel")
+        && get_prev(math_root, [math_root.children[math_root.children.length-1]]).children[0].type === "rel")
       || (selection.selected_nodes[0].parent.model.obj.nextAll(".mrel").length !== 0
-        && get_next([math_root.children[0]]).children[0].type === "rel")))
+        && get_next(math_root, [math_root.children[0]]).children[0].type === "rel")))
   {
     //ANIMATION??
     console.log("changing base of side");
@@ -312,7 +313,7 @@ export function change_side() {
       if (node.children.length > 1) base_text = "(" + base_text + ")";
     }
     let body_text = node.parent.children[1].text;
-    new_math_str = replace_in_mtstr(selection.selected_nodes, "");
+    new_math_str = replace_in_mtstr(math_root, selection.selected_nodes, "");
     math_HS = new_math_str.split("="); //HS=hand sides
     if (node.parent.model.obj.nextAll(".mrel").length !== 0) { //before eq sign
       let offset = this.eqCoords.end_of_equation.left - this.eqCoords.equals_position.left;
@@ -349,6 +350,8 @@ export function change_side() {
 
 //move term within expression, or factor within term
 export function move_right(){
+  let math_root = this.math_root;
+  let selection = this.selection;
   //moving factor or term
   if (selection.$selected.next().filter(".mrel").length === 0)
   {
@@ -362,12 +365,12 @@ export function move_right(){
     }
     var selected_width = tot_width(selection.$selected, true, include_op);
     var selected_text_str, next_text_str;
-    var next_node = get_next(selection.selected_nodes);
+    var next_node = get_next(math_root, selection.selected_nodes);
     var $selected_next = next_node.model.obj;
     var selected_next_width = tot_width($selected_next, true, include_op);
     //check if it's a multiplication operator, and if so, get next thing
     if (next_node.type2 === "op" && next_node.optype === "mult") {
-      next_node = get_next(next_node)
+      next_node = get_next(math_root, next_node)
       var width_diff = selected_next_width - selected_width;
       var $selected_next = next_node.model.obj;
       var selected_next_width = tot_width($selected_next.add($selected_next.prev()), true, include_op);
@@ -380,7 +383,7 @@ export function move_right(){
         if (!has_op(selection.$selected) && selection.selected_nodes[0].type === "term") {selected_text_str = "+" + selection.selected_text;} else {selected_text_str = selection.selected_text;}
         next_text = next_node.text;
         if (!has_op($selected_next) && selection.selected_nodes[0].type === "term") {next_text_str = "+" + next_text;} else {next_text_str = next_text;}
-        new_math_str = replace_in_mtstr([next_node].concat(selection.selected_nodes), [selected_text_str, next_text_str]);
+        new_math_str = replace_in_mtstr(math_root, [next_node].concat(selection.selected_nodes), [selected_text_str, next_text_str]);
         resolve(new_math_str);
       });
     });
@@ -390,6 +393,8 @@ export function move_right(){
 }
 
 export function move_left() {
+  let math_root = this.math_root;
+  let selection = this.selection;
   //moving factor or term
   if (selection.$selected.prev().filter(".mrel").length === 0)
   {
@@ -405,12 +410,12 @@ export function move_left() {
     }
     var selected_width = tot_width(selection.$selected, true, include_op);
     var selected_text_str, prev_text_str;
-    var prev_node = get_prev(selection.selected_nodes);
+    var prev_node = get_prev(math_root, selection.selected_nodes);
     var $selected_prev = prev_node.model.obj;
     var selected_prev_width = tot_width($selected_prev, true, include_op);
     //check if it's a multiplication operator, and if so, get prev thing
     if (prev_node.type2 === "op" && prev_node.optype === "mult") {
-      prev_node = get_prev(prev_node)
+      prev_node = get_prev(math_root, prev_node)
       var $selected_prev = prev_node.model.obj;
       var width_diff = selected_prev_width - selected_width;
       var selected_prev_width = tot_width($selected_prev.add($selected_prev.next()), true, include_op);
@@ -424,7 +429,7 @@ export function move_left() {
         if (!has_op(selection.$selected) && selection.selected_nodes[0].type === "term") {selected_text_str = "+" + selection.selected_text;} else {selected_text_str = selection.selected_text;}
         prev_text = prev_node.text;
         if (!has_op($selected_prev) && selection.selected_nodes[0].type === "term") { prev_text_str = "+" + prev_text;} else {prev_text_str = prev_text;}
-        new_math_str = replace_in_mtstr([prev_node].concat(selection.selected_nodes), [selected_text_str, prev_text_str]);
+        new_math_str = replace_in_mtstr(math_root, [prev_node].concat(selection.selected_nodes), [selected_text_str, prev_text_str]);
         resolve(new_math_str);
       });
     });
@@ -435,6 +440,8 @@ export function move_left() {
 
 //move up and down in a fraction
 export function move_up() {
+  let math_root = this.math_root;
+  let selection = this.selection;
   var same_parents = have_same_ancestors(selection.selected_nodes, 1),
     same_type2 = have_same_type(selection.selected_nodes,1),
     same_type = have_same_type(selection.selected_nodes);
@@ -514,7 +521,7 @@ export function move_up() {
     selection.$selected.first().prevAll().animate({left:-extra_selected_width/2}, step_duration);
     return new Promise((resolve, reject) => {
       selection.$selected.animate({left:-h_offset, top:-v_offset}, step_duration).promise().done(function() {
-        new_math_str = replace_in_mtstr([numerator].concat(selection.selected_nodes), new_nom_text); //this just changes text of numerator and deletes selection.selected_nodes
+        new_math_str = replace_in_mtstr(math_root, [numerator].concat(selection.selected_nodes), new_nom_text); //this just changes text of numerator and deletes selection.selected_nodes
         resolve(new_math_str);
       });
     });
@@ -523,7 +530,8 @@ export function move_up() {
 }
 
 export function move_down() {
-
+  let math_root = this.math_root;
+  let selection = this.selection;
   var same_parents = have_same_ancestors(selection.selected_nodes, 1);
 
   if (same_parents) {
@@ -543,7 +551,7 @@ export function move_down() {
       selection.$selected.first().prevAll().animate({left:-extra_selected_width/2}, step_duration);
       return new Promise((resolve, reject) => {
         selection.$selected.animate({left:-h_offset, top:v_offset}, step_duration).promise().done(function() {
-          new_math_str = replace_in_mtstr([denominator].concat(selection.selected_nodes), new_denom_text);
+          new_math_str = replace_in_mtstr(math_root, [denominator].concat(selection.selected_nodes), new_denom_text);
           resolve(new_math_str);
         });
       });
@@ -599,7 +607,7 @@ export function move_down() {
             };
           };
           new_text = "\\frac{"+new_nom_text+"}{"+new_denom_text+"}";
-          new_math_str = replace_in_mtstr(selection.selected_nodes[0].parent.children.slice(begin_i), new_text);
+          new_math_str = replace_in_mtstr(math_root, selection.selected_nodes[0].parent.children.slice(begin_i), new_text);
           resolve(new_math_str);
         });
       });
@@ -611,6 +619,8 @@ export function move_down() {
 
 // document.getElementById("split").onclick = split;
 export function split() {
+  let math_root = this.math_root;
+  let selection = this.selection;
   var same_factor = true,
     same_parents = have_same_ancestors(selection.selected_nodes, 1),
     // same_grandparents = have_same_ancestors(selection.selected_nodes, 2),
@@ -665,7 +675,7 @@ export function split() {
       denominator_text2 = "";
     }
     var new_text = "\\frac{" + numerator_text + "}{" + denominator_text + "}" + "\\frac{" + numerator_text2 + "}{" + denominator_text2 + "}";
-    new_math_str = replace_in_mtstr([selection.selected_nodes[0].parent.parent.parent], new_text);
+    new_math_str = replace_in_mtstr(math_root, [selection.selected_nodes[0].parent.parent.parent], new_text);
     return new Promise((resolve, reject) => {resolve(new_math_str)});
   }
   //split factors out of logs
@@ -694,14 +704,14 @@ export function split() {
     var new_text = "\\log_{" + base_text + "}{" + body_text + "}+ \\log_{" + base_text + "}{" + body_text2 + "}";
     let new_math_str;
     if (log_fact.parent.children.length === 1) {
-      new_math_str = replace_in_mtstr([log_fact.parent], new_text);
+      new_math_str = replace_in_mtstr(math_root, [log_fact.parent], new_text);
     } else if (log_fact.parent.children.length === 2 && (log_fact.parent.children[0].text === "-" || log_fact.parent.children[0].text === "+")) {
       let sign = log_fact.parent.children[0].text;
       new_text = sign + new_text;
-      new_math_str = replace_in_mtstr([log_fact.parent], new_text);
+      new_math_str = replace_in_mtstr(math_root, [log_fact.parent], new_text);
     } else {
       new_text = "(" + new_text + ")";
-      new_math_str = replace_in_mtstr([log_fact], new_text);
+      new_math_str = replace_in_mtstr(math_root, [log_fact], new_text);
     }
     return new Promise((resolve, reject) => {resolve(new_math_str)});
   }
@@ -710,6 +720,8 @@ export function split() {
 
 // document.getElementById("merge").onclick = merge;
 export function merge() {
+  let math_root = this.math_root;
+  let selection = this.selection;
   var same_factor = true,
     same_parents = have_same_ancestors(selection.selected_nodes, 1),
     // same_grandparents = have_same_ancestors(selection.selected_nodes, 2),
@@ -728,7 +740,7 @@ export function merge() {
       let numerator_text = multiply(selection.selected_nodes.map(x => (x.type2 === "frac" ? x.children[0] : x)));
       let denominator_text = multiply(selection.selected_nodes.filter(x => x.type2 === "frac").map(x => x.children[1]));
       var new_text = "\\frac{" + numerator_text + "}{" + denominator_text + "}";
-      let new_math_str = replace_in_mtstr(selection.selected_nodes, new_text);
+      let new_math_str = replace_in_mtstr(math_root, selection.selected_nodes, new_text);
       return new Promise((resolve, reject) => {resolve(new_math_str)});
     }
     //merge logs into log
@@ -753,13 +765,15 @@ export function merge() {
       let factor = selection.selected_nodes[0].children[selection.selected_nodes[0].children.length-1];
       if (factor.children === 2) base_text += factor.children[0].text;
       let new_text = "+\\log_{" + base_text + "}{" + body_text + "}";
-      let new_math_str = replace_in_mtstr(selection.selected_nodes, new_text);
+      let new_math_str = replace_in_mtstr(math_root, selection.selected_nodes, new_text);
       return new Promise((resolve, reject) => {resolve(new_math_str)});
     }
 }
 
 //distributing in stuff
 export function distribute_in() {
+  let math_root = this.math_root;
+  let selection = this.selection;
   var same_factor = true,
     same_parents = have_same_ancestors(selection.selected_nodes, 1),
     same_grandparents = have_same_ancestors(selection.selected_nodes, 2),
@@ -811,7 +825,7 @@ export function distribute_in() {
           } else {
             var new_text = text
           }
-          new_math_str = replace_in_mtstr(selection.selected_nodes, new_text);
+          new_math_str = replace_in_mtstr(math_root, selection.selected_nodes, new_text);
           // console.log(text, new_math_str);
           resolve(new_math_str);
         });
@@ -834,7 +848,7 @@ export function distribute_in() {
         new_terms.push(selection.selected_nodes[i].text);
       }
     }
-    new_math_str = replace_in_mtstr(selection.selected_nodes, new_terms);
+    new_math_str = replace_in_mtstr(math_root, selection.selected_nodes, new_terms);
     return new Promise((resolve, reject) => {resolve(new_math_str)});
   }
   //split fraction into terms when selecting terms
@@ -857,7 +871,7 @@ export function distribute_in() {
         new_terms.push(selection.selected_nodes[i].text);
       }
     }
-    new_math_str = replace_in_mtstr(selection.selected_nodes, new_terms);
+    new_math_str = replace_in_mtstr(math_root, selection.selected_nodes, new_terms);
     return new Promise((resolve, reject) => {resolve(new_math_str)});
   }
   //split square root. Need to make it work with fractions
@@ -869,7 +883,7 @@ export function distribute_in() {
     for (var i=0; i<factors.length; i++) {
         text+="\\sqrt{" + factors[i].text + "}";
       }
-    new_math_str = replace_in_mtstr(selection.selected_nodes, text);
+    new_math_str = replace_in_mtstr(math_root, selection.selected_nodes, text);
     return new Promise((resolve, reject) => {resolve(new_math_str)});
   }
   //distribute power in
@@ -886,7 +900,7 @@ export function distribute_in() {
     var base_factors = selection.selected_nodes[0].children[0].children[0].children;
     console.log("base_factors", base_factors, "power_text", power_text);
     var text = exponentiate(base_factors, false, power_text,true);
-    new_math_str = replace_in_mtstr(selection.selected_nodes, text);
+    new_math_str = replace_in_mtstr(math_root, selection.selected_nodes, text);
     return new Promise((resolve, reject) => {resolve(new_math_str)});
   }
   //split exponential with terms into exponentials
@@ -906,7 +920,7 @@ export function distribute_in() {
     for (var i=0; i<power_terms.length; i++) {
       text+=base_text + "^{" + power_terms[i].text + "}";
     }
-    new_math_str = replace_in_mtstr([selection.selected_nodes[0].parent], text);
+    new_math_str = replace_in_mtstr(math_root, [selection.selected_nodes[0].parent], text);
     return new Promise((resolve, reject) => {resolve(new_math_str)});
   }
 
@@ -916,6 +930,8 @@ export function distribute_in() {
 
 //merging stuff
 export function collect_out() {
+  let math_root = this.math_root;
+  let selection = this.selection;
   var same_parents = have_same_ancestors(selection.selected_nodes, 1),
   same_grandparents = have_same_ancestors(selection.selected_nodes, 2),
   same_type = have_same_type(selection.selected_nodes),
@@ -995,7 +1011,7 @@ export function collect_out() {
         .done(function() {
           var selected_terms = [];
           let factor_selected_text = factor_texts[0];
-          new_math_str = replace_in_mtstr(selection.selected_nodes, fact_subs);
+          new_math_str = replace_in_mtstr(math_root, selection.selected_nodes, fact_subs);
           var new_text = "";
           playing = true; //so that it doesn't go into history..
           math_root = math_str_to_tree(clear_math(new_math_str)); //I SHOULD CREATE A FUNCTION THAT PARSES A LATEX STRING INTO A MATH_ROOT IDEALLY...
@@ -1009,7 +1025,7 @@ export function collect_out() {
             selected_terms.push(term);
           }
           new_text = "+" + factor_selected_text + "(" + new_text + ")";
-          new_math_str = replace_in_mtstr(selected_terms, new_text);
+          new_math_str = replace_in_mtstr(math_root, selected_terms, new_text);
           resolve(new_math_str);
         });
       });
@@ -1019,8 +1035,8 @@ export function collect_out() {
   {
     console.log("merge equal factors into exp");
     //ANIMATION??
-    new_math_str = replace_in_mtstr(selection.selected_nodes, eval_expression(selection.selected_text));
-    // new_math_str = replace_in_mtstr(selection.selected_nodes, selection.selected_nodes[0].text + "^{" + selection.selected_nodes.length.toString() + "}");
+    new_math_str = replace_in_mtstr(math_root, selection.selected_nodes, eval_expression(selection.selected_text));
+    // new_math_str = replace_in_mtstr(math_root, selection.selected_nodes, selection.selected_nodes[0].text + "^{" + selection.selected_nodes.length.toString() + "}");
     return new Promise((resolve, reject) => {resolve(new_math_str)});
   }
   //merge equal terms into term
@@ -1031,7 +1047,7 @@ export function collect_out() {
     if (selection.selected_nodes[0].children[0].type2 === "op") {
       term_text = selection.selected_nodes[0].text.slice(1);
     }
-    new_math_str = replace_in_mtstr(selection.selected_nodes, "+" + selection.selected_nodes.length.toString() + term_text);
+    new_math_str = replace_in_mtstr(math_root, selection.selected_nodes, "+" + selection.selected_nodes.length.toString() + term_text);
 
     return new Promise((resolve, reject) => {resolve(new_math_str)});
   }
@@ -1052,7 +1068,7 @@ export function collect_out() {
       }
     }
     var new_text = "+\\frac{" + numerator_text + "}{" + denominator_text + "}";
-    new_math_str = replace_in_mtstr(selection.selected_nodes, new_text);
+    new_math_str = replace_in_mtstr(math_root, selection.selected_nodes, new_text);
     return new Promise((resolve, reject) => {resolve(new_math_str)});
   }
   //merge terms into fraction
@@ -1086,7 +1102,7 @@ export function collect_out() {
     //ANIMATION??
     var new_text = "+\\frac{" + numerator_text + "}{" + denominator_text + "}";
     // new_text = "+" + rationalize(selection.selected_text);
-    new_math_str = replace_in_mtstr(selection.selected_nodes, new_text);
+    new_math_str = replace_in_mtstr(math_root, selection.selected_nodes, new_text);
     return new Promise((resolve, reject) => {resolve(new_math_str)});
   }
   //merge exponentials
@@ -1116,7 +1132,7 @@ export function collect_out() {
         power_text+=selection.selected_nodes[i].children[1].text;
       }
       var new_text = base_text + "^{" + power_text + "}";
-      new_math_str = replace_in_mtstr(selection.selected_nodes, new_text);
+      new_math_str = replace_in_mtstr(math_root, selection.selected_nodes, new_text);
       return new Promise((resolve, reject) => {resolve(new_math_str)});
     }
     else if (same_power && !same_base)  //with common power
@@ -1132,7 +1148,7 @@ export function collect_out() {
         }
       }
       var new_text = "(" + base_text + ")" + "^{" + power_text + "}";
-      new_math_str = replace_in_mtstr(selection.selected_nodes, new_text);
+      new_math_str = replace_in_mtstr(math_root, selection.selected_nodes, new_text);
       return new Promise((resolve, reject) => {resolve(new_math_str)});
     }
   }
@@ -1154,7 +1170,7 @@ export function collect_out() {
       }
     }
     new_text+="}";
-    new_math_str = replace_in_mtstr(selection.selected_nodes, new_text);
+    new_math_str = replace_in_mtstr(math_root, selection.selected_nodes, new_text);
     return new Promise((resolve, reject) => {resolve(new_math_str)});
   }
 
@@ -1164,10 +1180,12 @@ export function collect_out() {
 
 //unbracket
 export function unbracket() {
+  let math_root = this.math_root;
+  let selection = this.selection;
   //animation?
   var new_term="";
   new_term += selection.selected_text.replace(/^\(|\)$/g, "");
-  new_math_str = replace_in_mtstr(selection.selected_nodes, new_term);
+  new_math_str = replace_in_mtstr(math_root, selection.selected_nodes, new_term);
   return new Promise((resolve, reject) => {resolve(new_math_str)});
   if (recording || playing) {recording_index++;}
   if (recording) {add_to_manip_rec(9);}
@@ -1175,6 +1193,8 @@ export function unbracket() {
 
 //evaulate simple sum or multiplication
 export function evaluate() {
+  let math_root = this.math_root;
+  let selection = this.selection;
   for (var i=0; i<selection.selected_nodes.length-1; i++) { //making sure, all elements are of the same parent
     if (selection.selected_nodes[i].parent !== selection.selected_nodes[i+1].parent) {return;}
   }
@@ -1182,7 +1202,7 @@ export function evaluate() {
   return new Promise((resolve, reject) => {
     selection.$selected.animate({"font-size": 0, opacity: 0}, step_duration).css('overflow', 'visible').promise().done(function() {
       new_term = eval_expression(selection.selected_text); //only works for sqrts or fracs separately, but not together
-      new_math_str = replace_in_mtstr(selection.selected_nodes, new_term);
+      new_math_str = replace_in_mtstr(math_root, selection.selected_nodes, new_term);
       resolve(new_math_str);
     });
   });
@@ -1192,10 +1212,12 @@ export function evaluate() {
 
 //operate with an operator
 export function operate() {
+  let math_root = this.math_root;
+  let selection = this.selection;
   if (selection.selected_nodes.length === 1 && selection.selected_nodes[0].type2 === "diff") {
     console.log("differentiating");
     var variable = selection.selected_nodes[0].children[1].text.slice(1);
-    var next_nodes = get_all_next(selection.selected_nodes[0]);
+    var next_nodes = get_all_next(math_root, selection.selected_nodes[0]);
     let expression = "";
     for (var i = 0; i < next_nodes.length; i++) {
       expression+=next_nodes[i].text;
@@ -1209,7 +1231,7 @@ export function operate() {
         // console.log("expression, variable", expression, variable);
         let new_term = Algebrite.run("d(" + expression + "," + variable + ")");
         new_term = ascii_to_latex(new_term);
-        new_math_str = replace_in_mtstr(selection.selected_nodes.concat(next_nodes), new_term);
+        new_math_str = replace_in_mtstr(math_root, selection.selected_nodes.concat(next_nodes), new_term);
         resolve(new_math_str);
       });
     });
@@ -1230,6 +1252,8 @@ $("#add_both_sides").keyup(function (e) {
 });
 
 export function add_both_sides(thing, math_str) {
+  let math_root = this.math_root;
+  let selection = this.selection;
   math_HS = math_str.split("=");
   new_math_str = math_HS[0] + thing + "=" +math_HS[1] + thing;
   return new Promise((resolve, reject) => {resolve(new_math_str)});
@@ -1245,6 +1269,8 @@ $("#replace").keyup(function (e) {
     }
 });
 export function replace(text, replace_ind=false) {
+  let math_root = this.math_root;
+  let selection = this.selection;
   return new Promise((resolve, reject) => {
     selection.$selected.animate({"font-size": 0, opacity: 0}, step_duration/2)
       .css('overflow', 'visible')
@@ -1255,10 +1281,10 @@ export function replace(text, replace_ind=false) {
           for (var i=0; i<selection.selected_nodes.length; i++) {
             text_arr.push(text);
           }
-        new_math_str = replace_in_mtstr(selection.selected_nodes, text_arr);
+        new_math_str = replace_in_mtstr(math_root, selection.selected_nodes, text_arr);
 
         } else {
-          new_math_str = replace_in_mtstr(selection.selected_nodes, text);
+          new_math_str = replace_in_mtstr(math_root, selection.selected_nodes, text);
         }
         resolve(new_math_str);
       });
@@ -1269,13 +1295,15 @@ export function replace(text, replace_ind=false) {
 
 //remove something. Used for: cancelling something on both sides, or cancelling something on a fraction, among other things
 export function remove() {
+  let math_root = this.math_root;
+  let selection = this.selection;
   console.log("removing");
   return new Promise((resolve, reject) => {
     selection.$selected.animate({"font-size": 0, opacity: 0}, step_duration)
       .css('overflow', 'visible')
       .promise()
       .done(function() {
-        new_math_str = replace_in_mtstr(selection.selected_nodes, "");
+        new_math_str = replace_in_mtstr(math_root, selection.selected_nodes, "");
         resolve(new_math_str);
       });
     });
@@ -1285,6 +1313,8 @@ export function remove() {
 
 //cancel out factors in a fraction. TODO: also be able to cancel terms.
 export function cancel_out() {
+  let math_root = this.math_root;
+  let selection = this.selection;
   var same_factor = true,
     same_parents = have_same_ancestors(selection.selected_nodes, 1),
     same_grandparents = have_same_ancestors(selection.selected_nodes, 2),
@@ -1323,7 +1353,7 @@ export function cancel_out() {
       for (var i = 1; i < denom_nodes.length; i++) {
         new_denom_strs.push("");
       }
-      new_math_str = replace_in_mtstr(num_nodes.concat(denom_nodes), new_num_strs.concat(new_denom_strs));
+      new_math_str = replace_in_mtstr(math_root, num_nodes.concat(denom_nodes), new_num_strs.concat(new_denom_strs));
       return new Promise((resolve, reject) => {resolve(new_math_str)});
     }
     //TODO: Add way to cancel terms too.
@@ -1331,6 +1361,8 @@ export function cancel_out() {
 
 //flip equation
 export function flip_equation(math_str) {
+  let math_root = this.math_root;
+  let selection = this.selection;
   var offset1 = tot_width($equals.prevAll(), true, false) + tot_width($equals, true, false);
   var offset2 = tot_width($equals.nextAll(), true, false) + tot_width($equals, true, false);
   return new Promise((resolve, reject) => {

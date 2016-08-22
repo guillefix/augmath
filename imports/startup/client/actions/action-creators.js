@@ -13,6 +13,11 @@ export const addToHist = (mathStr, index) => ({
   index
 })
 
+export const addToEqs = (eq) => ({
+  type: 'ADD_TO_EQUATIONS',
+  eq
+})
+
 export const updateIndex = (index) => ({
   type: 'UPDATE_INDEX',
   index
@@ -45,4 +50,13 @@ export const updateSelect = (newSelectVars, resetMtype = false) => {
 export const updateZoom = (newZoom) => ({
   type: 'UPDATE_ZOOM',
   newZoom
+})
+
+export const selectNode = (nodeId) => ({
+  type: 'SELECT_NODE',
+  nodeId
+})
+
+export const resetSelected = () => ({
+  type: 'RESET_SELECTED'
 })

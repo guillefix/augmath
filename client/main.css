@@ -1,12 +1,21 @@
 /* AugMath CSS */
 
-#math, .base .mbin, .base .mord, .base .mrel, .base .minner, .base .mopen, .base .mclose, .base .vlist {
+#math, #math .base .mbin, #math .base .mord, #math .base .mrel, #math .base .minner, #math .base .mopen, #math .base .mclose, #math .base .vlist {
 	position: relative;
 }
 
-#math {
+/*.math {
 	top:55px !important;
+}*/
+
+#MathInput {
+	height: 50px;
+	margin-bottom: 30px;
 }
+
+/*.math {
+	height: 50px !important;
+}*/
 
 .mrel {
 	color: blue;
@@ -28,6 +37,7 @@
 
 .math {
 	height: 150px;
+	position: relative;
 }
 
 .note {

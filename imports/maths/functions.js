@@ -27,59 +27,6 @@ import {eqCoords, selection} from '../startup/client/App.js';
 // }
 
 
-export function select_node(node, multi_select=false, var_select=false) {
-  $this = node.model.obj;
-  $this.toggleClass("selected");
-  console.log(node);
-  node.selected = !node.selected;
-  // console.log(node.selected);
-  // console.log(node, node.selected);
-  if (!multi_select) {
-    math_root.walk(function (node2) {
-      if (node2.model.id !== node.model.id && node2.selected) {
-        node2.selected = false;
-        node2.model.obj.removeClass("selected")
-      }
-    });
-  }
-  if (!multi_select) {
-    selection.selected_nodes = [];
-  }
-  if (var_select) {
-    math_root.walk(function (node2) {
-      let has_matching_children = false
-      node2.walk(function (node3) {
-        if (node3.model.id !== node2.model.id && node3.text === node.text) has_matching_children = true;
-      });
-      if (node2.model.id !== node.model.id && node2.text === node.text && !has_matching_children) {
-        // console.log(node2.text, node2.selected);
-        node2.selected = node.selected;
-        if (node.selected) {
-          node2.model.obj.addClass("selected");
-          selection.selected_nodes.push(node2);
-        } else {
-          node2.model.obj.removeClass("selected");
-        }
-      }
-    });
-  }
-  selection.selected_text = "";
-  selection.selected_nodes.push(node);
-  // selection.selected_text += node.text;
-  math_root.walk(function (node) {
-    if (node.selected) {selection.selected_text += node.text;}
-  });
-  if (var_select) {
-    selection.selected_text = node.text;
-  }
-  selection.$selected = $(".selected");
-  // selected_width = tot_width(selection.$selected, true);
-  selection.selected_position = selection.$selected.offset();
-  var replace_el = document.getElementById("replace");
-  replace_el.value = selection.selected_text;
-  // console.log(selection.selected_nodes);
-}
-
 //get all the indices of searchStr within str
 export function getIndicesOf(searchStr, str) { //should fix the getIndicesOf to work with regexes
     var startIndex = 0, searchStrLen = searchStr.length;
@@ -467,7 +414,7 @@ export function have_same_log_base(nodes) {
 // }
 
 //get previous node
-export function get_prev(nodes) {
+export function get_prev(math_root, nodes) {
   if (!Array.isArray(nodes)) {nodes = [nodes];}
   var node = nodes[0];
   var array = node.model.id.split("/");
@@ -481,7 +428,7 @@ export function get_prev(nodes) {
 }
 
 //get next node
-export function get_next(nodes) {
+export function get_next(math_root, nodes) {
   if (!Array.isArray(nodes)) {nodes = [nodes];}
   var node = nodes[nodes.length-1];
   var array = node.model.id.split("/");
@@ -495,7 +442,7 @@ export function get_next(nodes) {
 }
 
 //get all next nodes
-export function get_all_next(node) {
+export function get_all_next(math_root, node) {
   var next_nodes = [];
   var array = node.model.id.split("/");
   var init = parseInt(array[array.length-1], 10);
@@ -704,7 +651,8 @@ export function parse_mtstr(root, node_arr, str_arr) {
 }
 
 //do some preparation to str_arr before calling parse_mtstr
-export function replace_in_mtstr(nodes, str_arr, root = math_root) {
+export function replace_in_mtstr(root, nodes, str_arr) {
+  // console.log("root", root);
   if (nodes.__proto__.length !== 0) {
     nodes = [nodes];
   }
@@ -1097,7 +1045,7 @@ export function clear_math(math) {
   let new_root = math_str_to_tree(math);
   new_root.walk(function (node) {
     if (node.type2 === "frac" && node.children[1].text === "") {
-      new_str = replace_in_mtstr(node, node.children[0].text, new_root);
+      new_str = replace_in_mtstr(new_root,node, node.children[0].text);
       new_root = math_str_to_tree(new_str);
     }
   });
@@ -1106,14 +1054,14 @@ export function clear_math(math) {
 
 export function math_str_to_tree(math) {
   // math = clear_math(math);
-
-  let math_el = $("#math");
+  $(".math-container").append($('<p id="temp"></p>'))
+  let math_el = document.getElementById("temp");
   // console.log(math_el);
-  // math_el.hide();
-  katex.render(math, math_el[0], { displayMode: true });
+  $(math_el).hide();
+  katex.render(math, math_el, { displayMode: true });
   // console.log(math);
 
-  var root_poly = $("#math .base");
+  var root_poly = $("#temp .base");
 
   let tree = new TreeModel();
 
@@ -1125,7 +1073,7 @@ export function math_str_to_tree(math) {
 
   parse_poly(root, root_poly, 0, true);
 
-  // math_el.remove();
+  $(math_el).remove();
 
   return root;
 }

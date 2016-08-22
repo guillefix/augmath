@@ -182,21 +182,21 @@ Meteor.startup(() => {
     manipulation_rec.push({manipulation:integer, arg:argument});
   }
 
-  function add_equation(eq) {
-    var eq_number = equations.push(eq)-1;
-    var eq_html = '<a class="list-group-item" onmouseover="$(this).stop().children(\'.eq_buttons\').show()" onmouseout="$(this).stop().children(\'.eq_buttons\').hide()"><p id="'+'eq'+eq_number.toString()+'" class="list-group-item">...</p><div class="eq_buttons"><br><button type="button" class="btn btn-default" onclick="prepare(equations['+eq_number.toString()+'])"><span class="glyphicon glyphicon-chevron-left"></span></button><button type="button" class="btn btn-default" onclick="$(this).parent().parent().remove()"><span class="glyphicon glyphicon-remove"></span></button>&nbsp;Latex:<input size="20" value="'+equations[+eq_number.toString()]+'"/></div></a>';
-    $("#eq_list").prepend(eq_html);
-    var eq_el = document.getElementById('eq'+eq_number.toString()); katex.render(equations[eq_number], eq_el, { displayMode: true });
-  }
-
-  $("#add_eq").keyup(function (e) {
-      if (e.keyCode == 13) {
-        var eq = $("#add_eq").get()[0].value;
-          add_equation(eq);
-      }
-  });
-  $("#keep").on("click", function () {
-    var eq = math_str_el.get()[0].value;
-      add_equation(eq);
-  });
+  // function add_equation(eq) {
+  //   var eq_number = equations.push(eq)-1;
+  //   var eq_html = '<a class="list-group-item" onmouseover="$(this).stop().children(\'.eq_buttons\').show()" onmouseout="$(this).stop().children(\'.eq_buttons\').hide()"><p id="'+'eq'+eq_number.toString()+'" class="list-group-item">...</p><div class="eq_buttons"><br><button type="button" class="btn btn-default" onclick="prepare(equations['+eq_number.toString()+'])"><span class="glyphicon glyphicon-chevron-left"></span></button><button type="button" class="btn btn-default" onclick="$(this).parent().parent().remove()"><span class="glyphicon glyphicon-remove"></span></button>&nbsp;Latex:<input size="20" value="'+equations[+eq_number.toString()]+'"/></div></a>';
+  //   $("#eq_list").prepend(eq_html);
+  //   var eq_el = document.getElementById('eq'+eq_number.toString()); katex.render(equations[eq_number], eq_el, { displayMode: true });
+  // }
+  //
+  // // $("#add_eq").keyup(function (e) {
+  // //     if (e.keyCode == 13) {
+  // //       var eq = $("#add_eq").get()[0].value;
+  // //         add_equation(eq);
+  // //     }
+  // // });
+  // // $("#keep").on("click", function () {
+  // //   var eq = math_str_el.get()[0].value;
+  // //     add_equation(eq);
+  // // });
 });

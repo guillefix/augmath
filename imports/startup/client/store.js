@@ -14,12 +14,15 @@ const defaultState = {
   var_select: false,
   replace_ind: false,
   current_index: 0,
-  mathHist: [init_math_str],
+  mathHist: [{mathStr: init_math_str, current_eq: 0}],
   eqZoom: 14,
   recording: false,
   manip: null,
   manip_data: null,
-  doing_manip: false
+  doing_manip: false,
+  equations: [init_math_str],
+  current_eq: 0,
+  selectedNodes: []
 };
 
 const store = createStore(rootReducer, defaultState);

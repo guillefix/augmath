@@ -58,61 +58,8 @@ export default class Tools extends React.Component {
   					</span>
   				</li>
   			</div>
-  			<h4>Manipulations</h4>
+  			<h4>More manipulations</h4>
   			<div>
-  				<li className="list-group-item">
-  					<button type="button" className="btn btn-default" id="undo" onClick={()=>{
-                const state = store.getState();
-                dispatch(Actions.updateIndex(state.current_index-1))
-              }}>
-  						Undo
-  					</button>
-  					<button type="button" className="btn btn-default" id="redo" onClick={()=>{
-                const state = store.getState();
-                dispatch(Actions.updateIndex(state.current_index+1))
-              }}>
-  						Redo
-  					</button>
-  				</li>
-  				<li className="list-group-item">
-  					<button type="button" className="btn btn-default" id="flip_equation" onClick={dispatch.bind(null, act.manipulate("flip_equation"))}>
-  						Flip equation
-  					</button>
-  					<button type="button" className="btn btn-default" id="change_side" onClick={dispatch.bind(null, act.manipulate("change_sign"))}>
-  						Change side
-  					</button>
-  				</li>
-  				<li className="list-group-item">
-  					<button type="button" className="btn btn-default" id="move_up" onClick={dispatch.bind(null, act.manipulate("move_up"))}>
-  							<span className="glyphicon glyphicon-arrow-up"></span>
-  					</button>
-  					<div className="row">
-  						<button type="button" className="btn btn-default" id="move_left" onClick={dispatch.bind(null, act.manipulate("move_left"))}>
-  							<span className="glyphicon glyphicon-arrow-left"></span>
-  						</button>
-  						<span>Move selection</span>
-  						<button type="button" className="btn btn-default" id="move_right" onClick={dispatch.bind(null, act.manipulate("move_right"))}>
-  							<span className="glyphicon glyphicon-arrow-right"></span>
-  						</button>
-  					</div>
-  					<button type="button" className="btn btn-default" id="move_down" onClick={dispatch.bind(null, act.manipulate("move_down"))}>
-  							<span className="glyphicon glyphicon-arrow-down"></span>
-  					</button>
-  				</li>
-  				<li className="list-group-item">
-  					<button type="button" className="btn btn-default" id="distribute-in" onClick={dispatch.bind(null, act.manipulate("distribute_in"))}>
-  						Distribute in
-  					</button>
-  					<button type="button" className="btn btn-default" id="collect-out" onClick={dispatch.bind(null, act.manipulate("collect_out"))}>
-  						Collect out
-  					</button>
-  				</li>
-  				<button type="button" className="list-group-item" id="eval" onClick={dispatch.bind(null, act.manipulate("evaluate"))}>
-  					Evaluate/Simplify
-  				</button>
-  				<button type="button" className="list-group-item" id="operate" onClick={dispatch.bind(null, act.manipulate("operate"))}>
-  					Operate
-  				</button>
   				<li className="list-group-item">
   					<label>Append to both sides: <input id="add_both_sides" size="20" placeholder="Type LaTeX here" onKeyUp={ (e) => {
                 if (e.keyCode == 13) {
@@ -125,7 +72,6 @@ export default class Tools extends React.Component {
   					<label>Replace selection with: <input id="replace" size="20" ref={(ref) => this.replaceSelectInput = ref} placeholder="Type LaTeX here" onKeyUp={(e)=> {if (e.keyCode == 13) dispatch(act.manipulate("replace", e.target.value))}} /></label>
   					<span>Replace individually <input type="checkbox" name="replace_ind" id="replace_ind" onChange={()=>{
                 let state = store.getState();
-                console.log("!state.replace_ind", !state.replace_ind);
                 dispatch(act.updateSelect({replace_ind: !state.replace_ind}))}}/></span>
   				</li>
   				<button type="button" className="list-group-item" id="remove" onClick={dispatch.bind(null, act.manipulate("remove"))}>
@@ -135,7 +81,7 @@ export default class Tools extends React.Component {
   					Unbracket
   				</button>
   			</div>
-  			<h4>Recording</h4>
+  			<h4>Recording (not working)</h4>
   			<div>
   				<li className="list-group-item">
   					<span>Recording <input type="checkbox" name="recording" id="recording"/></span>
@@ -167,3 +113,61 @@ export default class Tools extends React.Component {
 Tools.contextTypes = {
   store: React.PropTypes.object
 };
+
+
+//Old
+/*
+<li className="list-group-item">
+  <button type="button" className="btn btn-default" id="undo" onClick={()=>{
+      const state = store.getState();
+      dispatch(Actions.updateIndex(state.current_index-1))
+    }}>
+    Undo
+  </button>
+  <button type="button" className="btn btn-default" id="redo" onClick={()=>{
+      const state = store.getState();
+      dispatch(Actions.updateIndex(state.current_index+1))
+    }}>
+    Redo
+  </button>
+</li>
+<li className="list-group-item">
+  <button type="button" className="btn btn-default" id="flip_equation" onClick={dispatch.bind(null, act.manipulate("flip_equation"))}>
+    Flip equation
+  </button>
+  <button type="button" className="btn btn-default" id="change_side" onClick={dispatch.bind(null, act.manipulate("change_sign"))}>
+    Change side
+  </button>
+</li>
+<li className="list-group-item">
+  <button type="button" className="btn btn-default" id="move_up" onClick={dispatch.bind(null, act.manipulate("move_up"))}>
+      <span className="glyphicon glyphicon-arrow-up"></span>
+  </button>
+  <div className="row">
+    <button type="button" className="btn btn-default" id="move_left" onClick={dispatch.bind(null, act.manipulate("move_left"))}>
+      <span className="glyphicon glyphicon-arrow-left"></span>
+    </button>
+    <span>Move selection</span>
+    <button type="button" className="btn btn-default" id="move_right" onClick={dispatch.bind(null, act.manipulate("move_right"))}>
+      <span className="glyphicon glyphicon-arrow-right"></span>
+    </button>
+  </div>
+  <button type="button" className="btn btn-default" id="move_down" onClick={dispatch.bind(null, act.manipulate("move_down"))}>
+      <span className="glyphicon glyphicon-arrow-down"></span>
+  </button>
+</li>
+<li className="list-group-item">
+  <button type="button" className="btn btn-default" id="distribute-in" onClick={dispatch.bind(null, act.manipulate("distribute_in"))}>
+    Distribute in
+  </button>
+  <button type="button" className="btn btn-default" id="collect-out" onClick={dispatch.bind(null, act.manipulate("collect_out"))}>
+    Collect out
+  </button>
+</li>
+<button type="button" className="list-group-item" id="eval" onClick={dispatch.bind(null, act.manipulate("evaluate"))}>
+  Evaluate/Simplify
+</button>
+<button type="button" className="list-group-item" id="operate" onClick={dispatch.bind(null, act.manipulate("operate"))}>
+  Operate
+</button>
+*/

@@ -18,7 +18,7 @@ export default class History extends React.Component {
       <div id="history">
         <div id="history_list" className="list-group">
           {mathHist.map((ms, i) =>
-            <HistoryEl dispatch={store.dispatch} current_index={current_index} recording={recording} key={i} mathStr={ms} index={i.toString()} />
+            <HistoryEl dispatch={store.dispatch} current_index={current_index} recording={recording} key={i} mathStr={ms.mathStr} index={i.toString()} />
           ).reverse()}
         </div>
       </div>
