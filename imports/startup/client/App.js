@@ -446,149 +446,167 @@ class Equation extends React.Component {
     var  index;
     //DRAG AND DROP. Goes here because I should group stuff depending on which manipulative is selectable really
     // $(".base").attr('id', 'sortable');
-    $(".sortable").removeClass("sortable")
-    $( ".sortable" ).disableSelection();
+
     math_root.walk(function (node) {
 
       let obj;
       // console.log("hello here", type, depth);
       if (node.type === type && node.model.id.split("/").length === depth+1 && typeof node.model.obj !== "undefined") {
-        node.model.obj.data('node', node)
-        // console.log(node.parent.parent);
-        if (type === "factor") {
-          obj = node.model.obj.parent();
-          obj.addClass("sortable")
-          obj.sortable({
-            forceHelperSize: true,
-            placeholder: "sortable-placeholder",
-            connectWith: ".sortable"
-          });
-        } else if (type === "term") {
-          obj = node.model.obj.parent();
-          obj.addClass("sortable")
-          obj.sortable({
-            forceHelperSize: true,
-            placeholder: "sortable-placeholder",
-            connectWith: ".sortable",
-            helper(e, item) {
-              // console.log(item);
-              // console.log(e);
-              let term_objs = item.data('node').model.obj.clone();
-              let helper_obj = $("<span></span>").append(term_objs);
-              helper_obj.data('node',item.data('node'));
-              return helper_obj
-            },
-            start(e, ui) {
-              ui.item.data('node').model.obj.css("display", "none");
-            },
-            stop(e, ui) {
-              let node = ui.item.data('node');
-              let elements = node.model.obj.clone().css("display", "inherit");
-              console.log(elements);
-              if (node.type === "term" && ui.item.next().length > 0 && ui.item.next().text() !== "+" && ui.item.next().text() !== "-" && ui.item.next().text() !== "=") {
-                console.log("kik");
-                $('<span class="mbin ui-sortable-handle" style="display: inline-block;">+</span>').insertAfter(ui.item)
-                ui.item.after(elements);
-              } else if (node.type === "term" && ui.item.prev().length > 0 && ui.item.text() !== "+" && ui.item.text() !== "-" && ui.item.text() !== "=") {
-                console.log("kek");
-                $('<span class="mbin ui-sortable-handle" style="display: inline-block;">+</span>').insertAfter(ui.item)
-                ui.item.next().after(elements);
-              } else {
-                ui.item.after(elements);
-              }
-              ui.item.data('node').model.obj.remove();
-            }
-          });
+        obj = node.model.obj;
+        obj.data('node', node)
+        // obj.addClass("draggable")
+        obj.draggable();
+        obj.droppable({
+          drop: function( event, ui ) {
+            $( this ).data('node')
         }
+    });
       }
-    });
-    // $("#sortable").sortable({
-    //  forceHelperSize: true,
-    //  placeholder: "sortable-placeholder",
-    // });
 
-    // $("#sortable").nestedSortable({
-    //   // forceHelperSize: true,
-    //   // placeholder: "sortable-placeholder",
-    //   listType: 'span',
-    //   items: 'span.mord',
-    //   isAllowed(placeholder, placeholderParent, currentItem) {
-    //     let hasparent = typeof placeholderParent !== "undefined";
-    //     if (hasparent && placeholderParent.is(".mord:has(> .mord)")) {
-    //       console.log(placeholderParent);
+    });
+
+    // $(".sortable").removeClass("sortable")
+    // $( ".sortable" ).disableSelection();
+    // math_root.walk(function (node) {
+    //
+    //   let obj;
+    //   // console.log("hello here", type, depth);
+    //   if (node.type === type && node.model.id.split("/").length === depth+1 && typeof node.model.obj !== "undefined") {
+    //     node.model.obj.data('node', node)
+    //     // console.log(node.parent.parent);
+    //     if (type === "factor") {
+    //       obj = node.model.obj.parent();
+    //       obj.addClass("sortable")
+    //       obj.sortable({
+    //         forceHelperSize: true,
+    //         placeholder: "sortable-placeholder",
+    //         connectWith: ".sortable"
+    //       });
+    //     } else if (type === "term") {
+    //       obj = node.model.obj.parent();
+    //       obj.addClass("sortable")
+    //       obj.sortable({
+    //         forceHelperSize: true,
+    //         placeholder: "sortable-placeholder",
+    //         connectWith: ".sortable",
+    //         helper(e, item) {
+    //           // console.log(item);
+    //           // console.log(e);
+    //           let term_objs = item.data('node').model.obj.clone();
+    //           let helper_obj = $("<span></span>").append(term_objs);
+    //           helper_obj.data('node',item.data('node'));
+    //           return helper_obj
+    //         },
+    //         start(e, ui) {
+    //           ui.item.data('node').model.obj.css("display", "none");
+    //         },
+    //         stop(e, ui) {
+    //           let node = ui.item.data('node');
+    //           let elements = node.model.obj.clone(true).css("display", "inherit");
+    //           // console.log(elements, ui.item.prev());
+    //           // let item = ui.item.prev();
+    //           node.model.obj.not(ui.item).remove();
+    //           if (node.type === "term" && ui.item.next().length > 0 && ui.item.next().text() !== "+" && ui.item.next().text() !== "-" && ui.item.next().text() !== "=") {
+    //             $('<span class="mbin ui-sortable-handle" style="display: inline-block;">+</span>').insertAfter(ui.item)
+    //             ui.item.after(elements);
+    //             ui.item.remove();
+    //           } else if (node.type === "term" && ui.item.prev().length > 0 && ui.item.text() !== "+" && ui.item.text() !== "-" && ui.item.text() !== "=") {
+    //             $('<span class="mbin ui-sortable-handle" style="display: inline-block;">+</span>').insertAfter(ui.item)
+    //             ui.item.next().after(elements);
+    //             ui.item.remove();
+    //           } else {
+    //             ui.item.after(elements);
+    //             ui.item.remove();
+    //           }
+    //         }
+    //       });
     //     }
-    //     return hasparent ? placeholderParent.is(".mord:has(> .mord)") : false;
-    //   },
-    //   // relocate( event, ui ) {
-    //   //
-    //   //   window.setTimeout(rerender, 50); //probably not a very elegant solution
-    //   //
-    //   //   function rerender() {
-    //   //     var root_poly = $("#math .base");
-    //   //
-    //   //     tree = new TreeModel();
-    //   //
-    //   //     math_root = tree.parse({});
-    //   //     math_root.model.id = "0";
-    //   //     //KaTeX offers MathML semantic elements on the HTML, could that be used?
-    //   //
-    //   //     parse_poly(math_root, root_poly, 0, true);
-    //   //
-    //   //     let newmath = parse_mtstr(math_root, [], []);
-    //   //
-    //   //     console.log(newmath);
-    //   //
-    //   //     thisApp.prepare(newmath);
-    //   //   }
-    //   //
-    //   // }
-    //   // connectWith: "#sortable,.sortable"
-    //   // over: (event, ui) => {
-    //   //   console.log(ui);
-    //   //   ui.placeholder.next().css("color","blue")
-    //   //   ui.item.css("color","green")
-    //   // }
+    //   }
     // });
-
-    $( ".sortable" ).droppable({
-        drop: function( event, ui ) {
-
-          window.setTimeout(rerender, 50); //probably not a very elegant solution
-
-          function rerender() {
-
-            var root_poly = $(".math .base").first();
-
-            tree = new TreeModel();
-
-            math_root = tree.parse({});
-            math_root.model.id = "0";
-            math_root.model.obj = root_poly;
-            //KaTeX offers MathML semantic elements on the HTML, could that be used?
-
-            parse_poly(math_root, root_poly, 0, true);
-
-            // console.log(event);
-            //
-            // let node = math_root.first((node) => node.model.obj === ui.helper);
-
-            let newmath = replace_in_mtstr(math_root, [], []);
-
-            store.dispatch(Actions.addToHist(newmath, state.current_index+1))
-          }
-
-        }
-    });
-    let thisComp = this;
-    math_root.walk(function (node) {
-      if (node.model.id !== "0" && node.type === type && getIndicesOf("/", node.model.id).length === depth) {
-          // console.log("adding event", node);
-          node.model.obj.off("click")
-          node.model.obj.on("click", dispatch.bind(null, Actions.selectNode(node.model.id)));
-          node.model.obj.css({"display":"inline-block"});
-        }
-    });
-    //Draggable.create(".mord", {type:"x,y", edgeResistance:0.65, throwProps:true});
+    // // $("#sortable").sortable({
+    // //  forceHelperSize: true,
+    // //  placeholder: "sortable-placeholder",
+    // // });
+    //
+    // // $("#sortable").nestedSortable({
+    // //   // forceHelperSize: true,
+    // //   // placeholder: "sortable-placeholder",
+    // //   listType: 'span',
+    // //   items: 'span.mord',
+    // //   isAllowed(placeholder, placeholderParent, currentItem) {
+    // //     let hasparent = typeof placeholderParent !== "undefined";
+    // //     if (hasparent && placeholderParent.is(".mord:has(> .mord)")) {
+    // //       console.log(placeholderParent);
+    // //     }
+    // //     return hasparent ? placeholderParent.is(".mord:has(> .mord)") : false;
+    // //   },
+    // //   // relocate( event, ui ) {
+    // //   //
+    // //   //   window.setTimeout(rerender, 50); //probably not a very elegant solution
+    // //   //
+    // //   //   function rerender() {
+    // //   //     var root_poly = $("#math .base");
+    // //   //
+    // //   //     tree = new TreeModel();
+    // //   //
+    // //   //     math_root = tree.parse({});
+    // //   //     math_root.model.id = "0";
+    // //   //     //KaTeX offers MathML semantic elements on the HTML, could that be used?
+    // //   //
+    // //   //     parse_poly(math_root, root_poly, 0, true);
+    // //   //
+    // //   //     let newmath = parse_mtstr(math_root, [], []);
+    // //   //
+    // //   //     console.log(newmath);
+    // //   //
+    // //   //     thisApp.prepare(newmath);
+    // //   //   }
+    // //   //
+    // //   // }
+    // //   // connectWith: "#sortable,.sortable"
+    // //   // over: (event, ui) => {
+    // //   //   console.log(ui);
+    // //   //   ui.placeholder.next().css("color","blue")
+    // //   //   ui.item.css("color","green")
+    // //   // }
+    // // });
+    //
+    // $( ".sortable" ).droppable({
+    //     drop: function( event, ui ) {
+    //
+    //       window.setTimeout(rerender, 50); //probably not a very elegant solution
+    //
+    //       function rerender() {
+    //         console.log("hiihi");
+    //
+    //         var root_poly = $(".math .base").first();
+    //
+    //         tree = new TreeModel();
+    //
+    //         math_root = tree.parse({});
+    //         math_root.model.id = "0";
+    //         math_root.model.obj = root_poly;
+    //
+    //         parse_poly(math_root, root_poly, 0, true);
+    //
+    //
+    //         let newmath = replace_in_mtstr(math_root, [], []);
+    //
+    //         store.dispatch(Actions.addToHist(newmath, state.current_index+1))
+    //       }
+    //
+    //     }
+    // });
+    // let thisComp = this;
+    // math_root.walk(function (node) {
+    //   if (node.model.id !== "0" && node.type === type && getIndicesOf("/", node.model.id).length === depth) {
+    //       // console.log("adding event", node);
+    //       node.model.obj.off("click")
+    //       node.model.obj.on("click", dispatch.bind(null, Actions.selectNode(node.model.id)));
+    //       node.model.obj.css({"display":"inline-block"});
+    //     }
+    // });
+    // //Draggable.create(".mord", {type:"x,y", edgeResistance:0.65, throwProps:true});
   }
   resetSelected() {
     this.selection.selected_nodes = [];
