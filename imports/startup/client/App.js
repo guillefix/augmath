@@ -447,23 +447,23 @@ class Equation extends React.Component {
     //DRAG AND DROP. Goes here because I should group stuff depending on which manipulative is selectable really
     // $(".base").attr('id', 'sortable');
 
-    math_root.walk(function (node) {
-
-      let obj;
-      // console.log("hello here", type, depth);
-      if (node.type === type && node.model.id.split("/").length === depth+1 && typeof node.model.obj !== "undefined") {
-        obj = node.model.obj;
-        obj.data('node', node)
-        // obj.addClass("draggable")
-        obj.draggable();
-        obj.droppable({
-          drop: function( event, ui ) {
-            $( this ).data('node')
-        }
-    });
-      }
-
-    });
+    // math_root.walk(function (node) {
+    //
+    //   let obj;
+    //   // console.log("hello here", type, depth);
+    //   if (node.type === type && node.model.id.split("/").length === depth+1 && typeof node.model.obj !== "undefined") {
+    //     obj = node.model.obj;
+    //     obj.data('node', node)
+    //     // obj.addClass("draggable")
+    //     obj.draggable();
+    //     obj.droppable({
+    //       drop: function( event, ui ) {
+    //         $( this ).data('node')
+    //     }
+    // });
+    //   }
+    //
+    // });
 
     // $(".sortable").removeClass("sortable")
     // $( ".sortable" ).disableSelection();
