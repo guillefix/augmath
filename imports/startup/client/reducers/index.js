@@ -11,15 +11,21 @@ const rootReducer = (state = {}, action) => {
     case "ADD_TO_HISTORY":
       // console.log("adding to history", state, action);
       cl_math = clear_math(action.mathStr);
-      newObj = {mathStr: cl_math, current_eq: state.current_eq};
+      let eqIndex;
+      if (typeof action.eqIndex !== "undefined") {
+        eqIndex = action.eqIndex;
+      } else {
+        eqIndex = state.current_eq;
+      }
+      newObj = {mathStr: cl_math, current_eq: eqIndex};
       return { ...state,
         mathHist: [ ...state.mathHist.slice(0, action.index), newObj, ...state.mathHist.slice(action.index+1)],
-        equations: [ ...state.equations.slice(0, state.current_eq), cl_math, ...state.equations.slice(state.current_eq+1)],
+        equations: [ ...state.equations.slice(0, eqIndex), cl_math, ...state.equations.slice(eqIndex+1)],
         current_index: action.index,
         doing_manip: false,
         selectedNodes: []}
     case "UPDATE_INDEX":
-      // console.log("updating index", action.index);
+      console.log("updating index", action.index);
       if (action.index > state.mathHist.length-1 || action.index < 0) {
         return state
       } else {
