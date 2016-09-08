@@ -1024,6 +1024,7 @@ export function parse_poly(root, poly, parent_id, is_container) {
     term.text+=factor_text;
     if (i === things.length) {term.model.obj = term_obj; poly_str+=term.text;}
   };
+  root.text = poly_str;
   return poly_str;
 }
 

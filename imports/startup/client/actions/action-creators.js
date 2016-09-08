@@ -7,10 +7,11 @@
 //   mathStr
 // })
 
-export const addToHist = (mathStr, index) => ({
+export const addToHist = (mathStr, index, eqIndex) => ({
   type: 'ADD_TO_HISTORY',
   mathStr,
-  index
+  index,
+  eqIndex
 })
 
 export const addToEqs = (eq) => ({
