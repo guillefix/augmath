@@ -2,7 +2,7 @@ import React from 'react';
 import ReactDOM from 'react-dom';
 // import * as manip from '../../maths/manipulations.js';
 import * as hist from './history';
-import * as act from './actions/action-creators';
+import * as act from '../actions/action-creators';
 
 export default class Tools extends React.Component {
   componentDidMount() {

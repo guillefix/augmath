@@ -3,7 +3,7 @@ import {select_node, clear_math, math_str_to_tree, replace_in_mtstr, tot_width} 
 import Bro from 'brototype'
 import {symbols} from '../../maths/symbols.js';
 import store from './store';
-import * as act from './actions/action-creators';
+import * as act from '../actions/action-creators';
 import * as manips from '../../maths/manipulations.js';
 
 
@@ -78,6 +78,8 @@ function test_manip(assert, manip, math_str_init, math_str_exp, node_ids) {
 }
 
 $( document ).ready(function() {
+
+  
 
   QUnit.test("tree", function( assert ) {
     dispatch(act.addToHist("ax^{2}+bx+c=0", 0))

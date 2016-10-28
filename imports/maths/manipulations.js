@@ -14,6 +14,8 @@ import {symbols} from './symbols.js';
 export function change_side() {
   let math_root = this.math_root;
   let selection = this.selection;
+  console.log("changing side");
+  console.log(selection.$selected); //.nextAll(".mrel").length !== 0
   // console.log("helping vars", this);
   var new_term;
   // equals_position = $equals.offset();
@@ -250,9 +252,9 @@ export function change_side() {
   else if (selection.selected_nodes[0].type === "power"
     && selection.selected_nodes.length === 1
     //and it comes from a top level term, plus there is only one term on the side of the selected sign:
-    && ((selection.$selected.prevAll(".mrel").length !== 0
-        && get_prev(math_root, [math_root.children[math_root.children.length-1]]).children[0].type === "rel")
-      || (selection.$selected.nextAll(".mrel").length !== 0
+    && ((selection.$selected.parent().prevAll(".mrel").length !== 0
+        && get_prev(math_root, [math_root.children[math_root.children.length-1]]).children[0].type === "rel") //LHS
+      || (selection.$selected.parent().nextAll(".mrel").length !== 0
         && get_next(math_root, [math_root.children[0]]).children[0].type === "rel")))
   {
     console.log("changing power of side");
@@ -537,6 +539,7 @@ export function move_down() {
   if (same_parents) {
     var new_denom_text = "";
     function move_down_frac(denominator) {
+      console.log("moving down in fraction");
       if (denominator.children.length === 1) {
         new_denom_text+=denominator.text;
       } else {
@@ -556,38 +559,48 @@ export function move_down() {
         });
       });
     }
+    //selected factor
     if (selection.selected_nodes[0].type === "factor"
     && selection.selected_nodes[0].parent.parent.parent
     && selection.selected_nodes[0].parent.parent.parent.type2 === "frac"
-    && selection.selected_nodes[0].parent.parent.children.length === 1) { //selected factor
+    && selection.selected_nodes[0].parent.parent.children.length === 1)
+    {
       new_denom_text = exponentiate(selection.selected_nodes, false, "-1");
       var denominator = selection.selected_nodes[0].parent.parent.parent.children[1];
-      move_down_frac(denominator)
-    } else if (selection.selected_nodes[0].type === "term"
+      return move_down_frac(denominator)
+    }
+    //selected term
+    else if (selection.selected_nodes[0].type === "term"
     && selection.selected_nodes.length === 1
     && selection.selected_nodes[0].parent.parent
     && selection.selected_nodes[0].parent.parent.type2 === "frac"
-    && selection.selected_nodes[0].parent.children.length === 1) {//selected term
+    && selection.selected_nodes[0].parent.children.length === 1)
+    {
       if (selection.selected_nodes[0].children.length === 1) {
         new_denom_text = selection.selected_nodes[0].text + "^{-1}";
       } else {
         new_denom_text = exponentiate(selection.selected_nodes[0].children, false, "-1");
       }
       var denominator = selection.selected_nodes[0].parent.parent.children[1];
-      move_down_frac(denominator)
-    } else if (selection.selected_nodes[0].type === "numerator"
+      return move_down_frac(denominator)
+    }
+    //selected numerator
+    else if (selection.selected_nodes[0].type === "numerator"
     && selection.selected_nodes.length === 1
     && selection.selected_nodes[0].parent
     && selection.selected_nodes[0].parent.type2 === "frac"
-    && selection.selected_nodes[0].children.length === 1) {//selected numerator
+    && selection.selected_nodes[0].children.length === 1)
+    {
       if (selection.selected_nodes[0].children.length === 1) {
         new_denom_text = selection.selected_nodes[0].text + "^{-1}";
       } else {
         new_denom_text = exponentiate(selection.selected_nodes[0].children[0].children, false, "-1");
       }
       var denominator = selection.selected_nodes[0].parent.children[1];
-      move_down_frac(denominator)
-    } else {
+      return move_down_frac(denominator)
+    }
+    else
+    {
       var selected_width = tot_width(selection.$selected, true, false);
       var extra_selected_width = tot_width(math_root.first(function(node) {return node.type2 === "normal"}).model.obj, true, false)*1;
       var h_offset = selected_width/2 + extra_selected_width/2;
