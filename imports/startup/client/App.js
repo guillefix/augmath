@@ -654,15 +654,15 @@ class Equation extends React.Component {
     }
 
     //CLICK/SELECT
-    // math_root.walk(function (node) {
-    //   if (node.model.id !== "0" && node.type === type && getIndicesOf("/", node.model.id).length === depth) {
-    //       // console.log("adding event", node);
-    //       node.model.obj.off("click")
-    //       node.model.obj.on("click", dispatch.bind(null, Actions.selectNode(node.model.id)));
-    //       node.model.obj.css({"display":"inline-block"});
-    //     }
-    // });
-    // //Draggable.create(".mord", {type:"x,y", edgeResistance:0.65, throwProps:true});
+    math_root.walk(function (node) {
+      if (node.model.id !== "0" && node.type === type && getIndicesOf("/", node.model.id).length === depth) {
+          // console.log("adding event", node);
+          node.model.obj.off("click")
+          node.model.obj.on("click", dispatch.bind(null, Actions.selectNode(node.model.id)));
+          node.model.obj.css({"display":"inline-block"});
+        }
+    });
+    //Draggable.create(".mord", {type:"x,y", edgeResistance:0.65, throwProps:true});
   }
   resetSelected() {
     this.selection.selected_nodes = [];

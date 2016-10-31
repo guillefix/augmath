@@ -88,6 +88,7 @@ export function ascii_to_latex(str) {
     .replace(/\^\(([-a-z0-9]+)\)/g, "^{$1}")
     .replace(/([a-z0-9])\/([a-z0-9])/g,"\\frac{$1}{$2}");
   if (str.slice(0,1) === "-") result = "-" + result;
+  else if (str.slice(0,1) === "+") result = "+" + result;
   return result
 }
 
