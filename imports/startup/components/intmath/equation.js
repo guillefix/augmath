@@ -25,6 +25,7 @@ export default class Equation extends React.Component {
     this.equals_position = $equals.offset();
     this.resetStyle();
     this.create_events(this.props.mtype, this.props.depth);
+
   }
   doManip() {
     // console.log(this);
@@ -157,7 +158,9 @@ export default class Equation extends React.Component {
     //DRAG AND DROP. Goes here because I should group stuff depending on which manipulative is selectable really
     // $(".base").attr('id', 'sortable');
 
-    let dragDrop = "eq";
+    let dragDrop = state.dragDrop;
+
+    console.log(dragDrop);
 
     if (dragDrop === "eq") {
       $(math_el).find( ".draggable" ).draggable( "destroy" );

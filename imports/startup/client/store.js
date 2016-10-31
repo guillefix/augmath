@@ -22,7 +22,8 @@ const defaultState = {
   doing_manip: false,
   equations: [init_math_str],
   current_eq: 0,
-  selectedNodes: []
+  selectedNodes: [],
+  dragDrop: 'eq'
 };
 
 const store = createStore(rootReducer, defaultState);

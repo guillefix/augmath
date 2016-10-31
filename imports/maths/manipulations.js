@@ -111,9 +111,9 @@ export function change_side() {
     || (selection.selected_nodes[0].type === "factor" && selection.selected_nodes[0].model.id.split("/").length === 6 && selection.selected_nodes[0].parent.parent.type === "numerator")
     || selection.selected_nodes[0].type === "numerator")
     //and it comes from a top level term, plus there is only one term on the side of the selected sign:
-    && ((selection.$selected.prevAll(".mrel").length !== 0
+    && (((selection.$selected.prevAll(".mrel").length === 1 || selection.$selected.parents(".mord").last().prevAll(".mrel").length === 1)
         && get_prev(math_root, [math_root.children[math_root.children.length-1]]).children[0].type === "rel")
-      || (selection.$selected.prevAll(".mrel").length === 0
+      || ((selection.$selected.prevAll(".mrel").length === 0 || selection.$selected.parents(".mord").last().prevAll(".mrel").length === 0)
         && get_next(math_root, [math_root.children[0]]).children[0].type === "rel")))
   {
     console.log("changing factor of side");

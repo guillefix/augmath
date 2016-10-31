@@ -2,14 +2,14 @@ import {change_side, move_right, move_left, move_up, move_down, split, merge, di
 import {select_node, clear_math, math_str_to_tree, replace_in_mtstr, tot_width} from "../../maths/functions";
 import Bro from 'brototype'
 import {symbols} from '../../maths/symbols.js';
-import store from './store';
+// import store from './store';
 import * as act from '../actions/action-creators';
 import * as manips from '../../maths/manipulations.js';
 
 
-const { dispatch } = store;
+// const { dispatch } = store.dispatch;
 
-//Oh man tests do really rock
+//Oh man tests do really rock. But need to update framework to work with react!
 step_duration=0; //is doing this ok?
 
 function test_manip(assert, manip, math_str_init, math_str_exp, node_ids) {
@@ -77,9 +77,7 @@ function test_manip(assert, manip, math_str_init, math_str_exp, node_ids) {
   // });
 }
 
-$( document ).ready(function() {
-
-  
+function test(math_root, dispatch) {
 
   QUnit.test("tree", function( assert ) {
     dispatch(act.addToHist("ax^{2}+bx+c=0", 0))
@@ -300,4 +298,4 @@ $( document ).ready(function() {
     test_manip(assert, "operate", "\\frac{d}{dx} (x^{5}+x^{3})", "5 x^{4} + 3 x^{2}",  ["0/1/1"]);
   });
 
-});
+};

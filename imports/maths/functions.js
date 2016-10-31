@@ -88,6 +88,7 @@ export function ascii_to_latex(str) {
     .replace(/\^\(([-a-z0-9]+)\)/g, "^{$1}")
     .replace(/([a-z0-9])\/([a-z0-9])/g,"\\frac{$1}{$2}");
   if (str.slice(0,1) === "-") result = "-" + result;
+  else if (str.slice(0,1) === "+") result = "+" + result;
   return result
 }
 
@@ -402,7 +403,7 @@ export function have_same_prop(nodes, prop, ignore_undefined = false) {
 export function have_same_log_base(nodes) {
   let result = true;
   for (var i = 0; i < nodes.length-1; i++) {
-    if (nodes[i].type2 !== "log" || (nodes[i].children.length === 2 && nodes[i+1].children.length === 2 && nodes[i].children[0].text !== nodes[i+1].children[0].text) || (nodes[i].children.length !== nodes[i+1].children.length)) {
+    if (typeof nodes[i] === "undefined" || nodes[i].type2 !== "log" || (nodes[i].children.length === 2 && nodes[i+1].children.length === 2 && nodes[i].children[0].text !== nodes[i+1].children[0].text) || (nodes[i].children.length !== nodes[i+1].children.length)) {
       result = false;
     }
   }
@@ -455,6 +456,22 @@ export function get_all_next(math_root, node) {
     });
   };
   return next_nodes;
+}
+
+//get all previous nodes
+export function get_all_prev(math_root, node) {
+  var prev_nodes = [];
+  var array = node.model.id.split("/");
+  var init = parseInt(array[array.length-1], 10);
+  // var max = node.parent.children.length;
+  for (var i = init-1; i >= 0; i--) {
+    array[array.length-1] = i;
+    var new_id = array.join("/");
+    math_root.walk(function (node) {
+      if (node.model.id === new_id) {prev_nodes.push(node); return false;}
+    });
+  };
+  return prev_nodes;
 }
 
 //does it have a visible sign?
@@ -1077,4 +1094,25 @@ export function math_str_to_tree(math) {
   $(math_el).remove();
 
   return root;
+}
+
+export function compare_trees(tree1, tree2) {
+  let children1 = tree1.children;
+  let children2 = tree2.children;
+  let subs = [];
+  if (children1.length === 0)
+    return {same: true, subs: [[tree1, tree2]]};
+  else if (children1.length !== children2.length || children1.type !== children2.type || children1.type2 !== children2.type2)
+    return {same: false, subs};
+  else {
+    for (var i = 0; i < children1.length; i++) {
+      let comp = compare_trees(children1[i], children2[i]);
+      if (comp.same) {
+        subs = [ ...subs, ...(comp.subs)];
+      } else {
+        return {same: false, subs}
+      }
+    }
+    return {same: true, subs}
+  }
 }

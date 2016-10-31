@@ -65,8 +65,9 @@ const rootReducer = (state = {}, action) => {
       let newState;
       if (state.multi_select && nodes.length > 0 && currEq === nodes[0].split('/')[0]) {
         if (index === -1) {
+          console.log("hi");
           newState = { ...state,
-            selectedNodes: [...nodes, action.nodeId]}
+            selectedNodes: [...nodes, id]}
         } else {
           newState = { ...state,
             selectedNodes: subsArray(nodes, index)};
@@ -79,9 +80,9 @@ const rootReducer = (state = {}, action) => {
           newState = { ...state,
             selectedNodes: []};
         }
-        return { ...newState,
-          current_eq: parseInt(currEq)}
       }
+      return { ...newState,
+        current_eq: parseInt(currEq)}
     case "RESET_SELECTED":
       return { ...state,
         selectedNodes: []}
