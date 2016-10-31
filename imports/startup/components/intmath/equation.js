@@ -3,7 +3,7 @@ import ReactDOM from 'react-dom';
 import * as Actions from '../../actions/action-creators';
 
 import * as manips from '../../../maths/manipulations.js';
-import {clear_math, select_node, parse_poly, tot_width, replace_in_mtstr, getIndicesOf, parse_mtstr, get_next, get_prev} from "../../../maths/functions";
+import {clear_math, select_node, parse_poly, tot_width, replace_in_mtstr, getIndicesOf, parse_mtstr, get_next, get_prev, get_all_prev, compare_trees} from "../../../maths/functions";
 import TreeModel from '../../../TreeModel-min.js';
 import 'nestedSortable';
 import katex from 'katex';
@@ -25,7 +25,6 @@ export default class Equation extends React.Component {
     this.equals_position = $equals.offset();
     this.resetStyle();
     this.create_events(this.props.mtype, this.props.depth);
-
   }
   doManip() {
     // console.log(this);
@@ -61,11 +60,13 @@ export default class Equation extends React.Component {
       } else {
         promise = manips[state.manip].call(vars);
       }
-      promise.then((data) => {
-        console.log("going to update equation", data);
-        let index = state.current_index;
-        store.dispatch(Actions.addToHist(data, ++index));
-      })
+      if (typeof promise !== "undefined") {
+        promise.then((data) => {
+          console.log("going to update equation", data);
+          let index = state.current_index;
+          store.dispatch(Actions.addToHist(data, ++index));
+        })
+      }
     }
     // else {
     //   this.forceUpdate();
@@ -82,7 +83,6 @@ export default class Equation extends React.Component {
     this.unsubscribe = store.subscribe(this.doManip.bind(this)); //rebinding
 
     //reset selected
-    let selNum = this.props.selectedNodes.length;
 
     //If math string is changed
     // console.log(this.props.index, prevProps.math, this.props.math);
@@ -97,11 +97,14 @@ export default class Equation extends React.Component {
     this.resetStyle();
 
     //update selected nodes
+    let selNum = this.props.selectedNodes.length;
     if (selNum === 0) {
       this.resetSelected();
     } else {
       for (var i = 0; i < selNum; i++) {
-        this.selectNode(this.props.selectedNodes[i], state.multi_select, state.var_select)
+        let node = this.props.selectedNodes[i];
+        if (prevProps.selectedNodes.indexOf(node) === -1)
+          this.selectNode(node, state.multi_select, state.var_select)
       }
     }
   }
@@ -122,8 +125,6 @@ export default class Equation extends React.Component {
     parse_poly(math_root, root_poly, this.props.index, true);
 
     this.math_root = math_root;
-
-    // window.math_root = math_root
   }
   resetStyle() {
     let math_el = ReactDOM.findDOMNode(this.refs.math);
@@ -158,9 +159,7 @@ export default class Equation extends React.Component {
     //DRAG AND DROP. Goes here because I should group stuff depending on which manipulative is selectable really
     // $(".base").attr('id', 'sortable');
 
-    let dragDrop = state.dragDrop;
-
-    console.log(dragDrop);
+    let dragDrop = "eq";
 
     if (dragDrop === "eq") {
       $(math_el).find( ".draggable" ).draggable( "destroy" );
@@ -182,6 +181,30 @@ export default class Equation extends React.Component {
               // let root = $( this ).data('root');
               let root = ui.draggable.data('root');
               console.log(root);
+              let eqNode1 = root.first(x => x.type === "rel")
+              let eqNode2 = math_root.first(x => x.type === "rel")
+              let allPrev1 = get_all_prev(root, eqNode1);
+              let tempNode1 = {children: allPrev1, type:"temp", type2: "temp"}
+              let allPrev2 = get_all_prev(math_root, eqNode2);
+              let tempNode2 = {children: allPrev2, type:"temp", type2: "temp"}
+              let comp = compare_trees(tempNode1, tempNode2)
+              if (comp.same) {
+                console.log(comp.subs);
+                let nodes = [];
+                let texts = [];
+                for (var i = 0; i < comp.subs.length; i++) {
+                  let node = comp.subs[i][0];
+                  let subText = comp.subs[i][1].text;
+                  thisComp.selectNode(node.model.id, false, true, root);
+                  nodes = [ ...nodes, ...thisComp.selection.selected_nodes];
+                  let tempTexts = thisComp.selection.selected_nodes.map(x => subText);
+                  texts = [ ...texts, ...tempTexts];
+                }
+                let newLHS = replace_in_mtstr(root, nodes, texts).split("=")[1];
+                let oldRHS = math_root.text.split("=")[1];
+                dispatch(Actions.addToHist(newLHS+"="+oldRHS, state.current_index+1, node.model.id.split('/')[0]))
+              }
+
               if (root.children[1].type === "rel") {
                 let varText = root.text.split("=")[0];
                 let newText = root.text.split("=")[1];
@@ -391,11 +414,12 @@ export default class Equation extends React.Component {
     var replace_el = document.getElementById("replace");
     replace_el.value = this.selection.selected_text;
   }
-  selectNode(nodeId, multi_select=false, var_select=false) {
-    // console.log("selectNode");
-    let math_root = this.math_root;
+  selectNode(nodeId, multi_select=false, var_select=false, math_root = this.math_root) {
+    console.log("selectNode", nodeId, multi_select);
+    // let math_root = this.math_root;
     let node = math_root.first(x => x.model.id === nodeId)
     let $this = node.model.obj;
+    console.log($this);
     const thisComp = this;
     $this.toggleClass("selected");
     node.selected = !node.selected;
