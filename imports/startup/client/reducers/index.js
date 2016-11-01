@@ -86,6 +86,9 @@ const rootReducer = (state = {}, action) => {
     case "RESET_SELECTED":
       return { ...state,
         selectedNodes: []}
+    case "UPDATE_DRAGDROP_MODE":
+      return { ...state,
+        dragDrop: action.newMode}
     default:
         return state;
   }

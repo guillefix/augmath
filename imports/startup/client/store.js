@@ -23,10 +23,12 @@ const defaultState = {
   equations: [init_math_str],
   current_eq: 0,
   selectedNodes: [],
-  dragDrop: 'eq'
+  dragDrop: 'apply'
 };
 
-const store = createStore(rootReducer, defaultState);
+const store = createStore(rootReducer, defaultState,
+    window.__REDUX_DEVTOOLS_EXTENSION__ && window.__REDUX_DEVTOOLS_EXTENSION__()
+  );
 
 //note that if store.getState() returns undefined it may be due to the rootReducer being incorrect, like missing a return statement.
 

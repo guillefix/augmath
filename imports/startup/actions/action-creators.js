@@ -43,6 +43,7 @@ export const updateSelect = (newSelectVars, resetMtype = false) => {
       default:
         newDepth = 3
     }
+    //this isn't very safe, as something wrong may be going to the state..
     newSelectVars.depth = newDepth;
   }
   return {type: 'UPDATE_SELECT', newSelectVars}
@@ -60,4 +61,9 @@ export const selectNode = (nodeId) => ({
 
 export const resetSelected = () => ({
   type: 'RESET_SELECTED'
+})
+
+export const updateddmode = (newMode) => ({
+  type: 'UPDATE_DRAGDROP_MODE',
+  newMode
 })

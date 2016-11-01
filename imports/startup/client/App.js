@@ -1,6 +1,6 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
-import Tools from './tools.js';
+import Tools from '../components/tools/tools.js';
 import EquationsPanel from './equations-panel.js';
 import MathInput from '../components/intmath/mathinput.js';
 import MQInput from '../components/intmath/mqinput.js';

@@ -1,8 +1,8 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
 // import * as manip from '../../maths/manipulations.js';
-import * as hist from './history';
-import * as act from '../actions/action-creators';
+import * as hist from '../../client/history';
+import * as act from '../../actions/action-creators';
 
 export default class Tools extends React.Component {
   componentDidMount() {
@@ -16,6 +16,7 @@ export default class Tools extends React.Component {
   render() {
     const { store } = this.context;
     const { dispatch } = store;
+    const state = store.getState();
     return <div>
       <ul id="tools" className="list-group text-center">
   			<h4>Selection</h4>
@@ -104,6 +105,15 @@ export default class Tools extends React.Component {
   				<button type="button" className="list-group-item" id="make_json">
   					<label htmlFor="zoom-slider">Zoom</label> <input name="zoom-slider" id="zoom-slider" type="range" min="1" max="100" step="3" defaultValue="14" onChange={(e)=>dispatch(act.updateZoom(e.target.value))}/>
   				</button>
+          <div type="button" className="list-group-item" id="make_json">
+            <label htmlFor="dragdropmode">Drag &amp; drop mode</label>
+            <br/>
+            <div className="btn-group" role="group" aria-label="dragdropmode">
+              <button type="button" className={"btn btn-default"+(state.dragDrop === "apply" ? " active" : "")} onClick={dispatch.bind(null, act.updateddmode("apply"))}>Apply</button>
+              <button type="button" className={"btn btn-default"+(state.dragDrop === "subs" ? " active" : "")} onClick={dispatch.bind(null, act.updateddmode("subs"))}>Subs</button>
+              <button type="button" className={"btn btn-default"+(state.dragDrop === "move" ? " active" : "")} onClick={dispatch.bind(null, act.updateddmode("move"))}>Move</button>
+            </div>
+          </div>
   			</div>
   		</ul>
     </div>

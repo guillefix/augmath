@@ -54,9 +54,9 @@ export default class Equation extends React.Component {
       if (state.manip === "replace") {
         promise = manips[state.manip].call(vars, state.manip_data, state.replace_ind);
       } else if (state.manip === "flip_equation") {
-        promise = manips[state.manip].call(vars, state.mathHist[state.current_index]);
+        promise = manips[state.manip].call(vars, state.mathHist[state.current_index].mathStr);
       } else if (state.manip === "add_both_sides") {
-        promise = manips[state.manip].call(vars, state.manip_data, state.mathHist[state.current_index]);
+        promise = manips[state.manip].call(vars, state.manip_data, state.mathHist[state.current_index].mathStr);
       } else {
         promise = manips[state.manip].call(vars);
       }
@@ -82,7 +82,20 @@ export default class Equation extends React.Component {
     this.unsubscribe();
     this.unsubscribe = store.subscribe(this.doManip.bind(this)); //rebinding
 
+    let currentDD = store.getState().dragDrop;
+    function handleDDChange() {
+      let nextDD = store.getState().dragDrop;
+      if (nextDD !== currentDD) {
+        console.log("changed drag-drop mode", currentDD, nextDD);
+        currentDD = nextDD;
+        this.create_events(this.props.mtype, this.props.depth);
+      }
+    }
+
+    store.subscribe(handleDDChange.bind(this));
+
     //reset selected
+    let selNum = this.props.selectedNodes.length;
 
     //If math string is changed
     // console.log(this.props.index, prevProps.math, this.props.math);
@@ -97,7 +110,6 @@ export default class Equation extends React.Component {
     this.resetStyle();
 
     //update selected nodes
-    let selNum = this.props.selectedNodes.length;
     if (selNum === 0) {
       this.resetSelected();
     } else {
@@ -119,7 +131,7 @@ export default class Equation extends React.Component {
     tree = new TreeModel();
 
     math_root = tree.parse({});
-    math_root.model.id = this.props.index.toString;
+    math_root.model.id = this.props.index.toString();
     math_root.model.obj = root_poly;
 
     parse_poly(math_root, root_poly, this.props.index, true);
@@ -159,9 +171,9 @@ export default class Equation extends React.Component {
     //DRAG AND DROP. Goes here because I should group stuff depending on which manipulative is selectable really
     // $(".base").attr('id', 'sortable');
 
-    let dragDrop = "eq";
+    let dragDrop = state.dragDrop;
 
-    if (dragDrop === "eq") {
+    if (dragDrop === "apply") {
       $(math_el).find( ".draggable" ).draggable( "destroy" );
       $(math_el).find(".draggable").droppable( "destroy" );
       $(math_el).find(".draggable").removeClass("draggable");
@@ -204,8 +216,8 @@ export default class Equation extends React.Component {
                 let oldRHS = math_root.text.split("=")[1];
                 dispatch(Actions.addToHist(newLHS+"="+oldRHS, state.current_index+1, node.model.id.split('/')[0]))
               }
-
-              if (root.children[1].type === "rel") {
+              else if (root.children[1].type === "rel") {
+                console.log("second type of apply");
                 let varText = root.text.split("=")[0];
                 let newText = root.text.split("=")[1];
                 // dispatch(Actions.updateSelect({var_select: true}))
@@ -225,14 +237,16 @@ export default class Equation extends React.Component {
     }
 
     if (dragDrop === "subs") {
+      // console.log($(math_el).find( ".draggable" ));
       $(math_el).find( ".draggable" ).draggable( "destroy" );
       $(math_el).find(".draggable").droppable( "destroy" );
       $(math_el).find(".draggable").removeClass("draggable");
       math_root.walk(function (node) {
         let obj;
+        // console.log(node);
         if (node.type === type && node.model.id.split("/").length === depth+1 && typeof node.model.obj !== "undefined") {
           obj = node.model.obj;
-          console.log("hello here", type, depth, obj);
+          // console.log("hello here", type, depth, obj);
           obj.data('node', node)
           obj.addClass("draggable")
           obj.draggable({
