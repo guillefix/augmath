@@ -10,7 +10,7 @@ import {symbols} from '../../maths/symbols.js';
 import {remove_from_history} from './history';
 // import Algebrite from 'algebrite';
 
-// import './tests'
+import './tests'
 
 /*
                       __  __       _   _

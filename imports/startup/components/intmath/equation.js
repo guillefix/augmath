@@ -48,6 +48,8 @@ export default class Equation extends React.Component {
 
       vars.math_root = this.math_root;
       vars.selection = this.selection;
+      vars.step_duration = state.step_duration;
+      vars.mathStr = this.props.math;
       // console.log(this.selection);
       // console.log("vars.math_root", vars.math_root);
       // console.log(this.selection.selected_nodes);
@@ -73,7 +75,7 @@ export default class Equation extends React.Component {
     // }
   }
   componentDidUpdate(prevProps, prevState) {
-    console.log("updating comp", this.props.index, this.props.math);
+    console.log("updating equation", this.props.index, this.props.math);
     let math_el = ReactDOM.findDOMNode(this.refs.math);
 
     const { store } = this.context;

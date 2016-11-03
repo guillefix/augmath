@@ -67,3 +67,8 @@ export const updateddmode = (newMode) => ({
   type: 'UPDATE_DRAGDROP_MODE',
   newMode
 })
+
+export const changeStepDuration = (newStepDur) => ({
+  type: 'CHANGE_STEP_DURATION',
+  newStepDur
+})

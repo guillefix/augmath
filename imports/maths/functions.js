@@ -364,8 +364,8 @@ export function have_same_denom(nodes) {
 export function are_same_terms(nodes) {
   var result = true;
   for (var i=0; i<nodes.length-1; i++) {
-    var term_text1 = selection.selected_nodes[i].text,
-        term_text2 = selection.selected_nodes[i+1].text;
+    var term_text1 = nodes[i].text,
+        term_text2 = nodes[i+1].text;
     if (nodes[i].type === "term" && nodes[i+1].type === "term") {
       if (Bro(nodes[i]).iCanHaz("children.0.type2") === "op") {
         term_text1 = term_text1.slice(1);
@@ -1053,7 +1053,7 @@ export function clear_math(math) {
         .replace(/^\+/, "")
         .replace(/=$/, "=0")
         .replace(/=+/, "=")
-        .replace(/=[\+\-]/g, "=")
+        .replace(/=[\+]/g, "=")
         .replace(/[\+\-]=/g, "=")
         .replace(/0\+/g, "")
         .replace(/0-/g, "-")

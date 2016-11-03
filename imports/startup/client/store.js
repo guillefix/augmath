@@ -23,7 +23,8 @@ const defaultState = {
   equations: [init_math_str],
   current_eq: 0,
   selectedNodes: [],
-  dragDrop: 'apply'
+  dragDrop: 'apply',
+  step_duration: 700
 };
 
 const store = createStore(rootReducer, defaultState,

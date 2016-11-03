@@ -12,10 +12,13 @@ import {symbols} from './symbols.js';
 
 //change side
 export function change_side() {
+  let step_duration = this.step_duration;
   let math_root = this.math_root;
   let selection = this.selection;
-  console.log("changing side");
-  console.log(selection.$selected); //.nextAll(".mrel").length !== 0
+  console.log("changing side", math_root);
+  // console.log(selection.$selected);
+  // console.log(selection.selected_nodes[0]);
+  // console.log((get_next(math_root, [math_root.children[0]]).children[0]));
   // console.log("helping vars", this);
   var new_term;
   // equals_position = $equals.offset();
@@ -35,7 +38,7 @@ export function change_side() {
   //terms
   if (selection.selected_nodes[0].parent === math_root)
   {
-    console.log("changing term of side");
+    console.log("changing term of side", selection.selected_nodes[0].text);
     if (selection.$selected.prevAll(".mrel").length === 0) { //before eq sign
       offset = (this.eqCoords.end_of_equation.left-selection.selected_position.left);
       selection.$selected.first().prevAll().animate({left:selected_width}, step_duration);
@@ -72,9 +75,9 @@ export function change_side() {
     && selection.selected_nodes.length === 1
     //and it comes from a top leve term, plus there is only one term on the side of the selected sign:
     && ((selection.$selected.prevAll(".mrel").length !== 0
-        && get_prev(math_root, [math_root.children[math_root.children.length-1]]).children[0].type === "rel")
+        && get_prev(math_root, [math_root.children[math_root.children.length-1]]).children[0].type === "rel") //RHS
       || (selection.$selected.nextAll(".mrel").length !== 0
-        && get_next(math_root, [math_root.children[0]]).children[0].type === "rel")))
+        && get_next(math_root, [math_root.children[0]]).children[0].type === "rel"))) //LHS
   {
     console.log("changing sign of side");
     var selected_width = tot_width(selection.$selected, true, true);
@@ -345,6 +348,12 @@ export function change_side() {
       });
     }
   }
+  else
+  {
+    let thisManip = this;
+    return new Promise((resolve, reject) => {resolve(thisManip.mathStr)})
+  }
+
 
   if (recording || playing) {recording_index++;}
   if (recording) {add_to_manip_rec(1);}
@@ -352,6 +361,7 @@ export function change_side() {
 
 //move term within expression, or factor within term
 export function move_right(){
+  let step_duration = this.step_duration;
   let math_root = this.math_root;
   let selection = this.selection;
   //moving factor or term
@@ -395,6 +405,7 @@ export function move_right(){
 }
 
 export function move_left() {
+  let step_duration = this.step_duration;
   let math_root = this.math_root;
   let selection = this.selection;
   //moving factor or term
@@ -442,6 +453,7 @@ export function move_left() {
 
 //move up and down in a fraction
 export function move_up() {
+  let step_duration = this.step_duration;
   let math_root = this.math_root;
   let selection = this.selection;
   var same_parents = have_same_ancestors(selection.selected_nodes, 1),
@@ -532,6 +544,7 @@ export function move_up() {
 }
 
 export function move_down() {
+  let step_duration = this.step_duration;
   let math_root = this.math_root;
   let selection = this.selection;
   var same_parents = have_same_ancestors(selection.selected_nodes, 1);
@@ -776,7 +789,7 @@ export function merge() {
       }))
       let base_text = "";
       let factor = selection.selected_nodes[0].children[selection.selected_nodes[0].children.length-1];
-      if (factor.children === 2) base_text += factor.children[0].text;
+      if (factor.children.length === 2) base_text += factor.children[0].text;
       let new_text = "+\\log_{" + base_text + "}{" + body_text + "}";
       let new_math_str = replace_in_mtstr(math_root, selection.selected_nodes, new_text);
       return new Promise((resolve, reject) => {resolve(new_math_str)});
@@ -785,6 +798,7 @@ export function merge() {
 
 //distributing in stuff
 export function distribute_in() {
+  let step_duration = this.step_duration;
   let math_root = this.math_root;
   let selection = this.selection;
   var same_factor = true,
@@ -943,6 +957,7 @@ export function distribute_in() {
 
 //merging stuff
 export function collect_out() {
+  let step_duration = this.step_duration;
   let math_root = this.math_root;
   let selection = this.selection;
   var same_parents = have_same_ancestors(selection.selected_nodes, 1),
@@ -1206,6 +1221,7 @@ export function unbracket() {
 
 //evaulate simple sum or multiplication
 export function evaluate() {
+  let step_duration = this.step_duration;
   let math_root = this.math_root;
   let selection = this.selection;
   for (var i=0; i<selection.selected_nodes.length-1; i++) { //making sure, all elements are of the same parent
@@ -1225,6 +1241,7 @@ export function evaluate() {
 
 //operate with an operator
 export function operate() {
+  let step_duration = this.step_duration;
   let math_root = this.math_root;
   let selection = this.selection;
   if (selection.selected_nodes.length === 1 && selection.selected_nodes[0].type2 === "diff") {
@@ -1282,6 +1299,7 @@ $("#replace").keyup(function (e) {
     }
 });
 export function replace(text, replace_ind=false) {
+  let step_duration = this.step_duration;
   let math_root = this.math_root;
   let selection = this.selection;
   return new Promise((resolve, reject) => {
@@ -1308,6 +1326,7 @@ export function replace(text, replace_ind=false) {
 
 //remove something. Used for: cancelling something on both sides, or cancelling something on a fraction, among other things
 export function remove() {
+  let step_duration = this.step_duration;
   let math_root = this.math_root;
   let selection = this.selection;
   console.log("removing");
@@ -1374,6 +1393,7 @@ export function cancel_out() {
 
 //flip equation
 export function flip_equation(math_str) {
+  let step_duration = this.step_duration;
   let math_root = this.math_root;
   let selection = this.selection;
   var offset1 = tot_width($equals.prevAll(), true, false) + tot_width($equals, true, false);

@@ -89,6 +89,9 @@ const rootReducer = (state = {}, action) => {
     case "UPDATE_DRAGDROP_MODE":
       return { ...state,
         dragDrop: action.newMode}
+    case "CHANGE_STEP_DURATION":
+      return { ...state,
+        step_duration: action.newStepDur}
     default:
         return state;
   }
