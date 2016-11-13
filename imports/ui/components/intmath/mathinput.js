@@ -1,6 +1,6 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
-import * as Actions from '../../actions/action-creators';
+import * as Actions from '../../../redux/actions/action-creators';
 import MQInput from './mqinput.js'
 
 export default class MathInput extends React.Component {

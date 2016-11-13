@@ -1,5 +1,5 @@
 //import { combineReducers } from 'redux';
-import { clear_math } from '../../../maths/functions'
+import { clear_math } from '../../maths/functions'
 
 let subsArray = (arr, index, el) => {
   if (typeof el === "undefined") return [ ...arr.slice(0, index), ...arr.slice(index+1)]
@@ -92,6 +92,9 @@ const rootReducer = (state = {}, action) => {
     case "CHANGE_STEP_DURATION":
       return { ...state,
         step_duration: action.newStepDur}
+    case "SELECT_EQUATION":
+      return { ...state,
+      current_eq: action.newEqIndex}
     default:
         return state;
   }

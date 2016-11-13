@@ -1,12 +1,14 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
-import * as Actions from '../../actions/action-creators';
+import * as Actions from '../../../redux/actions/action-creators';
 
 import * as manips from '../../../maths/manipulations.js';
 import {clear_math, select_node, parse_poly, tot_width, replace_in_mtstr, getIndicesOf, parse_mtstr, get_next, get_prev, get_all_prev, compare_trees} from "../../../maths/functions";
 import TreeModel from '../../../TreeModel-min.js';
 import 'nestedSortable';
 import katex from 'katex';
+import classNames from 'classnames';
+
 
 export default class Equation extends React.Component {
   constructor() {
@@ -18,10 +20,9 @@ export default class Equation extends React.Component {
     const { store } = this.context;
     const state = store.getState();
     this.unsubscribe = store.subscribe(this.doManip.bind(this));
-    let math_el = ReactDOM.findDOMNode(this.refs.math);
-    katex.render(this.props.math, math_el, { displayMode: true });
+    katex.render(this.props.math, this.math_el, { displayMode: true });
     this.updateTree();
-    window.$equals =  $(math_el).find(".base").find(".mrel");
+    let $equals =  $(this.math_el).find(".base").find(".mrel");
     this.equals_position = $equals.offset();
     this.resetStyle();
     this.create_events(this.props.mtype, this.props.depth);
@@ -31,7 +32,7 @@ export default class Equation extends React.Component {
     const { store } = this.context;
     let math_root = this.math_root;
     const state = store.getState();
-    if (state.doing_manip && this.selection.selected_nodes.length > 0)
+    if (state.doing_manip && state.current_eq === this.props.index)
     {
       let promise, eqCoords = {};
 
@@ -50,16 +51,15 @@ export default class Equation extends React.Component {
       vars.selection = this.selection;
       vars.step_duration = state.step_duration;
       vars.mathStr = this.props.math;
-      // console.log(this.selection);
-      // console.log("vars.math_root", vars.math_root);
-      // console.log(this.selection.selected_nodes);
-      if (state.manip === "replace") {
+      vars.$equals =  $(this.math_el).find(".base").find(".mrel");
+
+      if (state.manip === "replace" && this.selection.selected_nodes.length > 0) {
         promise = manips[state.manip].call(vars, state.manip_data, state.replace_ind);
       } else if (state.manip === "flip_equation") {
-        promise = manips[state.manip].call(vars, state.mathHist[state.current_index].mathStr);
+        promise = manips[state.manip].call(vars, this.props.math);
       } else if (state.manip === "add_both_sides") {
-        promise = manips[state.manip].call(vars, state.manip_data, state.mathHist[state.current_index].mathStr);
-      } else {
+        promise = manips[state.manip].call(vars, state.manip_data, this.props.math);
+      } else if (this.selection.selected_nodes.length > 0){
         promise = manips[state.manip].call(vars);
       }
       if (typeof promise !== "undefined") {
@@ -70,13 +70,10 @@ export default class Equation extends React.Component {
         })
       }
     }
-    // else {
-    //   this.forceUpdate();
-    // }
   }
   componentDidUpdate(prevProps, prevState) {
     console.log("updating equation", this.props.index, this.props.math);
-    let math_el = ReactDOM.findDOMNode(this.refs.math);
+    // let math_el = ReactDOM.findDOMNode(this.refs.math);
 
     const { store } = this.context;
     const state = store.getState();
@@ -98,11 +95,10 @@ export default class Equation extends React.Component {
 
     //reset selected
     let selNum = this.props.selectedNodes.length;
-
     //If math string is changed
     // console.log(this.props.index, prevProps.math, this.props.math);
     if (prevProps.math !== this.props.math ) { //|| prevProps.eqNum !== this.props.eqNum
-      katex.render(this.props.math, math_el, { displayMode: true });
+      katex.render(this.props.math, this.math_el, { displayMode: true });
       this.updateTree();
       this.create_events(this.props.mtype, this.props.depth);
     }
@@ -127,7 +123,7 @@ export default class Equation extends React.Component {
     const state = store.getState();
     let math_root;
 
-    let math_el = ReactDOM.findDOMNode(this.refs.math);
+    let math_el = this.math_el;
     let root_poly = $(math_el).find(".base");
 
     tree = new TreeModel();
@@ -141,7 +137,7 @@ export default class Equation extends React.Component {
     this.math_root = math_root;
   }
   resetStyle() {
-    let math_el = ReactDOM.findDOMNode(this.refs.math);
+    let math_el = this.math_el;
 
     //setting zoom
     $(math_el).css("font-size", this.props.eqZoom.toString()+"px");
@@ -150,7 +146,7 @@ export default class Equation extends React.Component {
 
     //repositioning equals so that it's always in the same place. put in fixed value
     let root_poly = $(math_el).find(".base");
-    window.$equals = root_poly.find(".mrel");
+    let $equals = root_poly.find(".mrel");
     if ($equals.length !== 0) {
       $(math_el).css("left","0px", "top", "0px");
       let new_equals_position = $equals.offset();
@@ -167,7 +163,7 @@ export default class Equation extends React.Component {
     let math_root = this.math_root;
     let thisComp = this;
     // console.log("creating events", type,depth);
-    let math_el = ReactDOM.findDOMNode(this.refs.math);
+    let math_el = this.math_el;
     $(math_el).find("*").off();
     var  index;
     //DRAG AND DROP. Goes here because I should group stuff depending on which manipulative is selectable really
@@ -328,53 +324,6 @@ export default class Equation extends React.Component {
           }
         }
       });
-      // $("#sortable").sortable({
-      //  forceHelperSize: true,
-      //  placeholder: "sortable-placeholder",
-      // });
-
-      // $("#sortable").nestedSortable({
-      //   // forceHelperSize: true,
-      //   // placeholder: "sortable-placeholder",
-      //   listType: 'span',
-      //   items: 'span.mord',
-      //   isAllowed(placeholder, placeholderParent, currentItem) {
-      //     let hasparent = typeof placeholderParent !== "undefined";
-      //     if (hasparent && placeholderParent.is(".mord:has(> .mord)")) {
-      //       console.log(placeholderParent);
-      //     }
-      //     return hasparent ? placeholderParent.is(".mord:has(> .mord)") : false;
-      //   },
-      //   // relocate( event, ui ) {
-      //   //
-      //   //   window.setTimeout(rerender, 50); //probably not a very elegant solution
-      //   //
-      //   //   function rerender() {
-      //   //     var root_poly = $("#math .base");
-      //   //
-      //   //     tree = new TreeModel();
-      //   //
-      //   //     math_root = tree.parse({});
-      //   //     math_root.model.id = "0";
-      //   //     //KaTeX offers MathML semantic elements on the HTML, could that be used?
-      //   //
-      //   //     parse_poly(math_root, root_poly, 0, true);
-      //   //
-      //   //     let newmath = parse_mtstr(math_root, [], []);
-      //   //
-      //   //     console.log(newmath);
-      //   //
-      //   //     thisApp.prepare(newmath);
-      //   //   }
-      //   //
-      //   // }
-      //   // connectWith: "#sortable,.sortable"
-      //   // over: (event, ui) => {
-      //   //   console.log(ui);
-      //   //   ui.placeholder.next().css("color","blue")
-      //   //   ui.item.css("color","green")
-      //   // }
-      // });
 
       $( ".sortable" ).droppable({
           drop: function( event, ui ) {
@@ -485,10 +434,72 @@ export default class Equation extends React.Component {
     var replace_el = document.getElementById("replace");
     replace_el.value = thisComp.selection.selected_text;
   }
+  handleClick() {
+    const { store } = this.context;
+    const state = store.getState();
+    if ( state.current_eq !== this.props.index) {
+      const { dispatch } = store;
+      dispatch(Actions.selectEquation(this.props.index))
+    }
+  }
   render() {
-    return <p id={this.props.selected ? "math" : undefined} className="math" ref="math">...</p>
+    const { selected } = this.props;
+    return <div className={classNames({"selected-equation" : selected })} onClick={this.handleClick.bind(this)}>
+      <p ref={(p) => this.math_el = p} className="math">...</p>
+    </div>
   }
 }
 Equation.contextTypes = {
   store: React.PropTypes.object
 };
+
+
+//OLD STUFF IN create_events
+
+// $("#sortable").sortable({
+//  forceHelperSize: true,
+//  placeholder: "sortable-placeholder",
+// });
+
+// $("#sortable").nestedSortable({
+//   // forceHelperSize: true,
+//   // placeholder: "sortable-placeholder",
+//   listType: 'span',
+//   items: 'span.mord',
+//   isAllowed(placeholder, placeholderParent, currentItem) {
+//     let hasparent = typeof placeholderParent !== "undefined";
+//     if (hasparent && placeholderParent.is(".mord:has(> .mord)")) {
+//       console.log(placeholderParent);
+//     }
+//     return hasparent ? placeholderParent.is(".mord:has(> .mord)") : false;
+//   },
+//   // relocate( event, ui ) {
+//   //
+//   //   window.setTimeout(rerender, 50); //probably not a very elegant solution
+//   //
+//   //   function rerender() {
+//   //     var root_poly = $("#math .base");
+//   //
+//   //     tree = new TreeModel();
+//   //
+//   //     math_root = tree.parse({});
+//   //     math_root.model.id = "0";
+//   //     //KaTeX offers MathML semantic elements on the HTML, could that be used?
+//   //
+//   //     parse_poly(math_root, root_poly, 0, true);
+//   //
+//   //     let newmath = parse_mtstr(math_root, [], []);
+//   //
+//   //     console.log(newmath);
+//   //
+//   //     thisApp.prepare(newmath);
+//   //   }
+//   //
+//   // }
+//   // connectWith: "#sortable,.sortable"
+//   // over: (event, ui) => {
+//   //   console.log(ui);
+//   //   ui.placeholder.next().css("color","blue")
+//   //   ui.item.css("color","green")
+//   // }
+// });

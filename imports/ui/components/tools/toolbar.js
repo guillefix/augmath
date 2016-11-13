@@ -1,6 +1,6 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
-import * as Actions from '../../actions/action-creators';
+import * as Actions from '../../../redux/actions/action-creators';
 
 export default class Toolbar extends React.Component {
   render() {

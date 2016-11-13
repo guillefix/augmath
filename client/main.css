@@ -1,7 +1,11 @@
 /* AugMath CSS */
 
-#math, #math .base .mbin, #math .base .mord, #math .base .mrel, #math .base .minner, #math .base .mopen, #math .base .mclose, #math .base .vlist {
+.math, .math .base .mbin, .math .base .mord, .math .base .mrel, .math .base .minner, .math .base .mopen, .math .base .mclose, .math .base .vlist {
 	position: relative;
+}
+
+.math {
+	padding: 10px;
 }
 
 /*.math {
@@ -11,6 +15,10 @@
 #MathInput {
 	height: 50px;
 	margin-bottom: 30px;
+}
+
+.selected-equation {
+	background-color: #EEE;
 }
 
 /*.math {
@@ -64,6 +72,22 @@
 
 .eq_buttons, .his_buttons {
 	display: none;
+}
+
+.equation-list {
+	padding: 10px;
+	background-color: white;
+	margin: 5px;
+}
+
+#search-eq {
+	width: 85%;
+	display: inline;
+}
+
+#user-login {
+	padding: 14px;
+	margin-right: 100px;
 }
 
 /*history and recording stuff*/

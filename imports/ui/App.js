@@ -1,12 +1,17 @@
-import React from 'react';
+import React, { Component, PropTypes } from 'react';
 import ReactDOM from 'react-dom';
-import Tools from '../components/tools/tools.js';
-import EquationsPanel from './equations-panel.js';
-import MathInput from '../components/intmath/mathinput.js';
-import MQInput from '../components/intmath/mqinput.js';
-import MathArea from '../components/intmath/matharea.js';
-import Toolbar from '../components/tools/toolbar.js';
-import * as Actions from '../actions/action-creators';
+
+//Components
+import Tools from './components/tools/tools.js';
+import EquationsPanel from './components/equations-panel.js';
+import MathInput from './components/intmath/mathinput.js';
+import MQInput from './components/intmath/mqinput.js';
+import MathArea from './components/intmath/matharea.js';
+import Toolbar from './components/tools/toolbar.js';
+import AccountsUIWrapper from './components/AccountsUIWrapper.jsx';
+
+import * as Actions from '../redux/actions/action-creators';
+
 
 export default class App extends React.Component {
   constructor() {
@@ -107,17 +112,44 @@ export default class App extends React.Component {
   render() {
     return (
       <div>
-        <div className="col-md-3 toolbar">
-          <Tools ref={(ref) => this.toolsPane = ref} mtype={this.state.mtype} depth={this.state.depth} />
-        </div>
-        <div className="col-md-6">
-          <Toolbar />
-          <MathInput mathStr={this.state.mathStr} update={this.update}/>
+        <nav className="navbar navbar-default">
+          <div className="container-fluid">
+            <div className="navbar-header">
+              <button type="button" className="navbar-toggle collapsed" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1" aria-expanded="false">
+                <span className="sr-only">Toggle navigation</span>
+                <span className="icon-bar"></span>
+                <span className="icon-bar"></span>
+                <span className="icon-bar"></span>
+              </button>
+              <a className="navbar-brand" href="#">AugMath</a>
+            </div>
+            <div className="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+             <ul className="nav navbar-nav navbar-right">
+               <li id="user-login">
+                 <AccountsUIWrapper />
+               </li>
+              	<li>
+              		<a href="https://github.com/guillefix/augmath">
+              			GitHub
+              		</a>
+              	</li>
+             </ul>
+            </div>
+          </div>
+        </nav>
+        <div className="container-fluid">
+          <div className="col-md-3 toolbar">
+            <Tools ref={(ref) => this.toolsPane = ref} mtype={this.state.mtype} depth={this.state.depth} />
+          </div>
+          <div className="col-md-6">
+            <Toolbar />
+            <MathInput mathStr={this.state.mathStr} update={this.update}/>
 
-          <MathArea mtype={this.state.mtype} depth={this.state.depth} eqZoom={this.state.eqZoom} />
-        </div>
-        <div className="col-md-3">
-          <EquationsPanel />
+            <MathArea mtype={this.state.mtype} depth={this.state.depth} eqZoom={this.state.eqZoom} />
+          </div>
+          <div className="col-md-3">
+            <EquationsPanel />
+          </div>
         </div>
       </div>
     );

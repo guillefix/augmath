@@ -72,3 +72,8 @@ export const changeStepDuration = (newStepDur) => ({
   type: 'CHANGE_STEP_DURATION',
   newStepDur
 })
+
+export const selectEquation = (newEqIndex) => ({
+  type: 'SELECT_EQUATION',
+  newEqIndex
+})

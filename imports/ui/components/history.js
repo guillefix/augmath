@@ -2,7 +2,7 @@ import React from 'react';
 import ReactDOM from 'react-dom'
 import katex from 'katex';
 import classNames from 'classnames';
-import {updateIndex} from '../actions/action-creators';
+import {updateIndex} from '../../redux/actions/action-creators';
 
 // import {equation, history} from './App.js';
 

@@ -10,7 +10,7 @@ import math from 'mathjs'
 import TreeModel from '../TreeModel-min.js';
 
 
-import {eqCoords, selection} from '../startup/client/App.js';
+import {eqCoords, selection} from '../ui/App.js';
 
 //USEFUL FUNCTIONS
 

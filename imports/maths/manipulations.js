@@ -1393,9 +1393,11 @@ export function cancel_out() {
 
 //flip equation
 export function flip_equation(math_str) {
+  console.log("flipping equation");
   let step_duration = this.step_duration;
   let math_root = this.math_root;
   let selection = this.selection;
+  let $equals = this.$equals;
   var offset1 = tot_width($equals.prevAll(), true, false) + tot_width($equals, true, false);
   var offset2 = tot_width($equals.nextAll(), true, false) + tot_width($equals, true, false);
   return new Promise((resolve, reject) => {
