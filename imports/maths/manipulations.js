@@ -15,13 +15,9 @@ export function change_side() {
   let step_duration = this.step_duration;
   let math_root = this.math_root;
   let selection = this.selection;
+  let $equals = this.$equals;
   console.log("changing side", math_root);
-  // console.log(selection.$selected);
-  // console.log(selection.selected_nodes[0]);
-  // console.log((get_next(math_root, [math_root.children[0]]).children[0]));
-  // console.log("helping vars", this);
   var new_term;
-  // equals_position = $equals.offset();
   var selected_width = tot_width(selection.$selected, true, true);
   equals_node = math_root.first(function (node) {
     if (node.children.length > 0) {
@@ -364,6 +360,7 @@ export function move_right(){
   let step_duration = this.step_duration;
   let math_root = this.math_root;
   let selection = this.selection;
+  let mathStr = this.mathStr;
   //moving factor or term
   if (selection.$selected.next().filter(".mrel").length === 0)
   {
@@ -388,6 +385,8 @@ export function move_right(){
       var selected_next_width = tot_width($selected_next.add($selected_next.prev()), true, include_op);
       var selected_width = selected_width + tot_width($selected_next.prev(), true, include_op);
       $selected_next.first().prev().animate({left:width_diff}, step_duration)
+    } else if (next_node.type2 === "op" && next_node.optype === "vecmult") {
+      return new Promise((resolve, reject) => {resolve(mathStr)});
     }
     $selected_next.animate({left:-selected_width}, step_duration); //animation should take into account possibly missing operator
     return new Promise((resolve, reject) => {
@@ -408,6 +407,7 @@ export function move_left() {
   let step_duration = this.step_duration;
   let math_root = this.math_root;
   let selection = this.selection;
+  let mathStr = this.mathStr;
   //moving factor or term
   if (selection.$selected.prev().filter(".mrel").length === 0)
   {
@@ -435,13 +435,25 @@ export function move_left() {
       var selected_width = selected_width + tot_width($selected_prev.next(), true, include_op);
       $selected_prev.last().next().animate({left:-width_diff}, step_duration)
 
+    } else if (prev_node.type2 === "op" && prev_node.optype === "vecmult") {
+      return new Promise((resolve, reject) => {resolve(mathStr)});
     }
     $selected_prev.animate({left:selected_width}, step_duration);
     return new Promise((resolve, reject) => {
       selection.$selected.animate({left:-selected_prev_width}, step_duration).promise().done(function() {
         if (!has_op(selection.$selected) && selection.selected_nodes[0].type === "term") {selected_text_str = "+" + selection.selected_text;} else {selected_text_str = selection.selected_text;}
         prev_text = prev_node.text;
-        if (!has_op($selected_prev) && selection.selected_nodes[0].type === "term") { prev_text_str = "+" + prev_text;} else {prev_text_str = prev_text;}
+        if (!has_op($selected_prev) && selection.selected_nodes[0].type === "term")
+        { prev_text_str = "+" + prev_text;}
+        else {prev_text_str = prev_text;}
+        if (selection.selected_nodes[0].type2 === "matrix" && prev_node.type2 === "matrix") {
+          if (selection.selected_nodes[0].parent.children.length > 2) {
+            selected_text_str = "(" + selected_text_str + prev_text_str + "+["+prev_text_str+","+selected_text_str+"]" + ")";
+            prev_text_str = "";
+          } else {
+            prev_text_str = prev_text_str + "+["+prev_text_str+","+selected_text_str+"]";
+          }
+        }
         new_math_str = replace_in_mtstr(math_root, [prev_node].concat(selection.selected_nodes), [selected_text_str, prev_text_str]);
         resolve(new_math_str);
       });

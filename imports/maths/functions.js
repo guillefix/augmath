@@ -527,7 +527,7 @@ export function parse_mtstr(root, node_arr, str_arr) {
             factor_text+=grandchild.text;
             break;
           case "group":
-            factor_text = "(" + parse_mtstr(grandchild, node_arr, str_arr) + ")";
+            factor_text = grandchild.text[0] + parse_mtstr(grandchild, node_arr, str_arr) + grandchild.text[grandchild.text.length-1];
             break;
           case "diff":
           case "frac":
@@ -642,6 +642,16 @@ export function parse_mtstr(root, node_arr, str_arr) {
             let base_txt = "_{" + log_text[1] + "}"
             factor_text = "\\log" + base_txt.repeat(log_text.length-1) + "{" + log_text[0] + "}";
             break;
+          case "matrix":
+            let text = grandchild.text;
+            for (var k=0; k<node_arr.length; k++) {
+              if (grandchild.model.id === node_arr[k].model.id) {
+                text = str_arr[k];
+                break;
+              }
+            }
+            factor_text = text;
+            break;
           default:
             //this should mean it is a function with some special name, like sin, cos.
             let arg_text = parse_mtstr(grandchild.children[0], node_arr, str_arr); //argument of fun
@@ -722,7 +732,7 @@ export function parse_poly(root, poly, parent_id, is_container) {
       inside = factor_obj.not(factor_obj.first()).not(factor_obj.last());
       if (!factor_obj.last().is(".mclose:has(.vlist)")) { //check it's not grouped exponential
         inside_text = parse_poly(factor, inside, factor_id, false);
-        factor.text = "(" + inside_text + ")";
+        factor.text = factor_obj.first().text() + inside_text + factor_obj.last().text();
       }
       factor_text = factor.text;
     }
@@ -767,6 +777,11 @@ export function parse_poly(root, poly, parent_id, is_container) {
           factor.text = "+";}
         factor_text = factor.text;
         // console.log(factor.text);
+      }
+      else if (thing.children().length === 1 && thing.children().first().hasClass("mathbf")) {
+        factor.type2 = "matrix";
+        factor.text = "\\mathbf{"+thing.children().first().text()+"}";
+        factor_text = factor.text;
       }
       term.addChild(factor);
       term_obj = term_obj.add(thing);
@@ -821,13 +836,18 @@ export function parse_poly(root, poly, parent_id, is_container) {
       i++;
     }
     //multiplication operator
-    else if (thing.is(".mbin, .mrel") && (thing.text() === "⋅"))
+    else if (thing.is(".mbin, .mrel") && (thing.text() === "⋅" || thing.text() === "×"))
     {
       factor = tree.parse({id: factor_id, obj: factor_obj});
       factor.type = "factor";
       factor.type2 = "op";
-      factor.optype = "mult";
-      factor.text = "\\cdot ";
+      if (thing.text() === "⋅") {
+        factor.optype = "mult";
+        factor.text = "\\cdot ";
+      } else if (thing.text() === "×") {
+        factor.optype = "vecmult";
+        factor.text = "\\times ";
+      }
       factor_text = factor.text;
       term.addChild(factor);
       term_obj = term_obj.add(thing);
@@ -935,11 +955,22 @@ export function parse_poly(root, poly, parent_id, is_container) {
         factor.type = "text";
         factor.text = thing.text();
       }
-      //accent
+      //accents and vectors
       else if (thing.is(".accent"))
       {
-        factor.type2 = "normal";
-        factor.text = "\\hat{" + thing.text().replace(/[^\x00-\x7F]/g, "").slice(0, -1) + "}"; //I guess there are more types of accent, but I'll add them latter.
+        //vector
+        if (thing.closest_n_descendents(".accent-body", 1).hasClass("accent-vec")) {
+          factor.type2 = "vector";
+          factor.text = "\\vec{" + thing.closest_n_descendents(".mord", 1).text().replace(/[^\x00-\x7F]/g, "") + "}";
+        } else { //some accent
+          if (thing.closest_n_descendents(".accent-body", 1).text()==="^") { //hat
+            factor.type2 = "normal";
+            factor.text = "\\hat{" + thing.text().replace(/[^\x00-\x7F]/g, "").slice(0, -1) + "}";
+          } else if (thing.closest_n_descendents(".accent-body", 1).text()==="~") {
+            factor.type2 = "normal";
+            factor.text = "\\tilde{" + thing.text().replace(/[^\x00-\x7F]/g, "").slice(0, -1) + "}";
+          }
+        }
       }
       //subscript
       else if (thing.is(":has(.vlist)") && !thing.is(".mop") && !thing.is(".accent") && thing.children(".mfrac").length === 0 && thing.children(".op-symbol").length === 0 && thing.closest_n_descendents(".vlist",1).children(":not(.baseline-fix)").css("top").slice(0,1) !== "-")
