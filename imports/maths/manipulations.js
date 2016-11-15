@@ -350,9 +350,6 @@ export function change_side() {
     return new Promise((resolve, reject) => {resolve(thisManip.mathStr)})
   }
 
-
-  if (recording || playing) {recording_index++;}
-  if (recording) {add_to_manip_rec(1);}
 };
 
 //move term within expression, or factor within term
@@ -399,8 +396,6 @@ export function move_right(){
       });
     });
   }
-  if (recording || playing) {recording_index++;}
-  if (recording) {add_to_manip_rec(4);}
 }
 
 export function move_left() {
@@ -459,8 +454,6 @@ export function move_left() {
       });
     });
   }
-  if (recording || playing) {recording_index++;}
-  if (recording) {add_to_manip_rec(5);}
 }
 
 //move up and down in a fraction
@@ -551,8 +544,8 @@ export function move_up() {
         resolve(new_math_str);
       });
     });
-  if (recording || playing) {recording_index++;}
-  if (recording) {add_to_manip_rec(2);}
+
+
 }
 
 export function move_down() {
@@ -651,8 +644,8 @@ export function move_down() {
       });
     }
   }
-  if (recording || playing) {recording_index++;}
-  if (recording) {add_to_manip_rec(6);}
+
+
 }
 
 // document.getElementById("split").onclick = split;
@@ -963,8 +956,8 @@ export function distribute_in() {
     return new Promise((resolve, reject) => {resolve(new_math_str)});
   }
 
-  if (recording || playing) {recording_index++;}
-  if (recording) {add_to_manip_rec(8);}
+
+
 }
 
 //merging stuff
@@ -1214,8 +1207,8 @@ export function collect_out() {
     return new Promise((resolve, reject) => {resolve(new_math_str)});
   }
 
-  if (recording || playing) {recording_index++;}
-  if (recording) {add_to_manip_rec(13);}
+
+
 }
 
 //unbracket
@@ -1227,8 +1220,8 @@ export function unbracket() {
   new_term += selection.selected_text.replace(/^\(|\)$/g, "");
   new_math_str = replace_in_mtstr(math_root, selection.selected_nodes, new_term);
   return new Promise((resolve, reject) => {resolve(new_math_str)});
-  if (recording || playing) {recording_index++;}
-  if (recording) {add_to_manip_rec(9);}
+
+
 }
 
 //evaulate simple sum or multiplication
@@ -1247,8 +1240,8 @@ export function evaluate() {
       resolve(new_math_str);
     });
   });
-  if (recording || playing) {recording_index++;}
-  if (recording) {add_to_manip_rec(3);}
+
+
 }
 
 //operate with an operator
@@ -1280,8 +1273,8 @@ export function operate() {
   } else {
     return;
   }
-  if (recording || playing) {recording_index++;}
-  if (recording) {add_to_manip_rec(14);}
+
+
 }
 
 //Append something to both sides
@@ -1299,8 +1292,6 @@ export function add_both_sides(thing, math_str) {
   math_HS = math_str.split("=");
   new_math_str = math_HS[0] + thing + "=" +math_HS[1] + thing;
   return new Promise((resolve, reject) => {resolve(new_math_str)});
-  if (recording || playing) {recording_index++;}
-  if (recording) {add_to_manip_rec(7, thing);}
 }
 
 //replace something
@@ -1332,8 +1323,6 @@ export function replace(text, replace_ind=false) {
         resolve(new_math_str);
       });
     });
-  if (recording || playing) {recording_index++;}
-  if (recording) {add_to_manip_rec(10, text);}
 }
 
 //remove something. Used for: cancelling something on both sides, or cancelling something on a fraction, among other things
@@ -1351,8 +1340,8 @@ export function remove() {
         resolve(new_math_str);
       });
     });
-  if (recording || playing) {recording_index++;}
-  if (recording) {add_to_manip_rec(11);}
+
+
 }
 
 //cancel out factors in a fraction. TODO: also be able to cancel terms.
@@ -1422,6 +1411,6 @@ export function flip_equation(math_str) {
       resolve(new_math_str);
     });
   });
-  if (recording || playing) {recording_index++;}
-  if (recording) {add_to_manip_rec(15);}
+
+
 }

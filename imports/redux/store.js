@@ -24,7 +24,8 @@ const defaultState = {
   current_eq: 0,
   selectedNodes: [],
   dragDrop: 'apply',
-  step_duration: 700
+  step_duration: 700,
+  recording: {doingRecording: false, doingPlaying: false, recordedActions: [], recordedStates: []}
 };
 
 const store = createStore(rootReducer, defaultState,

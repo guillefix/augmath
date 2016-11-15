@@ -96,6 +96,23 @@
 	color: black;
 }
 
+#recording {
+    display:none;
+}
+#recording + label {
+    display:inline-block;
+    width:19px;
+    height:19px;
+    margin:-1px 60px 0 0;
+		padding-left: 19px;
+    vertical-align:middle;
+    background:url(img/check_radio_sheet.png) -38px top no-repeat;
+    cursor:pointer;
+}
+#recording:checked + label {
+    background:url(img/check_radio_sheet.png) -57px top no-repeat;
+}
+
 .recording {
 	background-color: red;
 }

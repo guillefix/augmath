@@ -28,7 +28,7 @@ EquationList.propTypes = {
 };
 
 export default EquationListComponent = createContainer(({query}) => {
-  console.log(query);
+  // console.log(query);
   let eqs;
   if (query === "") {
     eqs = [];

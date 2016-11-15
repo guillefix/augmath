@@ -77,3 +77,26 @@ export const selectEquation = (newEqIndex) => ({
   type: 'SELECT_EQUATION',
   newEqIndex
 })
+
+//RECORDING
+
+export const beginRecording = () => ({
+  type: 'BEGIN_RECORDING',
+})
+
+export const stopRecording = () => ({
+  type: 'STOP_RECORDING',
+})
+
+export const beginPlaying = () => ({
+  type: 'BEGIN_PLAYING',
+})
+
+export const stopPlaying = () => ({
+  type: 'BEGIN_PLAYING',
+})
+
+export const updateState = (state) => ({
+  type: 'UPDATE_STATE',
+  state
+})
