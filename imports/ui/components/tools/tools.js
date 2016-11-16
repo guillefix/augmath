@@ -4,7 +4,7 @@ import ReactDOM from 'react-dom';
 import * as hist from '../history';
 import * as act from '../../../redux/actions/action-creators';
 
-import Recording from './recording.js';
+import RecordPlayControl from './record-play-control.js';
 
 export default class Tools extends React.Component {
   componentDidMount() {
@@ -86,7 +86,7 @@ export default class Tools extends React.Component {
   			</div>
   			<h4>Recording</h4>
 
-  			<Recording />
+  			<RecordPlayControl />
 
         <h4>Settings</h4>
   			<div>

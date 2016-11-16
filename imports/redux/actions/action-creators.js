@@ -96,7 +96,12 @@ export const stopPlaying = () => ({
   type: 'BEGIN_PLAYING',
 })
 
-export const updateState = (state) => ({
-  type: 'UPDATE_STATE',
-  state
+// export const updateState = (state) => ({
+//   type: 'UPDATE_STATE',
+//   state
+// })
+
+export const loadRecording = (recObj) => ({
+  type: 'LOAD_RECORDING',
+  recObj
 })

@@ -4,7 +4,7 @@ import PlainEq from './plain-eq'
 
 //Server API
 import { createContainer } from 'meteor/react-meteor-data';
-import { Equations } from '../../api/equations.js';
+import { Equations } from '../../api/collections.js';
 import {addToEqs} from '../../redux/actions/action-creators';
 import { Meteor } from 'meteor/meteor';
 

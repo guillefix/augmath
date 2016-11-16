@@ -1,1 +1,1 @@
-import '../imports/api/equations.js';
+import '../imports/api/collections.js';

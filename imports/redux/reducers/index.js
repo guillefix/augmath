@@ -19,10 +19,17 @@ const rootReducer = (state = {}, action) => {
         || action.type === "SELECT_EQUATION")) {
     newState = { ...state, recording: { ...state.recording,
       recordedActions: [ ...state.recording.recordedActions, action ]}}
-  } else if (state.recording.doingPlaying && action.type !== "UPDATE_STATE") {
-    newState = { ...state, recording: { ...state.recording,
-    recordedStates: [ ...state.recording.recordedStates, state ]}}
-  } else {
+  }
+  // else if (state.recording.doingPlaying && action.type !== "UPDATE_STATE") {
+  //   if (state.recording.recordedStates.length >= state.recording.maxRecordedStates) {
+  //     newState = { ...state, recording: { ...state.recording,
+  //       recordedStates: [ ...state.recording.recordedStates.slice(1), state ]}}
+  //   } else {
+  //     newState = { ...state, recording: { ...state.recording,
+  //       recordedStates: [ ...state.recording.recordedStates, state ]}}
+  //   }
+  // }
+  else {
     newState = { ...state }
   }
   switch(action.type) {
@@ -130,12 +137,16 @@ const rootReducer = (state = {}, action) => {
       break;
     case "STOP_PLAYING":
       return { ...newState,
-        recording: { ...newState.recording, doingPlaying: false}
+        recording: { ...newState.recording, doingPlaying: false, recordedStates: []}
       }
       break;
-    case "UPDATE_STATE":
-      console.log("UPDATE STATE ACTION!");
-      return { ...action.state}
+    // case "UPDATE_STATE":
+    //   console.log("UPDATE STATE ACTION!");
+    //   return { ...action.state}
+    //   break;
+    case "LOAD_RECORDING":
+      return { ...newState,
+        recording: action.recObj}
       break;
     default:
         return state;

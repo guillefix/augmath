@@ -96,6 +96,21 @@
 	color: black;
 }
 
+#save-rec-name {
+	display: inline;
+	width: 80%;
+	margin-left: 15px;
+	margin-top:10px;
+}
+
+.tags-input {
+	margin-top: 10px;
+}
+
+#save-rec-submit {
+	margin-bottom: 10px;
+}
+
 #recording {
     display:none;
 }
