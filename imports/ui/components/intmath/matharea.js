@@ -15,7 +15,7 @@ export default class MathArea extends React.Component {
           {equations.map((x, i) => {
             let sel = selectedNodes.filter(x => parseInt(x.split('/')[0]) === i)
             // console.log("math", i, x);
-            return <Equation mtype={this.props.mtype} depth={this.props.depth} selectedNodes={sel} eqZoom={this.props.eqZoom} math={x} eqNum={eqNum} index={i} key={i} selected={state.current_eq === i}/>
+            return <Equation mtype={this.props.mtype} depth={this.props.depth} selectedNodes={sel} eqZoom={this.props.eqZoom} math={x} eqNum={eqNum} index={i} key={i} selected={state.mathHist[state.current_index].current_eq === i}/>
           }).reverse()}
   			</div>
       </div>

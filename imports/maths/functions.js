@@ -622,6 +622,20 @@ export function parse_mtstr(root, node_arr, str_arr) {
             }
             factor_text = exp_text[0] + "_{" + exp_text[1] + "}";
             break;
+          case "subsexp":
+            exp_text[0] = parse_mtstr(grandchild.children[0], node_arr, str_arr);
+            exp_text[1] = parse_mtstr(grandchild.children[1], node_arr, str_arr);
+            exp_text[2] = parse_mtstr(grandchild.children[2], node_arr, str_arr);
+            for (var l=0; l<3; l++) {
+              for (var k=0; k<node_arr.length; k++) {
+                if (grandchild.children[l].model.id === node_arr[k].model.id) {
+                  exp_text[l] = str_arr[k];
+                  break;
+                }
+              }
+            }
+            factor_text = exp_text[0] + "_{" + exp_text[1] + "}" + "^{" + exp_text[2] + "}";
+            break;
           case "log":
             let log_text = [];
             // console.log(grandchild);
@@ -654,14 +668,32 @@ export function parse_mtstr(root, node_arr, str_arr) {
             break;
           default:
             //this should mean it is a function with some special name, like sin, cos.
-            let arg_text = parse_mtstr(grandchild.children[0], node_arr, str_arr); //argument of fun
-            for (var k=0; k<node_arr.length; k++) {
-              if (grandchild.children[0].model.id === node_arr[k].model.id) {
-                arg_text = str_arr[k];
-                break;
+            if (grandchild.children.length === 1) {
+              let arg_text = parse_mtstr(grandchild.children[0], node_arr, str_arr); //argument of fun
+              for (var k=0; k<node_arr.length; k++) {
+                if (grandchild.children[0].model.id === node_arr[k].model.id) {
+                  arg_text = str_arr[k];
+                  break;
+                }
               }
+              factor_text = "\\" + grandchild.type2 + "{" + arg_text + "}";
             }
-            factor_text = "\\" + grandchild.type2 + "{" + arg_text + "}";
+            else if (grandchild.children.length === 2) {
+              let low_lim_text = "";
+              let up_lim_text = "";
+              low_lim_text = parse_mtstr(grandchild.children[0], node_arr, str_arr); //lower_limit
+              up_lim_text = parse_mtstr(grandchild.children[1], node_arr, str_arr); //upper_limit
+              for (var k=0; k<node_arr.length; k++) {
+                if (grandchild.children[0].model.id === node_arr[k].model.id) {
+                  low_lim_text = str_arr[k];
+                  break;
+                } else if (grandchild.children[1].model.id === node_arr[k].model.id) {
+                  up_lim_text = str_arr[k];
+                  break;
+                }
+              }
+              factor_text = "\\" + grandchild.type2 + "_{"+ low_lim_text + "}"  + "^{"+ up_lim_text + "}";
+            }
             break;
 
         }
@@ -709,10 +741,13 @@ export function parse_poly(root, poly, parent_id, is_container) {
   term.text = "";
   term.type = "term";
   root.addChild(term);
+  console.log(poly);
   var things = is_container ? poly.children() : poly;
+  console.log(things, is_container);
   while (i < things.length) {
     var thing = things.filter(":eq("+i+")");
     // console.log(thing);
+    console.log("thing", thing);
     factor_obj = thing;
     factor_id = parent_id.toString() + "/" + (term_cnt+1).toString() + "/" + (factor_cnt+1).toString();
     term_id = parent_id.toString() + "/" + (term_cnt+1).toString();
@@ -737,9 +772,11 @@ export function parse_poly(root, poly, parent_id, is_container) {
       factor_text = factor.text;
     }
     //if not grouped, deal with individual element
+
     //if number, group numbers into factor
     if (/^\d$/.test(thing.text()))
     {
+      console.log("if number, group numbers into factor");
       factor_text = "";
       asd=0;
       factor_text+=factor_obj.text();
@@ -757,40 +794,14 @@ export function parse_poly(root, poly, parent_id, is_container) {
       factor_cnt++;
       i += factor_obj.length;
     }
-    //normal factor
-    if (!(/^\d$/.test(thing.text())) && (!thing.is(".mbin, .mopen, .mclose, .mrel, .mop") || thing.text() === "!"))
-    {
-      factor = tree.parse({id: factor_id, obj: factor_obj});
-      factor.type = "factor";
-      factor.type2 = "normal";
-      if (!thing.is(":has(*)")) //if thing doesn't have children. If it does, we deal with them below!
-      {
-        factor.text = thing.text();
-        if (factor.text === "−")
-        {
-          factor.type2 = "op";
-          factor.text = "-";
-        }
-        else if (factor.text === "+")
-        {
-          factor.type2 = "op";
-          factor.text = "+";}
-        factor_text = factor.text;
-        // console.log(factor.text);
-      }
-      else if (thing.children().length === 1 && thing.children().first().hasClass("mathbf")) {
-        factor.type2 = "matrix";
-        factor.text = "\\mathbf{"+thing.children().first().text()+"}";
-        factor_text = factor.text;
-      }
-      term.addChild(factor);
-      term_obj = term_obj.add(thing);
-      factor_cnt++;
-      i++;
-    }
     //operators that begin new term
-    else if (thing.is(".mbin, .mrel") && (thing.text() === "+" || thing.text() === "−" || thing.text() === "="))
+    else if (thing.is(".mbin, .mrel") && (thing.text() === "+"
+      || thing.text() === "−"
+      || thing.text() === "="
+      || thing.text() === ">"
+      || thing.text() === "<"))
     {
+      console.log("operator that begins new term");
       term.model.obj = term_obj;
       poly_str+=term.text;
       term_cnt++;
@@ -838,6 +849,7 @@ export function parse_poly(root, poly, parent_id, is_container) {
     //multiplication operator
     else if (thing.is(".mbin, .mrel") && (thing.text() === "⋅" || thing.text() === "×"))
     {
+      console.log("multiplication operator");
       factor = tree.parse({id: factor_id, obj: factor_obj});
       factor.type = "factor";
       factor.type2 = "op";
@@ -857,6 +869,7 @@ export function parse_poly(root, poly, parent_id, is_container) {
     //logs
     else if (thing.is(".mop") && (thing.children().filter(".mop").text() === "log" || thing.text() === "log"))
     {
+      console.log("logs");
       factor_obj.css("position", "relative"); //so that animations work with log element..
       factor_obj = factor_obj.add(thing.next());
       factor = tree.parse({id: factor_id, obj: factor_obj});
@@ -870,22 +883,61 @@ export function parse_poly(root, poly, parent_id, is_container) {
     //other functions
     else if (thing.is(".mop"))
     {
+      console.log("other functions");
+      condNotArg = thing.is(":has(.vlist)") && thing.children(".op-symbol").length !== 0 || thing.is(".mop, .op-limits");
+      //because functions except those that satisfy the condition include the next HTML element too, as the body of the log!
+      //and some things are different
       factor_obj.css("position", "relative"); //so that animations work with log element..
-      factor_obj = factor_obj.add(thing.next());
+      if (!condNotArg) factor_obj = factor_obj.add(thing.next());
       factor = tree.parse({id: factor_id, obj: factor_obj});
       factor.type = "factor";
       factor.type2 = thing.text();
       term.addChild(factor);
       term_obj = term_obj.add(factor_obj);
       factor_cnt++;
-      i=i+2; //because functions include the next HTML element too, as the body of the log!
+      i= condNotArg ? i+1 : i+2;
     }
-
+    //normal factors, and other things (treat them as factors, as a default behavior for unknown things)
+    //prev selector: if (!(/^\d$/.test(thing.text())) && (!thing.is(".mbin, .mopen, .mclose, .mrel, .mop") || thing.text() === "!"))
+    else if (!thing.is(".mclose,.mopen") || thing.text() === "!")
+    {
+      console.log("normal");
+      //treat as factor
+      factor = tree.parse({id: factor_id, obj: factor_obj});
+      factor.type = "factor";
+      factor.type2 = "normal";
+      if (!thing.is(":has(*)")) //if thing doesn't have children. If it does, we deal with them below!
+      {
+        factor.text = thing.text();
+        if (factor.text === "−")
+        {
+          factor.type2 = "op";
+          factor.text = "-";
+        }
+        else if (factor.text === "+")
+        {
+          factor.type2 = "op";
+          factor.text = "+";}
+        factor_text = factor.text;
+        // console.log(factor.text);
+      }
+      else if (thing.children().length === 1 && thing.children().first().hasClass("mathbf")) {
+        factor.type2 = "matrix";
+        factor.text = "\\mathbf{"+thing.children().first().text()+"}";
+        factor_text = factor.text;
+      }
+      term.addChild(factor);
+      term_obj = term_obj.add(thing);
+      factor_cnt++;
+      i++;
+    }
+    console.log("going to parse children");
     //PARSING CHILDREN: deal with things with children, recursivelly.
     if (factor_obj.is(":has(*)")) {
       //fractions
       if (thing.children(".mfrac").length !== 0 && thing.children(".mfrac").children(".vlist").children().length === 4)
       {
+        console.log("fraction");
         factor.type2 = "frac";
         denominator = thing.closest_n_descendents(".mord", 2).first();
         numerator = thing.closest_n_descendents(".mord", 2).last();
@@ -915,22 +967,37 @@ export function parse_poly(root, poly, parent_id, is_container) {
         inside = thing.find(".mord").first();
         factor.text = "\\sqrt{" + parse_poly(factor, inside, factor_id, true) + "}";
       }
-      //exponentials
-      else if (thing.is(":has(.vlist)") && !thing.is(".mop") && !thing.is(".accent") && thing.children(".mfrac").length === 0 && thing.children(".op-symbol").length === 0 && thing.closest_n_descendents(".vlist",1).children(":not(.baseline-fix)").css("top").slice(0,1) === "-")
+      //exponentials, and sub and superscripts
+      else if (thing.is(":has(.vlist)") && !thing.is(".mop") && !thing.is(".accent") && thing.children(".mfrac").length === 0 && thing.children(".op-symbol").length === 0)
       {
         base_obj = thing.find(".mord").first();
-        power_obj = thing.closest_n_descendents(".vlist", 1);
-        var inside2 = power_obj.find(".mord").first();
         base = tree.parse({id: factor_id + "/" + "1", obj: base_obj});
         base.type = "base";
         base.text = parse_poly(base, base_obj, factor_id + "/" + "1", false);
-        power = tree.parse({id: factor_id + "/" + "2", obj: power_obj});
-        power.type = "power";
-        power.text = parse_poly(power, inside2, factor_id + "/" + "2", true);
         factor.addChild(base);
-        factor.addChild(power);
-        factor.type2 = "exp";
-        factor.text = base.text + "^{" + power.text + "}";//needs the standard power format in latex
+        factor.text = base.text
+        let arr = thing.closest_n_descendents(".vlist",1).children(":not(.baseline-fix)");
+        factor.type2 = "";
+        for (let i = 0; i < arr.length; i++) {
+          inside2 = $(arr[i]).find(".mord.mathit, .mord.mathrm, .mop").first().parent();
+          if ($(arr[i]).css("top").slice(0,1) === "-") // superscript/exp
+          {
+            let power = tree.parse({id: factor_id + "/" + toString(i+1), obj: $(arr[i])});
+            power.type = "power";
+            power.text = parse_poly(power, inside2, factor_id + "/" + toString(i+1), true);
+            factor.addChild(power);
+            factor.type2 += "exp";
+            factor.text += "^{"+power.text+"}";
+          } else
+          {
+            let sub = tree.parse({id: factor_id + "/" + toString(i+1), obj: $(arr[i])});
+            sub.type = "subscript";
+            sub.text = parse_poly(sub, inside2, factor_id + "/" + toString(i+1), true);
+            factor.addChild(sub);
+            factor.type2 += "subs";
+            factor.text += "_{"+sub.text+"}"
+          }
+        }
       }
       //exponentiated group
       else if (factor_obj.last().is(".mclose:has(.vlist)"))
@@ -972,23 +1039,6 @@ export function parse_poly(root, poly, parent_id, is_container) {
           }
         }
       }
-      //subscript
-      else if (thing.is(":has(.vlist)") && !thing.is(".mop") && !thing.is(".accent") && thing.children(".mfrac").length === 0 && thing.children(".op-symbol").length === 0 && thing.closest_n_descendents(".vlist",1).children(":not(.baseline-fix)").css("top").slice(0,1) !== "-")
-      {
-        let base_obj = thing.find(".mord").first();
-        let sub_obj = thing.closest_n_descendents(".vlist", 1);
-        var inside2 = sub_obj.find(".mord").first();
-        let base = tree.parse({id: factor_id + "/" + "1", obj: base_obj});
-        base.type = "base";
-        base.text = parse_poly(base, base_obj, factor_id + "/" + "1", false);
-        let sub = tree.parse({id: factor_id + "/" + "2", obj: sub_obj});
-        sub.type = "subscript";
-        sub.text = parse_poly(sub, inside2, factor_id + "/" + "2", true);
-        factor.addChild(base);
-        factor.addChild(sub);
-        factor.type2 = "subs";
-        factor.text = base.text + "_{" + sub.text + "}";
-      }
       //binomial coefficient
       else if (thing.children(".mfrac").length !== 0 && thing.children(".mfrac").children(".vlist").children().length === 3)
       {
@@ -1028,7 +1078,34 @@ export function parse_poly(root, poly, parent_id, is_container) {
           child2.text = low_str;
           factor.text = "\\int_{" + low_str + "}^{" + up_str + "}"
         }
-
+        else
+        {
+          let fun_text = thing.children().first().text();
+          if (fun_text.includes("∑")) {fun_text = "sum";}
+          else if (fun_text.includes("∏")) {fun_text = "prod";}
+          factor.type2 = fun_text;
+          fun_text = "\\" + fun_text;
+          let low_lim_obj = thing.children(":nth-child(2)").children(":nth-child(1)").closest_n_descendents(".mord", 1);
+          let up_lim_obj = thing.children(":nth-child(2)").children(":nth-child(2)").closest_n_descendents(".mord", 1);
+          // let arg_obj = thing.next();
+          // let arg = tree.parse({id: factor_id + "/" + "1", obj: arg_obj});
+          let low_lim = tree.parse({id: factor_id + "/" + "1", obj: low_lim_obj});
+          let up_lim = tree.parse({id: factor_id + "/" + "2", obj: up_lim_obj});
+          // arg.type = "arg";
+          // arg.type2 = "body";
+          low_lim.type = "arg";
+          low_lim.type2 = "limit";
+          up_lim.type = "arg";
+          up_lim.type2 = "limit";
+          // arg.text = parse_poly(arg, arg_obj, factor_id + "/" + "1", arg_obj.children().length > 0);
+          console.log("low_lim_obj.children().length > 0", low_lim_obj.children().length > 0);
+          low_lim.text = parse_poly(low_lim, low_lim_obj, factor_id + "/" + "1", low_lim_obj.children().length > 0);
+          up_lim.text = parse_poly(up_lim, up_lim_obj, factor_id + "/" + "2", up_lim_obj.children().length > 0);
+          // factor.addChild(arg);
+          factor.addChild(low_lim);
+          factor.addChild(up_lim);
+          factor.text = fun_text + "_{"+ low_lim.text + "}"  + "^{"+ up_lim.text + "}" // + "{" + arg.text + "}";
+        }
       }
       //logs
       else if (thing.is(".mop") && (thing.children().filter(".mop").text() === "log" || thing.text() === "log"))
@@ -1048,6 +1125,34 @@ export function parse_poly(root, poly, parent_id, is_container) {
         body.text = parse_poly(body, body_obj, factor_id + "/" + "2", body_obj.children().length > 0);
         factor.addChild(body);
         factor.text = log_text + "{" + body.text + "}";
+      }
+      //op with limits, should add \lims?
+      else if (thing.is(".mop, .op-limits"))
+      {
+        let fun_text = thing.children().first().children(":nth-child(2)").text();
+        if (fun_text.includes("∑")) {fun_text = "sum";}
+        else if (fun_text.includes("∏")) {fun_text = "prod";}
+        factor.type2 = fun_text;
+        fun_text = "\\" + fun_text;
+        let low_lim_obj = thing.children().first().children(":nth-child(1)").closest_n_descendents(".mord", 1);
+        let up_lim_obj = thing.children().first().children(":nth-child(3)").closest_n_descendents(".mord", 1);
+        // let arg_obj = thing.next();
+        // let arg = tree.parse({id: factor_id + "/" + "1", obj: arg_obj});
+        let low_lim = tree.parse({id: factor_id + "/" + "1", obj: low_lim_obj});
+        let up_lim = tree.parse({id: factor_id + "/" + "2", obj: up_lim_obj});
+        // arg.type = "arg";
+        // arg.type2 = "body";
+        low_lim.type = "arg";
+        low_lim.type2 = "limit";
+        up_lim.type = "arg";
+        up_lim.type2 = "limit";
+        // arg.text = parse_poly(arg, arg_obj, factor_id + "/" + "1", arg_obj.children().length > 0);
+        low_lim.text = parse_poly(low_lim, low_lim_obj, factor_id + "/" + "1", low_lim_obj.children().length > 0);
+        up_lim.text = parse_poly(up_lim, up_lim_obj, factor_id + "/" + "2", up_lim_obj.children().length > 0);
+        // factor.addChild(arg);
+        factor.addChild(low_lim);
+        factor.addChild(up_lim);
+        factor.text = fun_text + "_{"+ low_lim.text + "}"  + "^{"+ up_lim.text + "}" // + "{" + arg.text + "}";
       }
       //other functions
       else if (thing.is(".mop"))

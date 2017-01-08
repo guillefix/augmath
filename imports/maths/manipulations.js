@@ -404,7 +404,7 @@ export function move_left() {
   let selection = this.selection;
   let mathStr = this.mathStr;
   //moving factor or term
-  if (selection.$selected.prev().filter(".mrel").length === 0)
+  if (!(get_prev(math_root,selection.selected_nodes).type === "rel"))
   {
     var include_op;
     if (selection.selected_nodes[0].type === "factor") {
@@ -449,7 +449,8 @@ export function move_left() {
             prev_text_str = prev_text_str + "+["+prev_text_str+","+selected_text_str+"]";
           }
         }
-        new_math_str = replace_in_mtstr(math_root, [prev_node].concat(selection.selected_nodes), [selected_text_str, prev_text_str]);
+        new_math_str = replace_in_mtstr(math_root, [prev_node].concat(selection.selected_nodes),
+          [selected_text_str,prev_text_str, ...selection.selected_nodes.slice(1).map(x=>"")]);
         resolve(new_math_str);
       });
     });

@@ -6,6 +6,8 @@ let subsArray = (arr, index, el) => {
   else return [ ...arr.slice(0, index), el, ...arr.slice(index+1)]
 };
 
+let updateIndexMathHist = (mathHist, equations, index) => [...mathHist.slice(0,-1), {mathStr: equations[index], current_eq: index}];
+
 const rootReducer = (state = {}, action) => {
   let newState;
   if (state.recording.doingRecording
@@ -40,7 +42,7 @@ const rootReducer = (state = {}, action) => {
       if (typeof action.eqIndex !== "undefined") {
         eqIndex = action.eqIndex;
       } else {
-        eqIndex = newState.current_eq;
+        eqIndex = newState.mathHist[newState.current_index].current_eq;
       }
       newObj = {mathStr: cl_math, current_eq: eqIndex};
       return { ...newState,
@@ -58,7 +60,6 @@ const rootReducer = (state = {}, action) => {
         let newEq = newState.mathHist[action.index].mathStr;
         return { ...newState,
           current_index: action.index,
-          current_eq: newEqIndex,
           equations: subsArray(newState.equations, newEqIndex, newEq)}
       }
     case "MANIPULATION":
@@ -77,7 +78,6 @@ const rootReducer = (state = {}, action) => {
       cl_math = clear_math(action.eq);
       let new_eq = newState.equations.length;
       return { ...newState,
-        current_eq: new_eq,
         equations: [ ...newState.equations, cl_math],
         mathHist: [...newState.mathHist, {mathStr: cl_math, current_eq: new_eq}],
         current_index: newState.current_index+1}
@@ -106,7 +106,7 @@ const rootReducer = (state = {}, action) => {
         }
       }
       return { ...newState,
-        current_eq: parseInt(currEq)}
+        mathHist: updateIndexMathHist(newState.mathHist,newState.equations,parseInt(currEq))}
     case "RESET_SELECTED":
       return { ...newState,
         selectedNodes: []}
@@ -118,7 +118,7 @@ const rootReducer = (state = {}, action) => {
         step_duration: action.newStepDur}
     case "SELECT_EQUATION":
       return { ...newState,
-      current_eq: action.newEqIndex}
+        mathHist: updateIndexMathHist(newState.mathHist,newState.equations,action.newEqIndex)}
       break;
     case "BEGIN_RECORDING":
       return { ...newState,

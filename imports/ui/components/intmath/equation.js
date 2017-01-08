@@ -32,7 +32,7 @@ export default class Equation extends React.Component {
     const { store } = this.context;
     let math_root = this.math_root;
     const state = store.getState();
-    if (state.doing_manip && state.current_eq === this.props.index)
+    if (state.doing_manip && state.mathHist[state.current_index].current_eq === this.props.index)
     {
       let promise, eqCoords = {};
 
@@ -437,7 +437,7 @@ export default class Equation extends React.Component {
   handleClick() {
     const { store } = this.context;
     const state = store.getState();
-    if ( state.current_eq !== this.props.index) {
+    if ( state.mathHist[state.current_index].current_eq !== this.props.index) {
       const { dispatch } = store;
       dispatch(Actions.selectEquation(this.props.index))
     }
