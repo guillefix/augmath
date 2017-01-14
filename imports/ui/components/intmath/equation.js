@@ -171,7 +171,8 @@ export default class Equation extends React.Component {
 
     let dragDrop = state.dragDrop;
 
-    if (dragDrop === "apply") {
+    if (dragDrop === "apply")
+    {
       $(math_el).find( ".draggable" ).draggable( "destroy" );
       $(math_el).find(".draggable").droppable( "destroy" );
       $(math_el).find(".draggable").removeClass("draggable");
@@ -234,7 +235,8 @@ export default class Equation extends React.Component {
       });
     }
 
-    if (dragDrop === "subs") {
+    if (dragDrop === "subs")
+    {
       // console.log($(math_el).find( ".draggable" ));
       $(math_el).find( ".draggable" ).draggable( "destroy" );
       $(math_el).find(".draggable").droppable( "destroy" );
@@ -255,7 +257,9 @@ export default class Equation extends React.Component {
               let node = $( this ).data('node');
               let text = ui.draggable.data('node').text;
               // console.log(node);
-              let newStr = replace_in_mtstr(math_root, [node], [text]);
+              thisComp.selectNode(node.model.id, false, true);
+              let n = thisComp.selection.selected_nodes.length;
+              let newStr = replace_in_mtstr(math_root, thisComp.selection.selected_nodes, thisComp.selection.selected_nodes.map(x=>text));
               // dispatch(Actions.selectNode(node.model.id))
               dispatch(Actions.addToHist(newStr, state.current_index, node.model.id.split('/')[0]))
             }
@@ -265,7 +269,8 @@ export default class Equation extends React.Component {
     }
 
     //SORTABLE
-    if (dragDrop === "move") {
+    if (dragDrop === "move")
+    {
       $(".sortable").removeClass("sortable")
       $( ".sortable" ).disableSelection();
       math_root.walk(function (node) {
