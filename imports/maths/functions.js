@@ -12,6 +12,8 @@ import TreeModel from '../TreeModel-min.js';
 
 import {eqCoords, selection} from '../ui/App.js';
 
+let convertMathML = require('mathml-to-asciimath');
+
 //USEFUL FUNCTIONS
 
 //remove and create events handlers that happen when user clicks a manipulative
@@ -58,38 +60,41 @@ export function cleanIndices(arr, str) {
 
 //convert a string from LaTeX to the format used by Algebrite. TODO: THIS SHOULD BE IMPROVED A LOT. OR JUST STORE AN ASCIIMATH COPY OF MATH_STR...
 export function latex_to_ascii(str) {
-  str = str.replace(/\\sqrt\{([-a-z0-9]+)\}/g, "sqrt($1)");
-  str = str.replace(/\}\{/g, ")/(").replace(/\\frac{/g, "(").replace(/\}/g, ")");
-  str = str.split("").join("*");
-  str = str.replace(/\*?\+\*?/g, "+")
-    .replace(/[ \*]+/g, "*")
-    .replace(/([0-9])\*([0-9])/g, "$1$2")
-    .replace(/\\cdot/g, "*")
-    .replace(/\*?-\*?/g, "-")
-    .replace(/\*?=\*?/g, "=")
-    .replace(/\*?\(\*?/g, "(")
-    .replace(/\*?\)\*?/g, ")")
-    .replace(/\*?\/\*?/g, "/")
-    .replace(/\(\+/g, "(")
-    .replace(/\*\^\*\{\*(\-?[0-9]+)\)/g, "^($1)")
-    .replace(/\^\*\{\*(\-?[0-9]+)\)/g, "^($1)")
-    .replace(/\*\^\*\{(\-?[0-9]+)\)/g, "^($1)");
-  // console.log(str);
+  // str = str.replace(/\\sqrt\{([-a-z0-9]+)\}/g, "sqrt($1)");
+  // str = str.replace(/\}\{/g, ")/(").replace(/\\frac{/g, "(").replace(/\}/g, ")");
+  // str = str.split("").join("*");
+  // str = str.replace(/\*?\+\*?/g, "+")
+  //   .replace(/[ \*]+/g, "*")
+  //   .replace(/([0-9])\*([0-9])/g, "$1$2")
+  //   .replace(/\\cdot/g, "*")
+  //   .replace(/\*?-\*?/g, "-")
+  //   .replace(/\*?=\*?/g, "=")
+  //   .replace(/\*?\(\*?/g, "(")
+  //   .replace(/\*?\)\*?/g, ")")
+  //   .replace(/\*?\/\*?/g, "/")
+  //   .replace(/\(\+/g, "(")
+  //   .replace(/\*\^\*\{\*(\-?[0-9]+)\)/g, "^($1)")
+  //   .replace(/\^\*\{\*(\-?[0-9]+)\)/g, "^($1)")
+  //   .replace(/\*\^\*\{(\-?[0-9]+)\)/g, "^($1)");
+
+  str = convertMathML(LatexToMathML(str)).replace(/ /g,"");
+  console.log(str);
   return str;
 }
 
 //convert a string in Algebrite ascii format to latex
 
 export function ascii_to_latex(str) {
-  var exp = new algebra.Expression(str);
+  // var exp = new algebra.Expression(str);
   // console.log(exp);
-  let result = exp.toTex()
-    .replace(/\^([a-z0-9])/g, "^{$1}")
-    .replace(/\^\(([-a-z0-9]+)\)/g, "^{$1}")
-    .replace(/([a-z0-9])\/([a-z0-9])/g,"\\frac{$1}{$2}");
-  if (str.slice(0,1) === "-") result = "-" + result;
-  else if (str.slice(0,1) === "+") result = "+" + result;
-  return result
+  // let result = exp.toTex()
+  //   .replace(/\^([a-z0-9])/g, "^{$1}")
+  //   .replace(/\^\(([-a-z0-9]+)\)/g, "^{$1}")
+  //   .replace(/([a-z0-9])\/([a-z0-9])/g,"\\frac{$1}{$2}");
+  // if (str.slice(0,1) === "-") result = "-" + result;
+  // else if (str.slice(0,1) === "+") result = "+" + result;
+
+  return math.parse(str).toTex()
 }
 
 //evaluate an expression with Algebrite
