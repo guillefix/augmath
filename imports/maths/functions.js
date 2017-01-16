@@ -987,7 +987,7 @@ export function parse_poly(root, poly, parent_id, is_container) {
     console.log("going to parse children");
     //PARSING CHILDREN: deal with things with children, recursivelly.
     if (factor_obj.is(":has(*)")) {
-      //fractions
+      //fractions, and Leibniz diffs
       if (thing.is(".mfrac") || (thing.children(".mfrac").length !== 0 && thing.children(".mfrac").children(".vlist").children().length === 4) )
       {
         console.log("fraction");
@@ -1005,7 +1005,7 @@ export function parse_poly(root, poly, parent_id, is_container) {
         denom_str = parse_poly(child2, denominator, factor_id + "/" + "2", true);
         child2.text = denom_str;
         factor.text = "\\frac{" + nom_str + "}{" + denom_str + "}";
-        if (nom_str === "d" && denom_str.search(/^d[a-z]$/) === 0) {
+        if (nom_str.search(/^d(\^\{[1-9]+\})*$/) === 0 && denom_str.search(/^d[a-z](\^\{[1-9]+\})*$/) === 0) {
           factor.type2 = "diff";
           // var variable = thing.closest_n_descendents(".mord", 2).first().children();
           // variable = variable.not(variable.first());
@@ -1111,7 +1111,7 @@ export function parse_poly(root, poly, parent_id, is_container) {
         child2.text = denom_str;
         factor.text = "\\binom{" + nom_str + "}{" + denom_str + "}"
       }
-      //operator
+      //operator: integrals and others
       else if (thing.is(":has(.vlist)") && thing.children(".op-symbol").length !== 0)
       {
         //integral
