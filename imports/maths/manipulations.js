@@ -1252,7 +1252,15 @@ export function operate() {
   let selection = this.selection;
   if (selection.selected_nodes.length === 1 && selection.selected_nodes[0].type2 === "diff") {
     console.log("differentiating");
-    var variable = selection.selected_nodes[0].children[1].text.slice(1);
+    let varNode = selection.selected_nodes[0].children[1].children[0].children[1];
+    let variable,degree;
+    if (varNode.type2 === "exp") {
+      degree = parseInt(varNode.children[1].text);
+      variable = varNode.children[0].text;
+    } else {
+      degree = 1;
+      variable = varNode.text;
+    }
     var next_nodes = get_all_next(math_root, selection.selected_nodes[0]);
     let expression = "";
     for (var i = 0; i < next_nodes.length; i++) {
@@ -1266,6 +1274,9 @@ export function operate() {
         // new_term = CQ(expression).differentiate(variable).toLaTeX().replace("\\cdot", "");
         // console.log("expression, variable", expression, variable);
         let new_term = Algebrite.run("d(" + expression + "," + variable + ")");
+        for (let i = 1; i < degree; i++) {
+          new_term = Algebrite.run("d(" + new_term + "," + variable + ")");
+        }
         new_term = ascii_to_latex(new_term);
         new_math_str = replace_in_mtstr(math_root, selection.selected_nodes.concat(next_nodes), new_term);
         resolve(new_math_str);
