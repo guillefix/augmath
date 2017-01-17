@@ -6,6 +6,7 @@ export default class MQInput extends React.Component {
   mqlatex() {
     return this.mathquill.latex().replace(/[^\x00-\x7F]/g, "")
       .replace(/\^([a-z0-9])/g, "^{$1}")
+      .replace(/\_([a-z0-9])/g, "_{$1}")
       .replace(/\\left/g, "")
       .replace(/\\right/g, "")
   }

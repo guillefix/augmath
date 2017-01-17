@@ -77,8 +77,9 @@ export function latex_to_ascii(str) {
   //   .replace(/\^\*\{\*(\-?[0-9]+)\)/g, "^($1)")
   //   .replace(/\*\^\*\{(\-?[0-9]+)\)/g, "^($1)");
 
-  str = convertMathML(LatexToMathML(str)).replace(/ /g,"");
-  console.log(str);
+  str = convertMathML(LatexToMathML(str)).replace(/ \(/g,"(");
+  str = str.replace(/([0-9]) ([0-9])/g, "$1$2")
+  // console.log(str);
   return str;
 }
 
@@ -94,31 +95,28 @@ export function ascii_to_latex(str) {
   // if (str.slice(0,1) === "-") result = "-" + result;
   // else if (str.slice(0,1) === "+") result = "+" + result;
 
-  return math.parse(str).toTex()
+  str = math.parse(str).toTex();
+  str = str.replace(/\{([a-z0-9\(\) ]+)\}\^/g, "$1^")
+  str = str.replace(/\\left/g, "")
+  str = str.replace(/\\right/g, "")
+  str = str.replace(/~/g, "")
+  str = str.replace(/^ /, "")
+  str = str.replace(/ $/, "")
+  str = str.replace(/\^\{\(([\-a-z0-9]+)\)\}/, "^{$1}")
+  return str;
 }
 
 //evaluate an expression with Algebrite
 export function eval_expression(expression) {
-  // console.log("eval_expression", expression);
+  console.log("eval_expression", expression);
   var new_term;
   expression = latex_to_ascii(expression) //doesn't work with some expressions, as usual
-  // console.log("expression", expression);
+  console.log("expression", expression);
   if (expression.search(/[a-z\(\)]/) > -1) {
     var new_str = Algebrite.simplify(expression).toString();
-    // console.log("new_str", new_str);
+    console.log("new_str", new_str);
     new_term = ascii_to_latex(new_str);
-    // console.log("new_term", new_term);
-    // try {
-    //   new_term = CQ(expression).simplify().toLaTeX().replace("\\cdot", ""); //removing cdot format
-    // }
-    // catch(err) {
-    //   console.log("Error (from CQ): " + err);
-    //   console.log("Expression is : " + expression);
-    //   new_term = CQ(expression).simplify().toString().replace(/\*{2}(\d+)/, "^{$1}").replace(/\*/g, "")
-    //                           .replace(/([a-z0-9]+)\/([a-z0-9]+)/, "\\frac{$1}{$2}");
-    // }
-    // finally {
-    // }
+    console.log("new_term", new_term);
 
   } else {
     new_term = "+" + math.eval(expression).toString();
@@ -157,6 +155,7 @@ export function tot_width(obj, bool, include_op) {
 
 //change sign of some nodes
 export function change_sign(nodes) {
+  // console.log("changing side");
   var text="";
   for (i=0; i<nodes.length; i++) {
     if (nodes[i].text.slice(0, 1) === "+") {
@@ -172,7 +171,7 @@ export function change_sign(nodes) {
 
 //change sign of exponent of some nodes
 export function exponentiate(nodes, overall, power, distInFrac) {
-  // console.log("exponentiating")
+  // console.log("exponentiating", power, nodes)
   if (typeof distInFrac === 'undefined') { distInFrac = false; }
   var new_text="";
   for (var i=0; i<nodes.length; i++) {
@@ -748,7 +747,7 @@ export function parse_poly(root, poly, parent_id, is_container) {
   root.addChild(term);
   console.log(poly);
   var things = is_container ? poly.children() : poly;
-  console.log(things, is_container);
+  // //console.log(things, is_container);
   while (i < things.length) {
     var thing = things.filter(":eq("+i+")");
     // console.log(thing);
@@ -781,7 +780,7 @@ export function parse_poly(root, poly, parent_id, is_container) {
     //if number, group numbers into factor
     if (/^\d$/.test(thing.text()))
     {
-      console.log("if number, group numbers into factor");
+      //console.log("if number, group numbers into factor");
       factor_text = "";
       asd=0;
       factor_text+=factor_obj.text();
@@ -806,7 +805,7 @@ export function parse_poly(root, poly, parent_id, is_container) {
       || thing.text() === ">"
       || thing.text() === "<"))
     {
-      console.log("operator that begins new term");
+      //console.log("operator that begins new term");
       term.model.obj = term_obj;
       poly_str+=term.text;
       term_cnt++;
@@ -854,7 +853,7 @@ export function parse_poly(root, poly, parent_id, is_container) {
     //multiplication operator
     else if (thing.is(".mbin, .mrel") && (thing.text() === "⋅" || thing.text() === "×"))
     {
-      console.log("multiplication operator");
+      //console.log("multiplication operator");
       factor = tree.parse({id: factor_id, obj: factor_obj});
       factor.type = "factor";
       factor.type2 = "op";
@@ -874,7 +873,7 @@ export function parse_poly(root, poly, parent_id, is_container) {
     //logs
     else if (thing.is(".mop") && (thing.children().filter(".mop").text() === "log" || thing.text() === "log"))
     {
-      console.log("logs");
+      //console.log("logs");
       factor_obj.css("position", "relative"); //so that animations work with log element..
       factor_obj = factor_obj.add(thing.next());
       factor = tree.parse({id: factor_id, obj: factor_obj});
@@ -888,7 +887,7 @@ export function parse_poly(root, poly, parent_id, is_container) {
     //other functions
     else if (thing.is(".mop"))
     {
-      console.log("other functions");
+      //console.log("other functions");
       condNotArg = thing.is(":has(.vlist)") && thing.children(".op-symbol").length !== 0 || thing.is(".mop.op-limits");
 
       //because functions except those that satisfy the condition include the next HTML element too, as the body of the log!
@@ -952,9 +951,9 @@ export function parse_poly(root, poly, parent_id, is_container) {
     }
     //normal factors, and other things (treat them as factors, as a default behavior for unknown things)
     //prev selector: if (!(/^\d$/.test(thing.text())) && (!thing.is(".mbin, .mopen, .mclose, .mrel, .mop") || thing.text() === "!"))
-    else if (!thing.is(".mclose,.mopen") || thing.text() === "!")
+    else if (thing.text() !== "" && (!thing.is(".mclose,.mopen") || thing.text() === "!"))
     {
-      console.log("normal");
+      console.log("normal", thing.text());
       //treat as factor
       factor = tree.parse({id: factor_id, obj: factor_obj});
       factor.type = "factor";
@@ -964,6 +963,7 @@ export function parse_poly(root, poly, parent_id, is_container) {
         factor.text = thing.text();
         if (factor.text === "−")
         {
+          console.log("minus sign");
           factor.type2 = "op";
           factor.text = "-";
         }
@@ -972,7 +972,7 @@ export function parse_poly(root, poly, parent_id, is_container) {
           factor.type2 = "op";
           factor.text = "+";}
         factor_text = factor.text;
-        // console.log(factor.text);
+        // //console.log(factor.text);
       }
       else if (thing.children().length === 1 && thing.children().first().hasClass("mathbf")) {
         factor.type2 = "matrix";
@@ -984,13 +984,18 @@ export function parse_poly(root, poly, parent_id, is_container) {
       factor_cnt++;
       i++;
     }
-    console.log("going to parse children");
+    //empty span
+    else if (thing.text() === "") {
+      i++;
+      continue;
+    }
+    // //console.log("going to parse children");
     //PARSING CHILDREN: deal with things with children, recursivelly.
     if (factor_obj.is(":has(*)")) {
       //fractions, and Leibniz diffs
       if (thing.is(".mfrac") || (thing.children(".mfrac").length !== 0 && thing.children(".mfrac").children(".vlist").children().length === 4) )
       {
-        console.log("fraction");
+        //console.log("fraction");
         factor.type2 = "frac";
         denominator = thing.closest_n_descendents(".mord", 2).first();
         numerator = thing.closest_n_descendents(".mord", 2).last();
@@ -1023,7 +1028,7 @@ export function parse_poly(root, poly, parent_id, is_container) {
       //exponentials, and sub and superscripts
       else if (thing.is(":has(.vlist)") && !thing.is(".mop") && !thing.is(".accent") && thing.children(".mfrac").length === 0 && thing.children(".op-symbol").length === 0)
       {
-        console.log("exponential");
+        //console.log("exponential");
         base_obj = thing.find(".mord").first();
         base = tree.parse({id: factor_id + "/" + "1", obj: base_obj});
         base.type = "base";
@@ -1033,7 +1038,8 @@ export function parse_poly(root, poly, parent_id, is_container) {
         let arr = thing.closest_n_descendents(".vlist",1).children(":not(.baseline-fix)");
         factor.type2 = "";
         for (let i = 0; i < arr.length; i++) {
-          inside2 = $(arr[i]).find(".mord.mathit, .mord.mathrm, .mop, .mfrac").first().parent();
+          //TODO: This feels very ad-hoc, but it is because their html structure varies quite a lot...
+          inside2 = $(arr[i]).find("*:only-child:has(.mord:has(:not(.mord, .mfrac)), .mfrac:has(:not(.mord, .mfrac))), *:only-child:has(.mord:not(:has(*)), .mfrac:not(:has(*)))").first()
           if ($(arr[i]).css("top").slice(0,1) === "-") // superscript/exp
           {
             let power = tree.parse({id: factor_id + "/" + toString(i+1), obj: $(arr[i])});
@@ -1152,7 +1158,7 @@ export function parse_poly(root, poly, parent_id, is_container) {
           up_lim.type = "arg";
           up_lim.type2 = "limit";
           // arg.text = parse_poly(arg, arg_obj, factor_id + "/" + "1", arg_obj.children().length > 0);
-          console.log("low_lim_obj.children().length > 0", low_lim_obj.children().length > 0);
+          //console.log("low_lim_obj.children().length > 0", low_lim_obj.children().length > 0);
           low_lim.text = parse_poly(low_lim, low_lim_obj, factor_id + "/" + "1", low_lim_obj.children().length > 0);
           up_lim.text = parse_poly(up_lim, up_lim_obj, factor_id + "/" + "2", up_lim_obj.children().length > 0);
           // factor.addChild(arg);
@@ -1218,6 +1224,7 @@ export function parse_poly(root, poly, parent_id, is_container) {
           factor_text = factor.text;
         }
     }
+    console.log(factor_text);
     term.text+=factor_text;
     if (i === things.length) {term.model.obj = term_obj; poly_str+=term.text;}
   };

@@ -12,6 +12,7 @@ import {symbols} from './symbols.js';
 
 //change side
 export function change_side() {
+  console.log(get_next);
   let step_duration = this.step_duration;
   let math_root = this.math_root;
   let selection = this.selection;
@@ -518,6 +519,7 @@ export function move_up() {
       new_nom_text+="(" + numerator.text + ")";
     }
   }
+  //fraction
   else if (selection.selected_nodes[0].type === "factor"
     && Bro(selection.selected_nodes[0]).iCanHaz("type2") === "frac"
     && Bro(selection.selected_nodes[0]).iCanHaz("parent.parent.parent.type2") === "frac"

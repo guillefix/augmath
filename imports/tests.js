@@ -419,5 +419,5 @@ function test_manip(assert, manip, math_str_init, math_str_exp, node_ids) {
   //
   //merge two exponentials
   QUnit.test("manipulations.operate", function( assert ) {
-    test_manip(assert, "operate", "\\frac{d}{dx} (x^{5}+x^{3})", "5 x^{4} + 3 x^{2}",  ["0/1/1"]);
+    test_manip(assert, "operate", "\\frac{d}{dx} (x^{5}+x^{3})", "5 x^{4}+3 x^{2}",  ["0/1/1"]);
   });
