@@ -14,6 +14,7 @@ export default class Equation extends React.Component {
   constructor() {
     super();
     this.selection = {};
+    this.shouldResetSelectedNodes = true;
   }
   componentDidMount() {
     console.log("mounting comp", this.props.index, this.props.math);
@@ -77,7 +78,7 @@ export default class Equation extends React.Component {
 
     const { store } = this.context;
     const state = store.getState();
-
+    const dispatch = store.dispatch;
     this.unsubscribe();
     this.unsubscribe = store.subscribe(this.doManip.bind(this)); //rebinding
 
@@ -108,13 +109,37 @@ export default class Equation extends React.Component {
     this.resetStyle();
 
     //update selected nodes
-    if (selNum === 0) {
+    if (selNum === 0 && this.shouldResetSelectedNodes) {
       this.resetSelected();
-    } else {
+    } else if (this.shouldResetSelectedNodes){
+      console.log(prevProps.selectedNodes,this.props.selectedNodes);
       for (var i = 0; i < selNum; i++) {
         let node = this.props.selectedNodes[i];
-        if (prevProps.selectedNodes.indexOf(node) === -1)
+        if (prevProps.selectedNodes.indexOf(node) === -1) {
           this.selectNode(node, state.multi_select, state.var_select)
+        }
+      }
+      if (state.multi_select) {
+        for (var i = 0; i < prevProps.selectedNodes.length; i++) {
+          let node = prevProps.selectedNodes[i];
+          if (this.props.selectedNodes.indexOf(node) === -1)
+          this.selectNode(node, state.multi_select, state.var_select)
+        }
+      }
+    } else {
+      console.log("doing this.shouldResetSelectedNodes = true;");
+      //this is just for some cases where the state says we should change
+      //the selected nodes, but we don't want for some reason (see this.selectNode)
+      this.shouldResetSelectedNodes = true;
+      let nodes = []
+      for (var i = 0; i < this.selection.selected_nodes.length; i++) {
+        let nodeId = this.selection.selected_nodes[i].model.id;
+        nodes = [...nodes, nodeId];
+      }
+      this.resetSelected();
+      for (var i = 0; i < nodes.length; i++) {
+        let nodeId = nodes[i];
+        dispatch(Actions.selectNode(nodeId))
       }
     }
   }
@@ -256,7 +281,7 @@ export default class Equation extends React.Component {
             drop: function( event, ui ) {
               let node = $( this ).data('node');
               let text = ui.draggable.data('node').text;
-              // console.log(node);
+              console.log("dropping", node);
               thisComp.selectNode(node.model.id, false, true);
               let n = thisComp.selection.selected_nodes.length;
               let newStr = replace_in_mtstr(math_root, thisComp.selection.selected_nodes, thisComp.selection.selected_nodes.map(x=>text));
@@ -388,6 +413,8 @@ export default class Equation extends React.Component {
     console.log("selectNode", nodeId, multi_select);
     // let math_root = this.math_root;
     let node = math_root.first(x => x.model.id === nodeId)
+
+    if (typeof node === "undefined") return;
     let $this = node.model.obj;
     console.log($this);
     const thisComp = this;
@@ -438,6 +465,20 @@ export default class Equation extends React.Component {
     thisComp.selection.selected_position = thisComp.selection.$selected.offset();
     var replace_el = document.getElementById("replace");
     replace_el.value = thisComp.selection.selected_text;
+
+    //////this.shouldResetSelectedNodes = false; will mean that we can change the varSelects, without
+    //reseting the selectedNodes;
+    //if the node is of a different type (caused by navigating the eq with arrows for instance),
+    //then change type first and then select
+    if (node.type !== this.props.mtype || getIndicesOf("/", node.model.id).length !== this.props.depth) {
+      console.log("doing this.shouldResetSelectedNodes = false;");
+      const { store } = thisComp.context;
+      const dispatch = store.dispatch;
+      let varSelects = {depth: getIndicesOf("/", node.model.id).length, mtype: node.type};
+      $this.toggleClass("selected");
+      thisComp.shouldResetSelectedNodes = false;
+      dispatch(Actions.updateSelect(varSelects))
+    }
   }
   handleClick() {
     const { store } = this.context;
@@ -457,54 +498,3 @@ export default class Equation extends React.Component {
 Equation.contextTypes = {
   store: React.PropTypes.object
 };
-
-
-//OLD STUFF IN create_events
-
-// $("#sortable").sortable({
-//  forceHelperSize: true,
-//  placeholder: "sortable-placeholder",
-// });
-
-// $("#sortable").nestedSortable({
-//   // forceHelperSize: true,
-//   // placeholder: "sortable-placeholder",
-//   listType: 'span',
-//   items: 'span.mord',
-//   isAllowed(placeholder, placeholderParent, currentItem) {
-//     let hasparent = typeof placeholderParent !== "undefined";
-//     if (hasparent && placeholderParent.is(".mord:has(> .mord)")) {
-//       console.log(placeholderParent);
-//     }
-//     return hasparent ? placeholderParent.is(".mord:has(> .mord)") : false;
-//   },
-//   // relocate( event, ui ) {
-//   //
-//   //   window.setTimeout(rerender, 50); //probably not a very elegant solution
-//   //
-//   //   function rerender() {
-//   //     var root_poly = $("#math .base");
-//   //
-//   //     tree = new TreeModel();
-//   //
-//   //     math_root = tree.parse({});
-//   //     math_root.model.id = "0";
-//   //     //KaTeX offers MathML semantic elements on the HTML, could that be used?
-//   //
-//   //     parse_poly(math_root, root_poly, 0, true);
-//   //
-//   //     let newmath = parse_mtstr(math_root, [], []);
-//   //
-//   //     console.log(newmath);
-//   //
-//   //     thisApp.prepare(newmath);
-//   //   }
-//   //
-//   // }
-//   // connectWith: "#sortable,.sortable"
-//   // over: (event, ui) => {
-//   //   console.log(ui);
-//   //   ui.placeholder.next().css("color","blue")
-//   //   ui.item.css("color","green")
-//   // }
-// });

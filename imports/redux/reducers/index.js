@@ -89,7 +89,6 @@ const rootReducer = (state = {}, action) => {
       let currEq = action.nodeId.split('/')[0];
       if (state.multi_select && nodes.length > 0 && currEq === nodes[0].split('/')[0]) {
         if (index === -1) {
-          console.log("hi");
           newState = { ...newState,
             selectedNodes: [...nodes, id]}
         } else {
@@ -98,6 +97,7 @@ const rootReducer = (state = {}, action) => {
         }
       } else {
         if (index === -1) {
+          console.log("hi");
           newState = { ...newState,
             selectedNodes: [action.nodeId]}
         } else {

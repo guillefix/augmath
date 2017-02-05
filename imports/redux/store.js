@@ -1,4 +1,5 @@
-import { createStore, compose } from 'redux';
+import { createStore, compose, applyMiddleware} from 'redux';
+// import multi from 'redux-multi';
 // import { syncHistoryWithStore } from 'react-router-redux';
 // import { browserHistory } from 'react-router';
 
@@ -28,8 +29,14 @@ const defaultState = {
   recording: {doingRecording: false, doingPlaying: false, recordedActions: []}
 };
 
+
+// const createStoreWithMiddleware = applyMiddleware(
+//   multi,
+// )(createStore)
+
+
 const store = createStore(rootReducer, defaultState,
-    window.__REDUX_DEVTOOLS_EXTENSION__ && window.__REDUX_DEVTOOLS_EXTENSION__()
+    window.__REDUX_DEVTOOLS_EXTENSION__ && window.__REDUX_DEVTOOLS_EXTENSION__(),
   );
 
 //note that if store.getState() returns undefined it may be due to the rootReducer being incorrect, like missing a return statement.

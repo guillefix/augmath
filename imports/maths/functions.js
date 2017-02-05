@@ -990,6 +990,7 @@ export function parse_poly(root, poly, parent_id, is_container) {
       continue;
     }
     // //console.log("going to parse children");
+
     //PARSING CHILDREN: deal with things with children, recursivelly.
     if (factor_obj.is(":has(*)")) {
       //fractions, and Leibniz diffs
@@ -1042,17 +1043,17 @@ export function parse_poly(root, poly, parent_id, is_container) {
           inside2 = $(arr[i]).find("*:only-child:has(.mord:has(:not(.mord, .mfrac)), .mfrac:has(:not(.mord, .mfrac))), *:only-child:has(.mord:not(:has(*)), .mfrac:not(:has(*)))").first()
           if ($(arr[i]).css("top").slice(0,1) === "-") // superscript/exp
           {
-            let power = tree.parse({id: factor_id + "/" + toString(i+1), obj: $(arr[i])});
+            let power = tree.parse({id: factor_id + "/" + (i+2).toString(), obj: $(arr[i])});
             power.type = "power";
-            power.text = parse_poly(power, inside2, factor_id + "/" + toString(i+1), true);
+            power.text = parse_poly(power, inside2, factor_id + "/" + (i+2).toString(), true);
             factor.addChild(power);
             factor.type2 += "exp";
             factor.text += "^{"+power.text+"}";
           } else
           {
-            let sub = tree.parse({id: factor_id + "/" + toString(i+1), obj: $(arr[i])});
+            let sub = tree.parse({id: factor_id + "/" + (i+2).toString(), obj: $(arr[i])});
             sub.type = "subscript";
-            sub.text = parse_poly(sub, inside2, factor_id + "/" + toString(i+1), true);
+            sub.text = parse_poly(sub, inside2, factor_id + "/" + (i+2).toString(), true);
             factor.addChild(sub);
             factor.type2 += "subs";
             factor.text += "_{"+sub.text+"}"

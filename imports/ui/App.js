@@ -46,7 +46,7 @@ export default class App extends React.Component {
       }
     })
 
-    setUpKeyControls(); //function is below
+    setUpKeyControls.call(this,dispatch,store); //function is below
   }
 
   render() {
@@ -103,65 +103,47 @@ let Nav = () => (
   </nav>
 )
 
-function setUpKeyControls() {
+function setUpKeyControls(dispatch, store) {
   //Key controls
-  $(document).on( "keyup", function (e) { //right
-      if (e.keyCode == 39) {
-        if (this.selection.selected_nodes && this.selection.selected_nodes.length > 0) {
-          let index = parseInt(this.selection.selected_nodes[0].model.id.split("/")[this.selection.selected_nodes[0].model.id.split("/").length-1]); //no +1 because the tree index is 1 based not 0 based
-            let new_node = this.selection.selected_nodes[0].parent.children[index] || undefined;
-            if (new_node) {
-              if (new_node.type !== this.selection.selected_nodes[0].type) {
-                dispatch(Actions.updateSelect({mtype:new_node.type}));
-              }
-              select_node(new_node, thisApp.state.multi_select, thisApp.state.var_select);
-            }
-          }
-      }
-  });
-  $(document).on( "keyup", function (e) { //left
-      if (e.keyCode == 37) {
-        if (this.selection.selected_nodes && this.selection.selected_nodes.length > 0) {
-          var index = parseInt(this.selection.selected_nodes[0].model.id.split("/")[this.selection.selected_nodes[0].model.id.split("/").length-1])-2;
-            let new_node = this.selection.selected_nodes[0].parent.children[index] || undefined;
-            if (new_node) {
-              if (new_node.type !== this.selection.selected_nodes[0].type) {
-                dispatch(Actions.updateSelect({mtype:new_node.type}));
-              }
-              select_node(new_node, thisApp.state.multi_select, thisApp.state.var_select);
-            }
-          }
-      }
-  });
-  $(document).on( "keyup", function (e) { //down
-      if (e.keyCode == 40) {
-        if (this.selection.selected_nodes && this.selection.selected_nodes.length > 0) {
-          if (this.selection.selected_nodes[0].children.length > 0) {
-            let new_node = this.selection.selected_nodes[0].children[0];
-            const state = store.getState();
-            dispatch(Actions.updateSelect({mtype:new_node.type, depth:++state.depth}));
-            select_node(new_node, thisApp.state.multi_select, thisApp.state.var_select);
-          }
-        }
-      }
-  });
-  $(document).on( "keyup", function (e) { //up
-      if (e.keyCode == 38) {
-        if (this.selection.selected_nodes && this.selection.selected_nodes.length > 0) {
-          if (this.selection.selected_nodes[0].parent !== math_root) {
-            let new_node = this.selection.selected_nodes[0].parent;
-            const state = store.getState();
-            dispatch(Actions.updateSelect({mtype:new_node.type, depth:--state.depth}));
-            select_node(new_node, thisApp.state.multi_select, thisApp.state.var_select);
-          }
-        }
-      }
-  });
-
-  $(document).on( "keyup", function (e) { //ctrl+m for multiselect
-      if (e.keyCode == 77 && e.ctrlKey) {
+  $(document).on( "keyup", function (e) {
+      if (e.keyCode == 39) { //right
         const state = store.getState();
-        $("#multi_select").prop("checked", !state.multi_select);
+        const selectedNodes = state.selectedNodes;
+        if (selectedNodes.length > 0) {
+          let arr = selectedNodes[0].split("/");
+          arr[arr.length-1] = (parseInt(arr[arr.length-1])+1).toString();
+          let newNodeId = arr.join("/");
+          dispatch(Actions.selectNode(newNodeId));
+          }
+      } else if (e.keyCode == 37) { //left
+        const state = store.getState();
+        const selectedNodes = state.selectedNodes;
+        if (selectedNodes.length > 0) {
+          let arr = selectedNodes[0].split("/");
+          arr[arr.length-1] = (parseInt(arr[arr.length-1])-1).toString();
+          let newNodeId = arr.join("/");
+          dispatch(Actions.selectNode(newNodeId));
+          }
+      } else if (e.keyCode == 40) { //down
+        const state = store.getState();
+        const selectedNodes = state.selectedNodes;
+        if (selectedNodes.length > 0) {
+            let arr = selectedNodes[0].split("/");
+            arr = [...arr, "1"];
+            let newNodeId = arr.join("/");
+            dispatch(Actions.selectNode(newNodeId));
+        }
+      } else if (e.keyCode == 38) { //up
+        const state = store.getState();
+        const selectedNodes = state.selectedNodes;
+        if (selectedNodes.length > 0) {
+            let arr = selectedNodes[0].split("/");
+            arr = arr.slice(0,-1);
+            let newNodeId = arr.join("/");
+            dispatch(Actions.selectNode(newNodeId));
+        }
+      } else if (e.keyCode == 77 && e.ctrlKey) { //ctrl+m for multiselect
+        const state = store.getState();
         dispatch(Actions.updateSelect({multi_select: !state.multi_select}));
         // console.log(thisApp.state.multi_select);
       }

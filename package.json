@@ -39,6 +39,7 @@
     "react-dom": "^15.4.2",
     "react-redux": "^4.4.6",
     "redux": "^3.6.0",
+    "redux-multi": "^0.1.12",
     "tree-model": "^1.0.4"
   },
   "devDependencies": {
