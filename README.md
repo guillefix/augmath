@@ -2,7 +2,7 @@
 
 [![Join the chat at https://gitter.im/guillefix/augmath](https://badges.gitter.im/guillefix/augmath.svg)](https://gitter.im/guillefix/augmath?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
-Note: the meteor hosting has stopped working for now, I will find a new hosting method soon.
+Try it live [here](http://augmath.net)
 
 ##Vision
 
