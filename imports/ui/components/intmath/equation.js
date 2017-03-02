@@ -225,7 +225,7 @@ export default class Equation extends React.Component {
               let tempNode2 = {children: allPrev2, type:"temp", type2: "temp"}
               let comp = compare_trees(tempNode1, tempNode2)
               if (comp.same) {
-                console.log(comp.subs);
+                console.log("comp.subs",comp.subs);
                 let nodes = [];
                 let texts = [];
                 for (var i = 0; i < comp.subs.length; i++) {
@@ -235,6 +235,7 @@ export default class Equation extends React.Component {
                   nodes = [ ...nodes, ...thisComp.selection.selected_nodes];
                   let tempTexts = thisComp.selection.selected_nodes.map(x => subText);
                   texts = [ ...texts, ...tempTexts];
+                  console.log("nodes, texts",i, nodes, texts);
                 }
                 let newLHS = replace_in_mtstr(root, nodes, texts).split("=")[1];
                 let oldRHS = math_root.text.split("=")[1];
@@ -470,7 +471,8 @@ export default class Equation extends React.Component {
     //reseting the selectedNodes;
     //if the node is of a different type (caused by navigating the eq with arrows for instance),
     //then change type first and then select
-    if (node.type !== this.props.mtype || getIndicesOf("/", node.model.id).length !== this.props.depth) {
+    if ((node.type !== this.props.mtype || getIndicesOf("/", node.model.id).length !== this.props.depth)
+      && math_root === thisComp.math_root) {
       console.log("doing this.shouldResetSelectedNodes = false;");
       const { store } = thisComp.context;
       const dispatch = store.dispatch;

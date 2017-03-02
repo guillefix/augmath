@@ -531,7 +531,15 @@ export function parse_mtstr(root, node_arr, str_arr) {
             factor_text+=grandchild.text;
             break;
           case "group":
-            factor_text = grandchild.text[0] + parse_mtstr(grandchild, node_arr, str_arr) + grandchild.text[grandchild.text.length-1];
+            if (grandchild.text[0]==="\\") {
+              let textArr1 = grandchild.text.split(" ");
+              let textArr2 = grandchild.text.split("\\");
+              let openText = textArr1[0];
+              let closeText = textArr2[textArr2.length-1];
+              factor_text = openText + " " + parse_mtstr(grandchild, node_arr, str_arr) + "\\" + closeText;
+            } else {
+              factor_text = grandchild.text[0] + parse_mtstr(grandchild, node_arr, str_arr) + grandchild.text[grandchild.text.length-1];
+            }
             break;
           case "diff":
           case "frac":
@@ -771,7 +779,11 @@ export function parse_poly(root, poly, parent_id, is_container) {
       inside = factor_obj.not(factor_obj.first()).not(factor_obj.last());
       if (!factor_obj.last().is(".mclose:has(.vlist)")) { //check it's not grouped exponential
         inside_text = parse_poly(factor, inside, factor_id, false);
-        factor.text = factor_obj.first().text() + inside_text + factor_obj.last().text();
+        let open_group_text = factor_obj.first().text();
+        let close_group_text = factor_obj.last().text();
+        if (open_group_text === "⟨") open_group_text = "\\langle ";
+        if (close_group_text === "⟩") close_group_text = "\\rangle ";
+        factor.text = open_group_text + inside_text + close_group_text;
       }
       factor_text = factor.text;
     }

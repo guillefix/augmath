@@ -1332,7 +1332,9 @@ export function replace(text, replace_ind=false) {
         new_math_str = replace_in_mtstr(math_root, selection.selected_nodes, text_arr);
 
         } else {
+          console.log("math_root",math_root);
           new_math_str = replace_in_mtstr(math_root, selection.selected_nodes, text);
+          console.log("new_math_str",new_math_str);
         }
         resolve(new_math_str);
       });
