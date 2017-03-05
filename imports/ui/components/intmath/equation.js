@@ -225,14 +225,17 @@ export default class Equation extends React.Component {
               let allPrev2 = get_all_prev(math_root, eqNode2);
               let tempNode2 = {children: allPrev2, type:"temp", type2: "temp"}
               let comp = compare_trees(tempNode1, tempNode2)
-              if (comp.same) {
+              if (comp.same
+                && !(comp.subs.length === 1
+                  && comp.subs[0][0].model.id.split("/").length < 4
+                  && root.children[1].type === "rel")) {
                 console.log("comp.subs",comp.subs);
                 let nodes = [];
                 let texts = [];
                 for (var i = 0; i < comp.subs.length; i++) {
                   let node = comp.subs[i][0];
                   let subText = comp.subs[i][1].text;
-                  thisComp.selectNode(node.model.id, false, true, root);
+                  thisComp.selectNode(node.model.id, false, true, root, false);
                   nodes = [ ...nodes, ...thisComp.selection.selected_nodes];
                   let tempTexts = thisComp.selection.selected_nodes.map(x => subText);
                   texts = [ ...texts, ...tempTexts];
@@ -248,9 +251,10 @@ export default class Equation extends React.Component {
                 let newText = root.text.split("=")[1];
                 // dispatch(Actions.updateSelect({var_select: true}))
                 let node = math_root.first(node => node.text === varText);
-                thisComp.selectNode(node.model.id, false, true);
+                thisComp.selectNode(node.model.id, false, true, math_root, false);
                 // dispatch(Actions.selectNode(node.model.id));
                 // console.log(node);
+                console.log(thisComp.selection.selected_nodes);
                 let texts = thisComp.selection.selected_nodes.map(x => newText);
                 let newStr = replace_in_mtstr(math_root, thisComp.selection.selected_nodes, texts);
                 // dispatch(Actions.selectNode(node.model.id))
@@ -411,20 +415,20 @@ export default class Equation extends React.Component {
     var replace_el = document.getElementById("replace");
     replace_el.value = this.selection.selected_text;
   }
-  selectNode(nodeId, multi_select=false, var_select=false, math_root = this.math_root) {
-    console.log("selectNode", nodeId, multi_select);
+  selectNode(nodeId, multi_select=false, var_select=false, math_root = this.math_root, mayUpdateSelect=true) {
+    console.log("selectNode", nodeId, multi_select, var_select);
     // let math_root = this.math_root;
     let node = math_root.first(x => x.model.id === nodeId)
     const thisComp = this;
 
     if ((node.type !== this.props.mtype || getIndicesOf("/", node.model.id).length !== this.props.depth)
-    && math_root === thisComp.math_root) {
+    && mayUpdateSelect) {
       multi_select = false;
     }
 
     if (typeof node === "undefined") return;
     let $this = node.model.obj;
-    console.log($this);
+    // console.log($this);
     $this.toggleClass("selected");
     node.selected = !node.selected;
     if (!multi_select) {
@@ -438,6 +442,7 @@ export default class Equation extends React.Component {
     if (!multi_select) {
       this.selection.selected_nodes = [];
     }
+    // console.log("node.text",node.text);
     if (var_select) {
       math_root.walk(function (node2) {
         let has_matching_children = false
@@ -478,7 +483,7 @@ export default class Equation extends React.Component {
     //then change type first and then select
     //we have math_root === thisComp.math_root because the drag&drop triggers this otherwise
     if ((node.type !== this.props.mtype || getIndicesOf("/", node.model.id).length !== this.props.depth)
-      && math_root === thisComp.math_root) {
+      && mayUpdateSelect) {
       console.log("doing this.shouldResetSelectedNodes = false;");
       const { store } = thisComp.context;
       const dispatch = store.dispatch;

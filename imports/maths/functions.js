@@ -76,9 +76,11 @@ export function latex_to_ascii(str) {
   //   .replace(/\*\^\*\{\*(\-?[0-9]+)\)/g, "^($1)")
   //   .replace(/\^\*\{\*(\-?[0-9]+)\)/g, "^($1)")
   //   .replace(/\*\^\*\{(\-?[0-9]+)\)/g, "^($1)");
-
   str = convertMathML(LatexToMathML(str)).replace(/ \(/g,"(");
   str = str.replace(/([0-9]) ([0-9])/g, "$1$2")
+  str = str.replace(/⟨/g, "___langle__");
+  str = str.replace(/⟩/g, "___rangle__");
+  //needed to edit mo-helpers.js from mathml-to-asciimath package, to make it work.
   // console.log(str);
   return str;
 }
@@ -116,6 +118,7 @@ export function eval_expression(expression) {
     var new_str = Algebrite.simplify(expression).toString();
     // console.log("new_str", new_str);
     new_term = ascii_to_latex(new_str);
+    new_term = new_term.replace(/___([a-z]+)__/g, "\\$1 ");
     // console.log("new_term", new_term);
 
   } else {
@@ -1310,7 +1313,9 @@ export function clear_math(math) {
         .replace(/0-/g, "-")
         .replace(/^=/, "0=")
         .replace(/\^{}/g, "")
-        .replace(/\\log\_\{\}/g, "\\log");
+        .replace(/\\log\_\{\}/g, "\\log")
+        .replace(/\{+/g, "{")
+        .replace(/\(+/g, "(");
   let new_root = math_str_to_tree(math);
   new_root.walk(function (node) {
     if (node.type2 === "frac" && node.children[1].text === "") {

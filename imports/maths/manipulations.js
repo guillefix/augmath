@@ -1067,10 +1067,9 @@ export function collect_out() {
           let factor_selected_text = factor_texts[0];
           new_math_str = replace_in_mtstr(math_root, selection.selected_nodes, fact_subs);
           var new_text = "";
-          playing = true; //so that it doesn't go into history..
           math_root = math_str_to_tree(clear_math(new_math_str)); //I SHOULD CREATE A FUNCTION THAT PARSES A LATEX STRING INTO A MATH_ROOT IDEALLY...
           console.log("new math_root", math_root);
-          playing = false;
+          console.log(term_ids);
           for (var k=0; k<term_ids.length; k++) {
             var term = math_root.first(function (node) {
               return node.model.id === term_ids[k]; //They will have the same id, because we have only removed children of them.
@@ -1215,10 +1214,15 @@ export function collect_out() {
     {
       console.log("merge exponentials with common power");
       //ANIMATION??
-      var power_text = selection.selected_nodes[0].children[1].text, base_text="";
+      let childIndex=1;
+      if (selection.selected_nodes[0].children.length === 3) childIndex=2;
+      var power_text = selection.selected_nodes[0].children[childIndex].text, base_text="";
       for (var i=0; i<selection.selected_nodes.length; i++) {
         if (selection.selected_nodes[i].children[0].children.length === 1) {
-          base_text+=selection.selected_nodes[i].children[0].text;
+          if (selection.selected_nodes[0].children.length === 2)
+            base_text += selection.selected_nodes[0].children[0].text;
+          else if (selection.selected_nodes[0].children.length === 3) //has subscript
+            base_text += selection.selected_nodes[0].children[0].text + "_{"+selection.selected_nodes[0].children[1].text+"}";
         } else {
           base_text+=add_brackets(selection.selected_nodes[i].children[0].text);
         }
@@ -1278,7 +1282,7 @@ export function evaluate() {
   //equals position not too well animated
   return new Promise((resolve, reject) => {
     selection.$selected.animate({"font-size": 0, opacity: 0}, step_duration).css('overflow', 'visible').promise().done(function() {
-      new_term = eval_expression(selection.selected_text); //only works for sqrts or fracs separately, but not together
+      new_term = eval_expression(selection.selected_text);
       new_math_str = replace_in_mtstr(math_root, selection.selected_nodes, new_term);
       resolve(new_math_str);
     });
