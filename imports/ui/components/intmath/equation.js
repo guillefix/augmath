@@ -130,6 +130,7 @@ export default class Equation extends React.Component {
       console.log("doing this.shouldResetSelectedNodes = true;");
       //this is just for some cases where the state says we should change
       //the selected nodes, but we don't want for some reason (see this.selectNode)
+      //like when updating varSelects after moving with keyboard.
       this.shouldResetSelectedNodes = true;
       let nodes = []
       for (var i = 0; i < this.selection.selected_nodes.length; i++) {
@@ -171,7 +172,7 @@ export default class Equation extends React.Component {
 
     //repositioning equals so that it's always in the same place. put in fixed value
     let root_poly = $(math_el).find(".base");
-    let $equals = root_poly.find(".mrel");
+    let $equals = root_poly.children(".mrel");
     if ($equals.length !== 0) {
       $(math_el).css("left","0px", "top", "0px");
       let new_equals_position = $equals.offset();
@@ -414,11 +415,16 @@ export default class Equation extends React.Component {
     console.log("selectNode", nodeId, multi_select);
     // let math_root = this.math_root;
     let node = math_root.first(x => x.model.id === nodeId)
+    const thisComp = this;
+
+    if ((node.type !== this.props.mtype || getIndicesOf("/", node.model.id).length !== this.props.depth)
+    && math_root === thisComp.math_root) {
+      multi_select = false;
+    }
 
     if (typeof node === "undefined") return;
     let $this = node.model.obj;
     console.log($this);
-    const thisComp = this;
     $this.toggleClass("selected");
     node.selected = !node.selected;
     if (!multi_select) {
@@ -433,7 +439,6 @@ export default class Equation extends React.Component {
       this.selection.selected_nodes = [];
     }
     if (var_select) {
-      let thisComp = this;
       math_root.walk(function (node2) {
         let has_matching_children = false
         node2.walk(function (node3) {
@@ -471,6 +476,7 @@ export default class Equation extends React.Component {
     //reseting the selectedNodes;
     //if the node is of a different type (caused by navigating the eq with arrows for instance),
     //then change type first and then select
+    //we have math_root === thisComp.math_root because the drag&drop triggers this otherwise
     if ((node.type !== this.props.mtype || getIndicesOf("/", node.model.id).length !== this.props.depth)
       && math_root === thisComp.math_root) {
       console.log("doing this.shouldResetSelectedNodes = false;");

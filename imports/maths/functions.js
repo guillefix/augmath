@@ -108,15 +108,15 @@ export function ascii_to_latex(str) {
 
 //evaluate an expression with Algebrite
 export function eval_expression(expression) {
-  console.log("eval_expression", expression);
+  // console.log("eval_expression", expression);
   var new_term;
   expression = latex_to_ascii(expression) //doesn't work with some expressions, as usual
-  console.log("expression", expression);
+  // console.log("expression", expression);
   if (expression.search(/[a-z\(\)]/) > -1) {
     var new_str = Algebrite.simplify(expression).toString();
-    console.log("new_str", new_str);
+    // console.log("new_str", new_str);
     new_term = ascii_to_latex(new_str);
-    console.log("new_term", new_term);
+    // console.log("new_term", new_term);
 
   } else {
     new_term = "+" + math.eval(expression).toString();
@@ -531,15 +531,9 @@ export function parse_mtstr(root, node_arr, str_arr) {
             factor_text+=grandchild.text;
             break;
           case "group":
-            if (grandchild.text[0]==="\\") {
-              let textArr1 = grandchild.text.split(" ");
-              let textArr2 = grandchild.text.split("\\");
-              let openText = textArr1[0];
-              let closeText = textArr2[textArr2.length-1];
-              factor_text = openText + " " + parse_mtstr(grandchild, node_arr, str_arr) + "\\" + closeText;
-            } else {
-              factor_text = grandchild.text[0] + parse_mtstr(grandchild, node_arr, str_arr) + grandchild.text[grandchild.text.length-1];
-            }
+            let openText = grandchild.openText;
+            let closeText = grandchild.closeText;
+            factor_text = openText + " " + parse_mtstr(grandchild, node_arr, str_arr) + closeText;
             break;
           case "diff":
           case "frac":
@@ -608,9 +602,8 @@ export function parse_mtstr(root, node_arr, str_arr) {
             factor_text = exp_text[0] + "^{" + exp_text[1] + "}";
             break;
           case "group_exp":
-            exp_text[0] = parse_mtstr(grandchild.children[0], node_arr, str_arr);
-            exp_text[1] = parse_mtstr(grandchild.children[1], node_arr, str_arr);
-            //console.log(grandchild.children);
+            openText = grandchild.openText;
+            closeText = grandchild.closeText;
             for (var l=0; l<2; l++) {
               for (var k=0; k<node_arr.length; k++) {
                 if (grandchild.children[l].model.id === node_arr[k].model.id) {
@@ -619,7 +612,9 @@ export function parse_mtstr(root, node_arr, str_arr) {
                 }
               }
             }
-            factor_text = "(" + exp_text[0] + ")" + "^{" + exp_text[1] + "}";
+            exp_text[0] = parse_mtstr(grandchild.children[0], node_arr, str_arr);
+            exp_text[1] = parse_mtstr(grandchild.children[1], node_arr, str_arr);
+            factor_text = openText + exp_text[0] + closeText + "^{" + exp_text[1] + "}";
             break;
           case "subs":
             exp_text[0] = parse_mtstr(grandchild.children[0], node_arr, str_arr);
@@ -705,6 +700,27 @@ export function parse_mtstr(root, node_arr, str_arr) {
                 }
               }
               factor_text = "\\" + grandchild.type2 + "_{"+ low_lim_text + "}"  + "^{"+ up_lim_text + "}";
+            } else if (grandchild.children.length === 3) {
+              let low_lim_text = "";
+              let up_lim_text = "";
+              let arg_text = parse_mtstr(grandchild.children[0], node_arr, str_arr); //argument of fun
+              low_lim_text = parse_mtstr(grandchild.children[1], node_arr, str_arr); //lower_limit
+              up_lim_text = parse_mtstr(grandchild.children[2], node_arr, str_arr); //upper_limit
+              for (var k=0; k<node_arr.length; k++) {
+                if (grandchild.children[0].model.id === node_arr[k].model.id) {
+                  arg_text = str_arr[k];
+                  break;
+                } else if (grandchild.children[1].model.id === node_arr[k].model.id) {
+                  low_lim_text = str_arr[k];
+                  break;
+                } else if (grandchild.children[2].model.id === node_arr[k].model.id) {
+                  up_lim_text = str_arr[k];
+                  break;
+                }
+              }
+              let arg_text2 = "{"+arg_text+"}";
+              if (arg_text.length === 0) arg_text2 = "";
+              factor_text = "\\" + grandchild.type2 + "_{"+ low_lim_text + "}"  + "^{"+ up_lim_text + "}" + arg_text2;
             }
             break;
 
@@ -753,17 +769,17 @@ export function parse_poly(root, poly, parent_id, is_container) {
   term.text = "";
   term.type = "term";
   root.addChild(term);
-  console.log(poly);
+  // console.log(poly);
   var things = is_container ? poly.children() : poly;
   // //console.log(things, is_container);
   while (i < things.length) {
     var thing = things.filter(":eq("+i+")");
     // console.log(thing);
-    console.log("thing", thing);
+    // console.log("thing", thing);
     factor_obj = thing;
     factor_id = parent_id.toString() + "/" + (term_cnt+1).toString() + "/" + (factor_cnt+1).toString();
     term_id = parent_id.toString() + "/" + (term_cnt+1).toString();
-    //deal with elements GROUPED by brackets
+    //GROUPED elements by brackets
     if (thing.is(".mopen"))
     {
       do {
@@ -784,6 +800,8 @@ export function parse_poly(root, poly, parent_id, is_container) {
         if (open_group_text === "⟨") open_group_text = "\\langle ";
         if (close_group_text === "⟩") close_group_text = "\\rangle ";
         factor.text = open_group_text + inside_text + close_group_text;
+        factor.openText = open_group_text;
+        factor.closeText = close_group_text;
       }
       factor_text = factor.text;
     }
@@ -811,11 +829,13 @@ export function parse_poly(root, poly, parent_id, is_container) {
       i += factor_obj.length;
     }
     //operators that begin new term
-    else if (thing.is(".mbin, .mrel") && (thing.text() === "+"
+    else if (thing.is(".mbin, .mrel") || (thing.text() === "+"
       || thing.text() === "−"
       || thing.text() === "="
       || thing.text() === ">"
-      || thing.text() === "<"))
+      || thing.text() === "<"
+      || thing.text() === "≠"
+      || thing.text() === "~"))
     {
       //console.log("operator that begins new term");
       term.model.obj = term_obj;
@@ -831,7 +851,9 @@ export function parse_poly(root, poly, parent_id, is_container) {
       term.text = "";
       factor_text = "";
       term.type = "term";
-      if (thing.is(".mbin"))
+      if (thing.is(".mbin")
+        || thing.text() === "+"
+        || thing.text() === "−")
       {
         term.addChild(op);
         op.type = "factor";
@@ -848,6 +870,8 @@ export function parse_poly(root, poly, parent_id, is_container) {
         term.addChild(op);
         op.type = "rel";
         op.text = thing.text();
+        if (thing.text() === "≠") op.text = "\\neq ";
+        else if (thing.text() === "~") op.text = "\\sim ";
         term.text+=op.text;
         poly_str+=term.text;
         term_cnt++;
@@ -907,11 +931,14 @@ export function parse_poly(root, poly, parent_id, is_container) {
       factor_obj.css("position", "relative"); //so that animations work with log element..
       i=i+1;
       let arg = tree.parse({id: factor_id + "/" + "1"});
+      // console.log("condNotArg",condNotArg);
       if (!condNotArg) {
         arg.type = "body";
         if (!thing.next().is(".mopen")) {
           arg_obj = thing.next();
-          arg.text = parse_poly(arg, arg_obj, factor_id + "/" + "1", arg_obj.children().length > 0);
+          let is_container = arg_obj.children().length > 0 && arg_obj.is(".textstyle.uncramped");
+          // console.log("is_container",is_container);
+          arg.text = parse_poly(arg, arg_obj, factor_id + "/" + "1", is_container);
           i=i+1;
           arg.model.obj = arg_obj;
         } else {
@@ -944,19 +971,21 @@ export function parse_poly(root, poly, parent_id, is_container) {
             arg.text = inside_factor.text;
           }
         }
+        factor_obj = factor_obj.add(arg_obj);
+        if (arg.text.length>1)
+        factor.text = fun_text + "{(" + arg.text + ")}";
+        else
+        factor.text = fun_text + "{" + arg.text + "}";
       }
-      factor_obj = factor_obj.add(arg_obj);
       factor = tree.parse({id: factor_id, obj: factor_obj});
 
       let fun_text = "\\" + thing.text();
+      if (fun_text  === "\\∫") fun_text = "\\int";
       factor.addChild(arg);
-      if (arg.text.length>1)
-        factor.text = fun_text + "{(" + arg.text + ")}";
-      else
-        factor.text = fun_text + "{" + arg.text + "}";
 
       factor.type = "factor";
       factor.type2 = thing.text();
+      if (thing.text()  === "∫") factor.type2 = "int";
       term.addChild(factor);
       term_obj = term_obj.add(factor_obj);
       factor_cnt++;
@@ -965,7 +994,7 @@ export function parse_poly(root, poly, parent_id, is_container) {
     //prev selector: if (!(/^\d$/.test(thing.text())) && (!thing.is(".mbin, .mopen, .mclose, .mrel, .mop") || thing.text() === "!"))
     else if (thing.text() !== "" && (!thing.is(".mclose,.mopen") || thing.text() === "!"))
     {
-      console.log("normal", thing.text());
+      // console.log("normal", thing.text());
       //treat as factor
       factor = tree.parse({id: factor_id, obj: factor_obj});
       factor.type = "factor";
@@ -975,7 +1004,7 @@ export function parse_poly(root, poly, parent_id, is_container) {
         factor.text = thing.text();
         if (factor.text === "−")
         {
-          console.log("minus sign");
+          // console.log("minus sign");
           factor.type2 = "op";
           factor.text = "-";
         }
@@ -1084,10 +1113,29 @@ export function parse_poly(root, poly, parent_id, is_container) {
         power = tree.parse({id: factor_id + "/" + "2", obj: power_obj});
         power.type = "power";
         inside = power_obj.find(".mord").first();
+        let open_group_text = factor_obj.first().text();
+        // let close_group_text = factor_obj.eq(-2).text();
+        if (open_group_text === "(") {
+          close_group_text = ")";
+        } else if (open_group_text === "⟨") {
+          open_group_text = "\\langle ";
+          close_group_text = "\\rangle ";
+        } else if (open_group_text === "[") {
+          close_group_text = "]";
+        } else if (open_group_text === "|") {
+          close_group_text = "|";
+        } else if (open_group_text === "<") {
+          close_group_text = ">";
+        } else {
+          close_group_text = open_group_text;
+        }
+        // if (close_group_text === "⟩") close_group_text = "\\rangle ";
         power.text = parse_poly(power, inside, factor_id + "/" + "2", true);
         factor.addChild(base);
         factor.addChild(power);
-        factor.text = "(" + base.text + ")" + "^{" + power.text + "}";
+        factor.openText = open_group_text;
+        factor.closeText = close_group_text;
+        factor.text = open_group_text + base.text + close_group_text + "^{" + power.text + "}";
       }
       //text
       else if (thing.is(".text"))
@@ -1185,17 +1233,20 @@ export function parse_poly(root, poly, parent_id, is_container) {
       {
         base_obj = thing.children().filter(".vlist").children().not(".baseline-fix").children(".reset-textstyle").children();
         let log_text = "\\log"
+        let bodyIndex = 1;
         if (base_obj.length > 0) {
           base = tree.parse({id: factor_id + "/" + "1", obj: base_obj});
           base.type = "base";
           base.text = parse_poly(base, base_obj, factor_id + "/" + "1", true);
           factor.addChild(base);
           log_text += "_{" + base.text + "}";
+          bodyIndex = 2;
         }
         let body_obj = thing.next();
-        let body = tree.parse({id: factor_id + "/" + "2", obj: body_obj});
+        let body = tree.parse({id: factor_id + "/" + bodyIndex.toString(), obj: body_obj});
         body.type = "body";
-        body.text = parse_poly(body, body_obj, factor_id + "/" + "2", body_obj.children().length > 0);
+        let is_container = body_obj.children().length > 0 && body_obj.is(".textstyle");
+        body.text = parse_poly(body, body_obj, factor_id + "/" + bodyIndex.toString(), is_container);
         factor.addChild(body);
         factor.text = log_text + "{" + body.text + "}";
       }
@@ -1237,7 +1288,7 @@ export function parse_poly(root, poly, parent_id, is_container) {
           factor_text = factor.text;
         }
     }
-    console.log(factor_text);
+    // console.log(factor_text);
     term.text+=factor_text;
     if (i === things.length) {term.model.obj = term_obj; poly_str+=term.text;}
   };
@@ -1276,8 +1327,8 @@ export function math_str_to_tree(math) {
   let math_el = document.getElementById("temp");
   // console.log(math_el);
   $(math_el).hide();
-  katex.render(math, math_el, { displayMode: true });
   // console.log(math);
+  katex.render(math, math_el, { displayMode: true });
 
   var root_poly = $("#temp .base");
 

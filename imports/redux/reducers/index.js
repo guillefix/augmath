@@ -52,7 +52,7 @@ const rootReducer = (state = {}, action) => {
         doing_manip: false,
         selectedNodes: []}
     case "UPDATE_INDEX":
-      console.log("updating index", action.index);
+      // console.log("updating index", action.index);
       if (action.index > newState.mathHist.length-1 || action.index < 0) {
         return state
       } else {
@@ -63,10 +63,10 @@ const rootReducer = (state = {}, action) => {
           equations: subsArray(newState.equations, newEqIndex, newEq)}
       }
     case "MANIPULATION":
-      console.log("manipulating", action.manip);
+      // console.log("manipulating", action.manip);
       return { ...newState, manip: action.manip, doing_manip: true, manip_data: action.manip_data}
     case "UPDATE_SELECT":
-      console.log("update select", action.newSelectVars);
+      // console.log("update select", action.newSelectVars);
       return { ...newState,
         ...action.newSelectVars,
         selectedNodes: []}

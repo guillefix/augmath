@@ -450,8 +450,11 @@ export function move_left() {
             prev_text_str = prev_text_str + "+["+prev_text_str+","+selected_text_str+"]";
           }
         }
+        console.log("selected_text_str", selected_text_str);
+        console.log("prev_text_str",prev_text_str);
         new_math_str = replace_in_mtstr(math_root, [prev_node].concat(selection.selected_nodes),
           [selected_text_str,prev_text_str, ...selection.selected_nodes.slice(1).map(x=>"")]);
+        console.log("new_math_str", new_math_str);
         resolve(new_math_str);
       });
     });
@@ -661,7 +664,7 @@ export function split() {
     same_ggparents = have_same_ancestors(selection.selected_nodes, 3),
     same_type = have_same_type(selection.selected_nodes);
     // same_type2 = have_same_type(selection.selected_nodes,1)
-  console.log(selection.selected_nodes);
+  // console.log(selection.selected_nodes);
   //split factors out of a fraction
   if (selection.selected_nodes[0].type === "factor"
       && same_type && same_ggparents
@@ -698,7 +701,7 @@ export function split() {
           for (var k=0; k<selection.selected_nodes.length; k++) {
             if (denominator_factors[j].model.id === selection.selected_nodes[k].model.id) {do_continue = true;}
           }
-          console.log(denominator_factors);
+          // console.log(denominator_factors);
           if (do_continue) {continue;}
           denominator_text2+=denominator_factors[j].text;
         }
@@ -760,6 +763,7 @@ export function merge() {
     same_parents = have_same_ancestors(selection.selected_nodes, 1),
     // same_grandparents = have_same_ancestors(selection.selected_nodes, 2),
     // same_ggparents = have_same_ancestors(selection.selected_nodes, 3),
+    same_text = have_same_text(selection.selected_nodes),
     same_type = have_same_type(selection.selected_nodes),
     same_type2 = have_same_type(selection.selected_nodes,1),
     same_log_base = have_same_log_base(selection.selected_nodes.map(x => x.children[x.children.length-1])),
@@ -802,6 +806,15 @@ export function merge() {
       let new_math_str = replace_in_mtstr(math_root, selection.selected_nodes, new_text);
       return new Promise((resolve, reject) => {resolve(new_math_str)});
     }
+    //merge equal factors
+    else if (selection.selected_nodes[0].type === "factor" && same_parents && same_type && same_text)
+    {
+      console.log("merge equal factors into exp");
+      //ANIMATION??
+      new_math_str = replace_in_mtstr(math_root, selection.selected_nodes, selection.selected_nodes[0].text+"^{"+selection.selected_nodes.length.toString()+"}");
+      // new_math_str = replace_in_mtstr(math_root, selection.selected_nodes, selection.selected_nodes[0].text + "^{" + selection.selected_nodes.length.toString() + "}");
+      return new Promise((resolve, reject) => {resolve(new_math_str)});
+    }
 }
 
 //distributing in stuff
@@ -826,7 +839,7 @@ export function distribute_in() {
     if (selection.selected_nodes[i].parent !== selection.selected_nodes[i+1].parent) {bool = true; j = 0;}
   }
 
-  var grouped = [];
+  var grouped = [],factors_text = "";
   for (var i=0; i<selection.selected_nodes.length; i++) {//identifying grouped element
     if (selection.selected_nodes[i].type2 === "group") {
       grouped.push(selection.selected_nodes[i]);
@@ -838,13 +851,13 @@ export function distribute_in() {
   //distribute in
   if (selection.selected_nodes[0].type === "factor" && same_type && same_parents && grouped.length > 0)
   {
-    var factors_text = "";
-      // console.log(selection.selected_nodes);
-      for (var i=0; i<selection.selected_nodes.length-1; i++) { //THE last factor is the one over which I should distribute.
-        factors_text+=selection.selected_nodes[i].text;
-      }
+    // var factors_text = "";
+    //   // console.log(selection.selected_nodes);
+    //   for (var i=0; i<selection.selected_nodes.length-1; i++) { //THE last factor is the one over which I should distribute.
+    //     factors_text+=selection.selected_nodes[i].text;
+    //   }
     var grouped_node = grouped[grouped.length-1];
-    // console.log("distribute in", factors_text, grouped_node);
+    console.log("distribute in", grouped_node);
     return new Promise((resolve, reject) => {
       selection.$selected.animate({"font-size": 0, opacity: 0}, step_duration) //IMPROVE ANIMATION (FOR EXAMPLE CLONE)
         .css('overflow', 'visible')
@@ -852,8 +865,13 @@ export function distribute_in() {
         .done(function() {
           var text = "";
           for (var i=0; i<grouped_node.children.length; i++) {
-            let temp_node = {text: factors_text, children: [], type: "temp"}
-            text += multiply([temp_node, grouped_node.children[i]])
+            let sortedNodes = [...selection.selected_nodes.slice(0,-1), grouped_node.children[i]]
+                .sort((a,b)=>{
+                  let index = Math.min(a.model.id.length-1, b.model.id.length-1);
+                  return parseInt(a.model.id[index])-parseInt(b.model.id[index]);
+                })
+            text += multiply(sortedNodes)
+            console.log("text", text);
           }
           if (selection.selected_nodes[0].parent.children.length > selection.selected_nodes.length) {
             var new_text = "(" + text + ")"
@@ -1009,7 +1027,7 @@ export function collect_out() {
     if (selection.selected_nodes[0].parent.parent.type==="denominator") {
 
     } else {
-      console.log("selected nodes", selection.selected_nodes);
+      // console.log("selected nodes", selection.selected_nodes);
       term_ids.push(selection.selected_nodes[0].parent.model.id);
       for (i=0; i<selection.selected_nodes.length-1; i++) {
         if (selection.selected_nodes[i].parent === selection.selected_nodes[i+1].parent) {
@@ -1022,7 +1040,7 @@ export function collect_out() {
           fact_cnt[j]=1;
           term_ids.push(selection.selected_nodes[i+1].parent.model.id);
         }
-        console.log("fact_subs", fact_subs);
+        // console.log("fact_subs", fact_subs);
         last_node_in_loop = selection.selected_nodes[i+1];
       }
       create_fact_subs(last_node_in_loop.parent, fact_cnt[j]);
@@ -1031,7 +1049,7 @@ export function collect_out() {
     for (var i=0; i<factor_texts.length-1; i++) { //checking if all factors are the same
       if (factor_texts[i] !== factor_texts[i+1]) {same_factors = false}
     }
-    console.log("factors_text", factor_texts);
+    // console.log("factors_text", factor_texts);
   }
 
   //
@@ -1067,7 +1085,8 @@ export function collect_out() {
       });
   }
   //merge equal factors into exp
-  else if (selection.selected_nodes[0].type === "factor" && same_parents && same_type && same_text)
+  else if (selection.selected_nodes[0].type === "factor" &&
+  selection.selected_nodes[0].type2 !== "subsexp" && same_parents && same_type && same_text)
   {
     console.log("merge equal factors into exp");
     //ANIMATION??
@@ -1142,30 +1161,51 @@ export function collect_out() {
     return new Promise((resolve, reject) => {resolve(new_math_str)});
   }
   //merge exponentials
-  else if ((selection.selected_nodes[0].type2 === "exp" || selection.selected_nodes[0].type2 === "group_exp")
+  else if ((selection.selected_nodes[0].type2 === "exp"
+    || selection.selected_nodes[0].type2 === "group_exp"
+    || selection.selected_nodes[0].type2 === "subsexp"
+    || selection.selected_nodes[0].type2 === "group_subsexp")
   && same_parents && same_type)
   {
     console.log("merge exponentials");
     var same_base = true, same_power = true;
     for (var i=0; i<selection.selected_nodes.length-1; i++) {//making sure all elemnts are of the same base
-      if (selection.selected_nodes[i].children[0].text !== selection.selected_nodes[i+1].children[0].text) {same_base = false}
+      if (selection.selected_nodes[i].children.length === 2
+        && selection.selected_nodes[i].children[0].text !== selection.selected_nodes[i+1].children[0].text) {
+          same_base = false
+      } else if (selection.selected_nodes[i].children.length === 3
+        && (selection.selected_nodes[i].children[0].text !== selection.selected_nodes[i+1].children[0].text
+          || selection.selected_nodes[i].children[1].text !== selection.selected_nodes[i+1].children[1].text)) {
+        same_base = false
+      }
     }
-    for (var i=0; i<selection.selected_nodes.length-1; i++) {//making sure all elemnts are of the same base
-      if (selection.selected_nodes[i].children[1].text !== selection.selected_nodes[i+1].children[1].text) {same_power = false}
+    for (var i=0; i<selection.selected_nodes.length-1; i++) {//making sure all elemnts are of the same power
+      if (selection.selected_nodes[i].children.length === 2
+        && selection.selected_nodes[i].children[1].text !== selection.selected_nodes[i+1].children[1].text) {
+          same_power = false
+      } else if (selection.selected_nodes[i].children.length === 3
+        && selection.selected_nodes[i].children[2].text !== selection.selected_nodes[i+1].children[2].text) {
+        same_power = false
+      }
     }
-    if (same_base && !same_power) //with common base
+    if (same_base) //with common base
     {
       console.log("merge exponentials with common base");
       //ANIMATION??
       var power_text = "", base_text="";
       if (selection.selected_nodes[0].children[0].children.length === 1) {
-        base_text = selection.selected_nodes[0].children[0].text;
+        if (selection.selected_nodes[0].children.length === 2)
+          base_text = selection.selected_nodes[0].children[0].text;
+        else if (selection.selected_nodes[0].children.length === 3) //has subscript
+          base_text = selection.selected_nodes[0].children[0].text + "_{"+selection.selected_nodes[0].children[1].text+"}";
       } else {
         base_text = add_brackets(selection.selected_nodes[0].children[0].text);
       }
+      let childIndex=1;
+      if (selection.selected_nodes[0].children.length === 3) childIndex=2;
       for (var i=0; i<selection.selected_nodes.length; i++) {
         if (i > 0) {power_text+="+";}
-        power_text+=selection.selected_nodes[i].children[1].text;
+        power_text+=selection.selected_nodes[i].children[childIndex].text;
       }
       var new_text = base_text + "^{" + power_text + "}";
       new_math_str = replace_in_mtstr(math_root, selection.selected_nodes, new_text);
