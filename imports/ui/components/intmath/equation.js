@@ -103,7 +103,7 @@ export default class Equation extends React.Component {
       this.updateTree();
       this.create_events(this.props.mtype, this.props.depth);
     }
-    if (prevProps.mtype !== this.props.mtype || prevProps.depth !== this.props.depth)
+    if (prevProps.dragDrop !== this.props.dragDrop || prevProps.depth !== this.props.depth)
       this.create_events(this.props.mtype, this.props.depth);
 
     this.resetStyle();

@@ -3,7 +3,7 @@ import katex from 'katex';
 // import TreeModel from '../TreeModel-min.js';
 import {symbols} from './symbols.js';
 import Bro from 'brototype';
-// import Algebrite from 'algebrite';
+import Algebrite from 'algebrite';
 import algebra from 'algebra.js'
 import math from 'mathjs'
 
@@ -78,8 +78,8 @@ export function latex_to_ascii(str) {
   //   .replace(/\*\^\*\{(\-?[0-9]+)\)/g, "^($1)");
   str = convertMathML(LatexToMathML(str)).replace(/ \(/g,"(");
   str = str.replace(/([0-9]) ([0-9])/g, "$1$2")
-  str = str.replace(/⟨/g, "___langle__");
-  str = str.replace(/⟩/g, "___rangle__");
+  str = str.replace(/⟨ /g, "langle");
+  str = str.replace(/ ⟩/g, "rangle");
   //needed to edit mo-helpers.js from mathml-to-asciimath package, to make it work.
   // console.log(str);
   return str;
@@ -113,17 +113,22 @@ export function eval_expression(expression) {
   // console.log("eval_expression", expression);
   var new_term;
   expression = latex_to_ascii(expression) //doesn't work with some expressions, as usual
-  // console.log("expression", expression);
+  console.log("expression", expression);
   if (expression.search(/[a-z\(\)]/) > -1) {
     var new_str = Algebrite.simplify(expression).toString();
-    // console.log("new_str", new_str);
-    new_term = ascii_to_latex(new_str);
-    new_term = new_term.replace(/___([a-z]+)__/g, "\\$1 ");
+    console.log("new_str", new_str);
+    new_term = ascii_to_latex(new_str)
+              .replace(/langle/g, "\\langle ")
+              .replace(/rangle/g, "\\rangle ")
+              .replace(/\{\\mathrm\{([a-z]+)\}\}/g, "$1");
+              // .replace(/^( *)(\+)+/g, "");
     // console.log("new_term", new_term);
 
   } else {
-    new_term = "+" + math.eval(expression).toString();
+    new_term = ("+" + math.eval(expression).toString());
+              // .replace(/^( *)(\+)+/g, "");
   }
+  console.log(new_term);
   return new_term;
 }
 
@@ -132,11 +137,9 @@ export function eval_expression(expression) {
 export function rationalize(str) {
   var ascii_str = latex_to_ascii(str);
   ascii_str = ascii_str.replace(/e/g, "ee"); //becase Algebrite annoyingly thinks all es are exponentials..
-  // console.log("HIIIIII",ascii_str)
   var new_exp = Algebrite.rationalize(ascii_str);
   var new_str = "\\frac{" + Algebrite.numerator(new_exp).toString() + "}{" + Algebrite.denominator(new_exp).toString() + "}";
   new_str = new_str.replace(/ee/g, "e").replace(/ /g, "");
-  // console.log("HIIIIII",new_str)
   return ascii_to_latex(new_str);
 }
 
@@ -536,7 +539,7 @@ export function parse_mtstr(root, node_arr, str_arr) {
           case "group":
             let openText = grandchild.openText;
             let closeText = grandchild.closeText;
-            factor_text = openText + " " + parse_mtstr(grandchild, node_arr, str_arr) + closeText;
+            factor_text = openText + (openText[0]==="\\" ? " " : "") + parse_mtstr(grandchild, node_arr, str_arr) + closeText;
             break;
           case "diff":
           case "frac":
@@ -607,6 +610,8 @@ export function parse_mtstr(root, node_arr, str_arr) {
           case "group_exp":
             openText = grandchild.openText;
             closeText = grandchild.closeText;
+            exp_text[0] = parse_mtstr(grandchild.children[0], node_arr, str_arr);
+            exp_text[1] = parse_mtstr(grandchild.children[1], node_arr, str_arr);
             for (var l=0; l<2; l++) {
               for (var k=0; k<node_arr.length; k++) {
                 if (grandchild.children[l].model.id === node_arr[k].model.id) {
@@ -615,8 +620,6 @@ export function parse_mtstr(root, node_arr, str_arr) {
                 }
               }
             }
-            exp_text[0] = parse_mtstr(grandchild.children[0], node_arr, str_arr);
-            exp_text[1] = parse_mtstr(grandchild.children[1], node_arr, str_arr);
             factor_text = openText + exp_text[0] + closeText + "^{" + exp_text[1] + "}";
             break;
           case "subs":
@@ -762,7 +765,7 @@ export function replace_in_mtstr(root, nodes, str_arr) {
 //This is tied to the way KaTeX renders maths. A good thing would be to do this for MathML, as it's likely to be a standard in the future.
 export function parse_poly(root, poly, parent_id, is_container) {
   let tree = new TreeModel();
-  var poly_str = "";
+  var poly_str = "", factor_text = "";
   var term_cnt = 0;
   var factor_cnt = 0;
   var i = 0;
@@ -774,11 +777,10 @@ export function parse_poly(root, poly, parent_id, is_container) {
   root.addChild(term);
   // console.log(poly);
   var things = is_container ? poly.children() : poly;
-  // //console.log(things, is_container);
+  //console.log(things, is_container);
   while (i < things.length) {
     var thing = things.filter(":eq("+i+")");
-    // console.log(thing);
-    // console.log("thing", thing);
+    // console.log(i,"thing", thing.text());
     factor_obj = thing;
     factor_id = parent_id.toString() + "/" + (term_cnt+1).toString() + "/" + (factor_cnt+1).toString();
     term_id = parent_id.toString() + "/" + (term_cnt+1).toString();
@@ -832,7 +834,7 @@ export function parse_poly(root, poly, parent_id, is_container) {
       i += factor_obj.length;
     }
     //operators that begin new term
-    else if (thing.is(".mbin, .mrel") || (thing.text() === "+"
+    else if ((thing.text() === "+"
       || thing.text() === "−"
       || thing.text() === "="
       || thing.text() === ">"
@@ -842,18 +844,20 @@ export function parse_poly(root, poly, parent_id, is_container) {
     {
       //console.log("operator that begins new term");
       term.model.obj = term_obj;
-      poly_str+=term.text;
-      term_cnt++;
-      factor_cnt = 0;
-      factor_id = parent_id.toString() + "/" + (term_cnt+1).toString() + "/" + (factor_cnt+1).toString();
-      term_id = parent_id.toString() + "/" + (term_cnt+1).toString();
       op = tree.parse({id: factor_id, obj: thing});
-      term = tree.parse({id: term_id});
-      root.addChild(term);
-      term_obj = $();
-      term.text = "";
-      factor_text = "";
-      term.type = "term";
+      if (factor_cnt > 0) {
+        poly_str+=term.text;
+        factor_cnt = 0;
+        term_cnt++;
+        factor_id = parent_id.toString() + "/" + (term_cnt+1).toString() + "/" + (factor_cnt+1).toString();
+        term_id = parent_id.toString() + "/" + (term_cnt+1).toString();
+        term = tree.parse({id: term_id});
+        term_obj = $();
+        term.text = "";
+        term.type = "term";
+        root.addChild(term);
+        factor_text = "";
+      }
       if (thing.is(".mbin")
         || thing.text() === "+"
         || thing.text() === "−")
@@ -1034,6 +1038,8 @@ export function parse_poly(root, poly, parent_id, is_container) {
       continue;
     }
     // //console.log("going to parse children");
+
+    // console.log("factor_text",factor_text);
 
     //PARSING CHILDREN: deal with things with children, recursivelly.
     if (factor_obj.is(":has(*)")) {
@@ -1291,7 +1297,7 @@ export function parse_poly(root, poly, parent_id, is_container) {
           factor_text = factor.text;
         }
     }
-    // console.log(factor_text);
+    // console.log(term_id,factor_text);
     term.text+=factor_text;
     if (i === things.length) {term.model.obj = term_obj; poly_str+=term.text;}
   };
@@ -1314,20 +1320,21 @@ export function clear_math(math) {
         .replace(/^=/, "0=")
         .replace(/\^{}/g, "")
         .replace(/\\log\_\{\}/g, "\\log")
-        .replace(/\{+/g, "{")
-        .replace(/\(+/g, "(");
-  let new_root = math_str_to_tree(math);
-  new_root.walk(function (node) {
-    if (node.type2 === "frac" && node.children[1].text === "") {
-      new_str = replace_in_mtstr(new_root,node, node.children[0].text);
-      new_root = math_str_to_tree(new_str);
-    }
-  });
+        .replace(/\{\+/g, "{")
+        .replace(/\(\+/g, "(");
+  if (new_str.indexOf("\\frac")!==-1) {
+    let new_root = math_str_to_tree(new_str);
+    new_root.walk(function (node) {
+      if (node.type2 === "frac" && node.children[1].text === "") {
+        new_str = replace_in_mtstr(new_root,node, node.children[0].text);
+        new_root = math_str_to_tree(new_str);
+      }
+    });
+  }
   return new_str
 }
 
 export function math_str_to_tree(math) {
-  // math = clear_math(math);
   $(".math-container").append($('<p id="temp"></p>'))
   let math_el = document.getElementById("temp");
   // console.log(math_el);

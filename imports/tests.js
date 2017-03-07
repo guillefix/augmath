@@ -334,7 +334,7 @@ function test_manip(assert, manip, math_str_init, math_str_exp, node_ids) {
     });
 
     QUnit.test("manipulations.distribute_in", (assert) => {
-      test_manip(assert, "distribute_in", "(x-3)^{2}-(x+2)3x+x+2", "(x-3)^{2}-(x3x+x3\\cdot 2)+x+2",  ["0/2/4", "0/2/3", "0/2/2"]);
+      test_manip(assert, "distribute_in", "(x-3)^{2}-(x+2)3x+x+2", "(x-3)^{2}-(x3x+2\\cdot 3x)+x+2",  ["0/2/4", "0/2/3", "0/2/2"]);
     });
 
     //DISTRIBUTE IN with one one-factor term
@@ -354,7 +354,7 @@ function test_manip(assert, manip, math_str_init, math_str_exp, node_ids) {
 
     //Split exponential with terms into several exponentials
     QUnit.test("manipulations.distribute_in", (assert) => {
-      test_manip(assert, "distribute_in", "(ab(x+y))^{33x+y}", "(ab(x+y))^{33x}(ab(x+y))^{+y}", ["0/1/1/2"]);
+      test_manip(assert, "distribute_in", "(ab(x+y))^{33x+y}", "(ab(x+y))^{33x}(ab(x+y))^{y}", ["0/1/1/2"]);
     });
 
     //distribute power in fraction
@@ -371,7 +371,7 @@ function test_manip(assert, manip, math_str_init, math_str_exp, node_ids) {
       test_manip(assert, "merge", "x^{4}\\frac{1}{4}\\frac{1}{z^{2}}", "x^{4}\\frac{1}{4z^{2}}",  ["0/1/2", "0/1/3"]);
     });
     QUnit.test("manipulations.merge", (assert) => {
-      test_manip(assert, "merge", "\\log{\\frac{1}{y}x}=z", "\\log{\\frac{x}{y}}=z",  ["0/1/1/2/1/1", "0/1/1/2/1/2"]);
+      test_manip(assert, "merge", "\\log{\\frac{1}{y}x}=z", "\\log{\\frac{x}{y}}=z",  ["0/1/1/1/1/1", "0/1/1/1/1/2"]);
     });
 
     //Merge logs into log
@@ -392,13 +392,13 @@ function test_manip(assert, manip, math_str_init, math_str_exp, node_ids) {
 
     //Split factors out of a log
     QUnit.test("manipulations.split", (assert) => {
-      test_manip(assert, "split", "\\log{xassdaadsy}", "\\log{asads}+ \\log{xsday}",  ["0/1/1/2/1/1", "0/1/1/2/1/3", "0/1/1/2/1/5", "0/1/1/2/1/6", "0/1/1/2/1/10"]);
+      test_manip(assert, "split", "\\log{xassdaadsy}", "\\log{asads}+ \\log{xsday}",  ["0/1/1/1/1/1", "0/1/1/1/1/3", "0/1/1/1/1/5", "0/1/1/1/1/6", "0/1/1/1/1/10"]);
     });
   //
 
     //merge two exponentials
     QUnit.test("manipulations.evaluate", (assert) => {
-      test_manip(assert, "evaluate", "a^{-1}a^{-1}", "a^{-2}",  ["0/1/1", "0/1/2"]);
+      test_manip(assert, "evaluate", "a^{-1}a^{-1}", "\\frac{1}{ a^{2}}",  ["0/1/1", "0/1/2"]);
     });
 
     //merge two terms

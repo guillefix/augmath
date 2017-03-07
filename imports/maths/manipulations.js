@@ -251,14 +251,17 @@ export function change_side() {
   //NEED TO ADD option for selecting factor or term within power, just like for fractions..
   else if (selection.selected_nodes[0].type === "power"
     && selection.selected_nodes.length === 1
+    && selection.selected_nodes[0].parent.parent.children.length === 1
     //and it comes from a top level term, plus there is only one term on the side of the selected sign:
-    && ((selection.$selected.parent().prevAll(".mrel").length !== 0
-        && get_prev(math_root, [math_root.children[math_root.children.length-1]]).children[0].type === "rel") //LHS
-      || (selection.$selected.parent().nextAll(".mrel").length !== 0
-        && get_next(math_root, [math_root.children[0]]).children[0].type === "rel")))
+    && ((selection.selected_nodes[0].model.id.split("/").length === 4
+        && selection.selected_nodes[0].model.id.split("/")[1] === math_root.children.length.toString()
+        && math_root.children[math_root.children.length-2].type === "rel")
+      || (selection.selected_nodes[0].model.id.split("/").length === 4 //LHS
+          && selection.selected_nodes[0].model.id.split("/")[1] === "1"
+          && math_root.children[1].type === "rel")))
   {
     console.log("changing power of side");
-    if (selection.$selected.parent().prevAll(".mrel").length === 0) { //before eq sign
+    if (selection.selected_nodes[0].model.id.split("/")[1] === "1") { //before eq sign
       var offset = this.eqCoords.end_of_equation.left - this.eqCoords.equals_position.left;
       return new Promise((resolve, reject) => {
         selection.$selected.animate({left:offset}, step_duration).promise().done(function() {
@@ -276,7 +279,7 @@ export function change_side() {
           resolve(new_math_str);
         });
       });
-    } else if (selection.$selected.parent().nextAll(".mrel").length === 0) { //after eq sign
+    } else if (selection.selected_nodes[0].model.id.split("/")[1] === math_root.children.length.toString()) { //after eq sign
       var offset = this.eqCoords.end_of_equation.left - this.eqCoords.equals_position.left;
       return new Promise((resolve, reject) => {
         selection.$selected.animate({left:-offset}, step_duration).promise().done(function() {
@@ -285,7 +288,9 @@ export function change_side() {
           if (selection.selected_nodes[0].text === "2") {
             new_math_str = "\\sqrt{" + math_HS[0] + "}" + "=" + math_HS[1];
           } else {
-            if (selection.selected_nodes[0].children.length === 1 && selection.selected_nodes[0].children[0].children.length ===1 && selection.selected_nodes[0].children[0].children[0].type2 === "frac") {
+            if (selection.selected_nodes[0].children.length === 1
+              && selection.selected_nodes[0].children[0].children.length ===1
+              && selection.selected_nodes[0].children[0].children[0].type2 === "frac") {
               new_math_str = add_brackets(math_HS[0]) + "^{" + flip_fraction([selection.selected_nodes[0].children[0].children[0]]) + "}" + "=" + math_HS[1];
             } else {
               new_math_str = add_brackets(math_HS[0]) + "^{" + "\\frac{1}{" + selection.selected_text + "}}" + "=" + math_HS[1]; //add brackets
@@ -770,44 +775,72 @@ export function merge() {
     are_logs = are_of_type(selection.selected_nodes.map(x => x.children[x.children.length-1]), "log",1),
     same_grandparents = have_same_ancestors(selection.selected_nodes, 2);
 
-    //merge fractions into fraction
-    if (selection.selected_nodes[0].type2 === "frac" && same_parents && same_type)
+  //merge fractions into fraction
+  if (selection.selected_nodes[0].type2 === "frac" && same_parents && same_type)
+  {
+    console.log("merge fractions into fraction");
+    //ANIMATION??
+    let numerator_text = multiply(selection.selected_nodes.map(x => (x.type2 === "frac" ? x.children[0] : x)));
+    let denominator_text = multiply(selection.selected_nodes.filter(x => x.type2 === "frac").map(x => x.children[1]));
+    var new_text = "\\frac{" + numerator_text + "}{" + denominator_text + "}";
+    let new_math_str = replace_in_mtstr(math_root, selection.selected_nodes, new_text);
+    return new Promise((resolve, reject) => {resolve(new_math_str)});
+  }
+  //merge logs into log
+  if (are_logs && same_grandparents && same_type && same_log_base)
+  {
+    console.log("merge logs into log");
+    //ANIMATION??
+    let body_text = multiply(selection.selected_nodes.map(x => {
+      let c = x.children;
+      let first_fact = x.children[0].text;
+      let gchild = c[c.length-1];
+      let ggchild = gchild.children[gchild.children.length-1];
+      if (first_fact === "-") {
+        let new_text = flip_fraction({ ...ggchild, type2: "normal"});
+        console.log("new_text", new_text);
+        return {...ggchild, text: new_text};
+      } else {
+        return ggchild;
+      }
+    }))
+    let base_text = "";
+    let factor = selection.selected_nodes[0].children[selection.selected_nodes[0].children.length-1];
+    if (factor.children.length === 2) base_text += factor.children[0].text;
+    let new_text = "+\\log_{" + base_text + "}{" + body_text + "}";
+    let new_math_str = replace_in_mtstr(math_root, selection.selected_nodes, new_text);
+    return new Promise((resolve, reject) => {resolve(new_math_str)});
+  }
+  //merge equal factors
+  else if (selection.selected_nodes[0].type === "factor" && same_parents && same_type && same_text)
+  {
+    if (selection.selected_nodes[0].type2 === "exp"
+      || selection.selected_nodes[0].type2 === "group_exp"
+      || selection.selected_nodes[0].type2 === "subsexp"
+      || selection.selected_nodes[0].type2 === "group_subsexp")
     {
-      console.log("merge fractions into fraction");
-      //ANIMATION??
-      let numerator_text = multiply(selection.selected_nodes.map(x => (x.type2 === "frac" ? x.children[0] : x)));
-      let denominator_text = multiply(selection.selected_nodes.filter(x => x.type2 === "frac").map(x => x.children[1]));
-      var new_text = "\\frac{" + numerator_text + "}{" + denominator_text + "}";
-      let new_math_str = replace_in_mtstr(math_root, selection.selected_nodes, new_text);
-      return new Promise((resolve, reject) => {resolve(new_math_str)});
-    }
-    //merge logs into log
-    if (are_logs && same_grandparents && same_type && same_log_base)
-    {
-      console.log("merge logs into log");
-      //ANIMATION??
-      let body_text = multiply(selection.selected_nodes.map(x => {
-        let c = x.children;
-        let first_fact = x.children[0].text;
-        let gchild = c[c.length-1];
-        let ggchild = gchild.children[gchild.children.length-1];
-        if (first_fact === "-") {
-          let new_text = flip_fraction({ ...ggchild, type2: "normal"});
-          console.log("new_text", new_text);
-          return {...ggchild, text: new_text};
+      console.log("merge equal factors which are exponentials");
+        //ANIMATION??
+        var power_text = "", base_text="";
+        if (selection.selected_nodes[0].children[0].children.length === 1) {
+          if (selection.selected_nodes[0].children.length === 2)
+            base_text = selection.selected_nodes[0].children[0].text;
+          else if (selection.selected_nodes[0].children.length === 3) //has subscript
+            base_text = selection.selected_nodes[0].children[0].text + "_{"+selection.selected_nodes[0].children[1].text+"}";
         } else {
-          return ggchild;
+          base_text = add_brackets(selection.selected_nodes[0].children[0].text);
         }
-      }))
-      let base_text = "";
-      let factor = selection.selected_nodes[0].children[selection.selected_nodes[0].children.length-1];
-      if (factor.children.length === 2) base_text += factor.children[0].text;
-      let new_text = "+\\log_{" + base_text + "}{" + body_text + "}";
-      let new_math_str = replace_in_mtstr(math_root, selection.selected_nodes, new_text);
-      return new Promise((resolve, reject) => {resolve(new_math_str)});
+        let childIndex=1;
+        if (selection.selected_nodes[0].children.length === 3) childIndex=2;
+        for (var i=0; i<selection.selected_nodes.length; i++) {
+          if (i > 0) {power_text+="+";}
+          power_text+=selection.selected_nodes[i].children[childIndex].text;
+        }
+        var new_text = base_text + "^{" + power_text + "}";
+        new_math_str = replace_in_mtstr(math_root, selection.selected_nodes, new_text);
+        return new Promise((resolve, reject) => {resolve(new_math_str)});
     }
-    //merge equal factors
-    else if (selection.selected_nodes[0].type === "factor" && same_parents && same_type && same_text)
+    else
     {
       console.log("merge equal factors into exp");
       //ANIMATION??
@@ -815,6 +848,7 @@ export function merge() {
       // new_math_str = replace_in_mtstr(math_root, selection.selected_nodes, selection.selected_nodes[0].text + "^{" + selection.selected_nodes.length.toString() + "}");
       return new Promise((resolve, reject) => {resolve(new_math_str)});
     }
+  }
 }
 
 //distributing in stuff
@@ -1077,6 +1111,8 @@ export function collect_out() {
             new_text += term.text;
             selected_terms.push(term);
           }
+          console.log("new_text", new_text);
+          console.log("factor_selected_text",factor_selected_text);
           new_text = "+" + factor_selected_text + "(" + new_text + ")";
           new_math_str = replace_in_mtstr(math_root, selected_terms, new_text);
           resolve(new_math_str);
