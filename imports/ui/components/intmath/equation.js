@@ -28,50 +28,6 @@ export default class Equation extends React.Component {
     this.resetStyle();
     this.create_events(this.props.mtype, this.props.depth);
   }
-  doManip() {
-    // console.log(this);
-    const { store } = this.context;
-    let math_root = this.math_root;
-    const state = store.getState();
-    if (state.doing_manip && state.mathHist[state.current_index].current_eq === this.props.index)
-    {
-      let promise, eqCoords = {};
-
-      //useful variables
-      let vars = {};
-
-      eqCoords.beginning_of_equation = math_root.children[0].model.obj.offset();
-      let width_last_term = tot_width(math_root.children[math_root.children.length-1].model.obj, true, true);
-      eqCoords.end_of_equation = math_root.children[math_root.children.length-1].model.obj.offset();
-      eqCoords.end_of_equation.left += width_last_term;
-      eqCoords.equals_position = this.equals_position;
-
-      vars.eqCoords = eqCoords;
-
-      vars.math_root = this.math_root;
-      vars.selection = this.selection;
-      vars.step_duration = state.step_duration;
-      vars.mathStr = this.props.math;
-      vars.$equals =  $(this.math_el).find(".base").find(".mrel");
-
-      if (state.manip === "replace" && this.selection.selected_nodes.length > 0) {
-        promise = manips[state.manip].call(vars, state.manip_data, state.replace_ind);
-      } else if (state.manip === "flip_equation") {
-        promise = manips[state.manip].call(vars, this.props.math);
-      } else if (state.manip === "add_both_sides") {
-        promise = manips[state.manip].call(vars, state.manip_data, this.props.math);
-      } else if (this.selection.selected_nodes.length > 0){
-        promise = manips[state.manip].call(vars);
-      }
-      if (typeof promise !== "undefined") {
-        promise.then((data) => {
-          console.log("going to update equation", data);
-          let index = state.current_index;
-          store.dispatch(Actions.addToHist(data, ++index));
-        })
-      }
-    }
-  }
   componentDidUpdate(prevProps, prevState) {
     console.log("updating equation", this.props.index, this.props.math);
     // let math_el = ReactDOM.findDOMNode(this.refs.math);
@@ -144,50 +100,13 @@ export default class Equation extends React.Component {
       }
     }
   }
-  updateTree() {
-    const { store } = this.context;
-    const state = store.getState();
-    let math_root;
-
-    let math_el = this.math_el;
-    let root_poly = $(math_el).find(".base");
-
-    tree = new TreeModel();
-
-    math_root = tree.parse({});
-    math_root.model.id = this.props.index.toString();
-    math_root.model.obj = root_poly;
-
-    parse_poly(math_root, root_poly, this.props.index, true);
-
-    this.math_root = math_root;
-  }
-  resetStyle() {
-    let math_el = this.math_el;
-
-    //setting zoom
-    $(math_el).css("font-size", this.props.eqZoom.toString()+"px");
-
-    $(math_el).css("height", "100%")
-
-    //repositioning equals so that it's always in the same place. put in fixed value
-    let root_poly = $(math_el).find(".base");
-    let $equals = root_poly.children(".mrel");
-    if ($equals.length !== 0) {
-      $(math_el).css("left","0px", "top", "0px");
-      let new_equals_position = $equals.offset();
-      // console.log("hi", this.props.index, this.equals_position, new_equals_position);
-      let h_eq_shift = this.equals_position.left-new_equals_position.left
-      let v_eq_shift = this.equals_position.top-new_equals_position.top
-      $(math_el).css("left",h_eq_shift.toString()+"px", "top", v_eq_shift.toString()+"px");
-    }
-  }
   create_events(type, depth) {
     const { store } = this.context;
     const state = store.getState();
     const dispatch = store.dispatch;
     let math_root = this.math_root;
     let thisComp = this;
+    let thisIndex = this.props.index
     // console.log("creating events", type,depth);
     let math_el = this.math_el;
     $(math_el).find("*").off();
@@ -243,7 +162,7 @@ export default class Equation extends React.Component {
                 }
                 let newLHS = replace_in_mtstr(root, nodes, texts).split("=")[1];
                 let oldRHS = math_root.text.split("=")[1];
-                dispatch(Actions.addToHist(newLHS+"="+oldRHS, state.current_index+1, node.model.id.split('/')[0]))
+                dispatch(Actions.addToHist(newLHS+"="+oldRHS, state.current_index+1, thisIndex))
               }
               else if (root.children[1].type === "rel") {
                 console.log("second type of apply");
@@ -258,7 +177,7 @@ export default class Equation extends React.Component {
                 let texts = thisComp.selection.selected_nodes.map(x => newText);
                 let newStr = replace_in_mtstr(math_root, thisComp.selection.selected_nodes, texts);
                 // dispatch(Actions.selectNode(node.model.id))
-                dispatch(Actions.addToHist(newStr, state.current_index, node.model.id.split('/')[0]))
+                dispatch(Actions.addToHist(newStr, state.current_index, thisIndex))
               }
             }
           });
@@ -292,14 +211,13 @@ export default class Equation extends React.Component {
               let n = thisComp.selection.selected_nodes.length;
               let newStr = replace_in_mtstr(math_root, thisComp.selection.selected_nodes, thisComp.selection.selected_nodes.map(x=>text));
               // dispatch(Actions.selectNode(node.model.id))
-              dispatch(Actions.addToHist(newStr, state.current_index, node.model.id.split('/')[0]))
+              dispatch(Actions.addToHist(newStr, state.current_index, thisIndex))
             }
           });
         }
       });
     }
 
-    //SORTABLE
     if (dragDrop === "move")
     {
       $(".sortable").removeClass("sortable")
@@ -382,7 +300,7 @@ export default class Equation extends React.Component {
 
               let newmath = replace_in_mtstr(math_root, [], []);
 
-              store.dispatch(Actions.addToHist(newmath, state.current_index+1))
+              store.dispatch(Actions.addToHist(newmath, state.current_index+1, parseInt(node.model.id.split('/')[0])))
             }
 
           }
@@ -399,6 +317,88 @@ export default class Equation extends React.Component {
         }
     });
     //Draggable.create(".mord", {type:"x,y", edgeResistance:0.65, throwProps:true});
+  }
+  resetStyle() {
+    let math_el = this.math_el;
+
+    //setting zoom
+    $(math_el).css("font-size", this.props.eqZoom.toString()+"px");
+
+    $(math_el).css("height", "100%")
+
+    //repositioning equals so that it's always in the same place. put in fixed value
+    let root_poly = $(math_el).find(".base");
+    let $equals = root_poly.children(".mrel");
+    if ($equals.length !== 0) {
+      $(math_el).css("left","0px", "top", "0px");
+      let new_equals_position = $equals.offset();
+      // console.log("hi", this.props.index, this.equals_position, new_equals_position);
+      let h_eq_shift = this.equals_position.left-new_equals_position.left
+      let v_eq_shift = this.equals_position.top-new_equals_position.top
+      $(math_el).css("left",h_eq_shift.toString()+"px", "top", v_eq_shift.toString()+"px");
+    }
+  }
+  updateTree() {
+    const { store } = this.context;
+    const state = store.getState();
+    let math_root;
+
+    let math_el = this.math_el;
+    let root_poly = $(math_el).find(".base");
+
+    tree = new TreeModel();
+
+    math_root = tree.parse({});
+    math_root.model.id = this.props.index.toString();
+    math_root.model.obj = root_poly;
+
+    parse_poly(math_root, root_poly, this.props.index, true);
+
+    this.math_root = math_root;
+  }
+  doManip() {
+    // console.log(this);
+    const { store } = this.context;
+    let math_root = this.math_root;
+    const state = store.getState();
+    if (state.doing_manip && state.mathHist[state.current_index].current_eq === this.props.index)
+    {
+      let promise, eqCoords = {};
+
+      //useful variables
+      let vars = {};
+
+      eqCoords.beginning_of_equation = math_root.children[0].model.obj.offset();
+      let width_last_term = tot_width(math_root.children[math_root.children.length-1].model.obj, true, true);
+      eqCoords.end_of_equation = math_root.children[math_root.children.length-1].model.obj.offset();
+      eqCoords.end_of_equation.left += width_last_term;
+      eqCoords.equals_position = this.equals_position;
+
+      vars.eqCoords = eqCoords;
+
+      vars.math_root = this.math_root;
+      vars.selection = this.selection;
+      vars.step_duration = state.step_duration;
+      vars.mathStr = this.props.math;
+      vars.$equals =  $(this.math_el).find(".base").find(".mrel");
+
+      if (state.manip === "replace" && this.selection.selected_nodes.length > 0) {
+        promise = manips[state.manip].call(vars, state.manip_data, state.replace_ind);
+      } else if (state.manip === "flip_equation") {
+        promise = manips[state.manip].call(vars, this.props.math);
+      } else if (state.manip === "add_both_sides") {
+        promise = manips[state.manip].call(vars, state.manip_data, this.props.math);
+      } else if (this.selection.selected_nodes.length > 0){
+        promise = manips[state.manip].call(vars);
+      }
+      if (typeof promise !== "undefined") {
+        promise.then((data) => {
+          console.log("going to update equation", data);
+          let index = state.current_index;
+          store.dispatch(Actions.addToHist(data, ++index, state.current_eq));
+        })
+      }
+    }
   }
   resetSelected() {
     this.selection.selected_nodes = [];
