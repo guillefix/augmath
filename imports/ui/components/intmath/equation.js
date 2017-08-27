@@ -6,7 +6,7 @@ import * as manips from '../../../maths/manipulations.js';
 import {clear_math, select_node, parse_poly, tot_width, replace_in_mtstr, getIndicesOf, parse_mtstr, get_next, get_prev, get_all_prev, compare_trees} from "../../../maths/functions";
 import TreeModel from '../../../TreeModel-min.js';
 import 'nestedSortable';
-import katex from 'katex';
+import katex from '/imports/katex.min.js';
 import classNames from 'classnames';
 
 

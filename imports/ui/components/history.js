@@ -1,6 +1,6 @@
 import React from 'react';
 import ReactDOM from 'react-dom'
-import katex from 'katex';
+import katex from '/imports/katex.min.js';
 import classNames from 'classnames';
 import {updateIndex} from '../../redux/actions/action-creators';
 
