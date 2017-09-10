@@ -50,6 +50,8 @@ export default class App extends React.Component {
   }
 
   render() {
+    const { store } = this.context;
+    const state = store.getState();
     return (
       <div>
         <Nav/>
@@ -59,9 +61,9 @@ export default class App extends React.Component {
           </div>
           <div className="col-md-6">
             <Toolbar />
-            <MathInput mathStr={this.state.mathStr} update={this.update}/>
+            <MathInput mathStr={this.state.mathStr} update={this.update} index={state.current_index} dispatch={store.dispatch}/>
 
-            <MathArea mtype={this.state.mtype} depth={this.state.depth} eqZoom={this.state.eqZoom} />
+            <MathArea mtype={this.state.mtype} depth={this.state.depth} eqZoom={this.state.eqZoom} index={this.state.current_index}/>
           </div>
           <div className="col-md-3">
             <EquationsPanel />

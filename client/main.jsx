@@ -51,7 +51,8 @@ Meteor.startup(() => {
     </Provider>, document.getElementById('app'));
 
   $(function() {
-    $("#tools").accordion({
+    $("#tools > div").accordion({
+      header: "h4",
       collapsible: true,
       heightStyle: "content"
     });

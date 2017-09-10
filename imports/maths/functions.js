@@ -76,10 +76,17 @@ export function latex_to_ascii(str) {
   //   .replace(/\*\^\*\{\*(\-?[0-9]+)\)/g, "^($1)")
   //   .replace(/\^\*\{\*(\-?[0-9]+)\)/g, "^($1)")
   //   .replace(/\*\^\*\{(\-?[0-9]+)\)/g, "^($1)");
-  str = convertMathML(LatexToMathML(str)).replace(/ \(/g,"(");
-  str = str.replace(/([0-9]) ([0-9])/g, "$1$2")
-  str = str.replace(/⟨ /g, "langle");
-  str = str.replace(/ ⟩/g, "rangle");
+  // console.log(str);
+  str = str.replace(/\\langle( )*([A-z0-9]+)( )*\\rangle/g, "(langle$2rangle)")
+           .replace(/ \^/g, "^")
+           .replace(/\\cdot/g, " ");
+  // console.log(str);
+  str = convertMathML(LatexToMathML(str)).replace(/ \(/g,"(")
+        .replace(/\( \) /g, "");
+  // console.log(str);
+  // str = str.replace(/([0-9]) ([0-9])/g, "$1$2")
+  str = str.replace(/l a n g l e( )+/g, "langle");
+  str = str.replace(/( )+r a n g l e/g, "rangle");
   //needed to edit mo-helpers.js from mathml-to-asciimath package, to make it work.
   // console.log(str);
   return str;
@@ -125,6 +132,7 @@ export function eval_expression(expression) {
     // console.log("new_term", new_term);
 
   } else {
+    expression = expression.replace(/ /, "*")
     new_term = ("+" + math.eval(expression).toString());
               // .replace(/^( *)(\+)+/g, "");
   }
@@ -777,7 +785,7 @@ export function parse_poly(root, poly, parent_id, is_container) {
   root.addChild(term);
   // console.log(poly);
   var things = is_container ? poly.children() : poly;
-  //console.log(things, is_container);
+  //LOOP through things
   while (i < things.length) {
     var thing = things.filter(":eq("+i+")");
     // console.log(i,"thing", thing.text());
