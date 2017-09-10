@@ -1,6 +1,6 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
-import katex from 'katex';
+import katex from '/imports/katex.min.js';
 
 
 export default class PlainEq extends React.Component {
