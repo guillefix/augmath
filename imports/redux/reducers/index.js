@@ -6,7 +6,7 @@ let subsArray = (arr, index, el) => {
   else return [ ...arr.slice(0, index), el, ...arr.slice(index+1)]
 };
 
-let updateIndexMathHist = (mathHist, equations, index) => [...mathHist.slice(0,-1), {mathStr: equations[index], current_eq: index}];
+let updateIndexMathHist = (current_index, mathHist, equations, index) => [...mathHist.slice(0,current_index), {mathStr: equations[index], current_eq: index}];
 
 const rootReducer = (state = {}, action) => {
   let newState;
@@ -106,7 +106,7 @@ const rootReducer = (state = {}, action) => {
         }
       }
       return { ...newState,
-        mathHist: updateIndexMathHist(newState.mathHist,newState.equations,parseInt(currEq))}
+        mathHist: updateIndexMathHist(newState.current_index,newState.mathHist,newState.equations,parseInt(currEq))}
     case "RESET_SELECTED":
       return { ...newState,
         selectedNodes: []}
@@ -118,7 +118,7 @@ const rootReducer = (state = {}, action) => {
         step_duration: action.newStepDur}
     case "SELECT_EQUATION":
       return { ...newState,
-        mathHist: updateIndexMathHist(newState.mathHist,newState.equations,action.newEqIndex)}
+        mathHist: updateIndexMathHist(newState.current_index,newState.mathHist,newState.equations,action.newEqIndex)}
       break;
     case "BEGIN_RECORDING":
       return { ...newState,

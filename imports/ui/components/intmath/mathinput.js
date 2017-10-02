@@ -16,17 +16,16 @@ export default class MathInput extends React.Component {
     this.math_str_el.hide();
   }
   render() {
-    const { store } = this.context;
-    const { dispatch } = store;
+    const dispatch = this.props.dispatch;
+    let index = this.props.index;
     return (
       <div className="row">
   			<p id="MathInput">Input some equation (<a id="show_latex" onClick={this.toggleLatexInput.bind(this)}>show LaTeX</a>): &nbsp;
-          <MQInput mathStr={this.props.mathStr} update={this.props.update}/>
+          <MQInput mathStr={this.props.mathStr} update={this.props.update} dispatch={dispatch} index={this.props.index}/>
           &nbsp;
           <input size="50" ref="latexInput" value={this.props.mathStr}
             onChange={() => {this.props.update(this.latexStr())}}
             onKeyUp={(e) =>{
-              let index = store.getState().current_index;
               if (e.keyCode == 13) dispatch(Actions.addToHist(this.props.mathStr, ++index))
             }}/>
           &nbsp;
@@ -38,6 +37,6 @@ export default class MathInput extends React.Component {
     )
   }
 }
-MathInput.contextTypes = {
-  store: React.PropTypes.object
-};
+// MathInput.contextTypes = {
+//   store: React.PropTypes.object
+// };

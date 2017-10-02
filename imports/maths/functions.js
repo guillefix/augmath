@@ -1,5 +1,5 @@
 import jQuery from 'jquery';
-import katex from 'katex';
+import katex from '/imports/katex.min.js';
 // import TreeModel from '../TreeModel-min.js';
 import {symbols} from './symbols.js';
 import Bro from 'brototype';
@@ -76,10 +76,17 @@ export function latex_to_ascii(str) {
   //   .replace(/\*\^\*\{\*(\-?[0-9]+)\)/g, "^($1)")
   //   .replace(/\^\*\{\*(\-?[0-9]+)\)/g, "^($1)")
   //   .replace(/\*\^\*\{(\-?[0-9]+)\)/g, "^($1)");
-  str = convertMathML(LatexToMathML(str)).replace(/ \(/g,"(");
-  str = str.replace(/([0-9]) ([0-9])/g, "$1$2")
-  str = str.replace(/⟨ /g, "langle");
-  str = str.replace(/ ⟩/g, "rangle");
+  // console.log(str);
+  str = str.replace(/\\langle( )*([A-z0-9]+)( )*\\rangle/g, "(langle$2rangle)")
+           .replace(/ \^/g, "^")
+           .replace(/\\cdot/g, " ");
+  // console.log(str);
+  str = convertMathML(LatexToMathML(str)).replace(/ \(/g,"(")
+        .replace(/\( \) /g, "");
+  // console.log(str);
+  // str = str.replace(/([0-9]) ([0-9])/g, "$1$2")
+  str = str.replace(/l a n g l e( )+/g, "langle");
+  str = str.replace(/( )+r a n g l e/g, "rangle");
   //needed to edit mo-helpers.js from mathml-to-asciimath package, to make it work.
   // console.log(str);
   return str;
@@ -125,6 +132,7 @@ export function eval_expression(expression) {
     // console.log("new_term", new_term);
 
   } else {
+    expression = expression.replace(/ /, "*")
     new_term = ("+" + math.eval(expression).toString());
               // .replace(/^( *)(\+)+/g, "");
   }
@@ -777,7 +785,7 @@ export function parse_poly(root, poly, parent_id, is_container) {
   root.addChild(term);
   // console.log(poly);
   var things = is_container ? poly.children() : poly;
-  //console.log(things, is_container);
+  //LOOP through things
   while (i < things.length) {
     var thing = things.filter(":eq("+i+")");
     // console.log(i,"thing", thing.text());
@@ -798,7 +806,8 @@ export function parse_poly(root, poly, parent_id, is_container) {
       factor_cnt++;
       i += factor_obj.length;
       inside = factor_obj.not(factor_obj.first()).not(factor_obj.last());
-      if (!factor_obj.last().is(".mclose:has(.vlist)")) { //check it's not grouped exponential
+      //check it's not grouped exponential
+      if (!factor_obj.last().is(".mclose:has(.msupsub)")) {
         inside_text = parse_poly(factor, inside, factor_id, false);
         let open_group_text = factor_obj.first().text();
         let close_group_text = factor_obj.last().text();
@@ -817,12 +826,10 @@ export function parse_poly(root, poly, parent_id, is_container) {
     {
       //console.log("if number, group numbers into factor");
       factor_text = "";
-      asd=0;
       factor_text+=factor_obj.text();
-      while (/^\d$/.test(factor_obj.last().next().text())) {
+      while (i+factor_obj.length < things.length && /^\d$/.test(factor_obj.last().next().text())) {
         factor_obj = factor_obj.add(factor_obj.last().next());
         factor_text+=factor_obj.last().text();
-        asd++;
       }
       factor = tree.parse({id: factor_id, obj: factor_obj});
       factor.type = "factor";
@@ -894,7 +901,7 @@ export function parse_poly(root, poly, parent_id, is_container) {
       i++;
     }
     //multiplication operator
-    else if (thing.is(".mbin, .mrel") && (thing.text() === "⋅" || thing.text() === "×"))
+    else if (thing.is(".mbin") && (thing.text() === "⋅" || thing.text() === "×"))
     {
       //console.log("multiplication operator");
       factor = tree.parse({id: factor_id, obj: factor_obj});
@@ -931,7 +938,7 @@ export function parse_poly(root, poly, parent_id, is_container) {
     else if (thing.is(".mop"))
     {
       //console.log("other functions");
-      condNotArg = thing.is(":has(.vlist)") && thing.children(".op-symbol").length !== 0 || thing.is(".mop.op-limits");
+      condNotArg = thing.is(":has(.msupsub)") && thing.children(".op-symbol").length !== 0 || thing.is(".mop.op-limits");
 
       //because functions except those that satisfy the condition include the next HTML element too, as the body of the log!
       //and some things are different
@@ -957,7 +964,8 @@ export function parse_poly(root, poly, parent_id, is_container) {
           inside = arg_obj.not(arg_obj.first()).not(arg_obj.last());
           i += arg_obj.length;
           arg.model.obj = arg_obj;
-          if (!arg_obj.last().is(".mclose:has(.vlist)")) { //check it's not grouped exponential
+          //check it's not grouped exponential
+          if (!arg_obj.last().is(".mclose:has(.msupsub)")) {
             arg.text = parse_poly(arg, inside, factor_id, false);
           } else {
             inside_factor = tree.parse({id: factor_id + "/1/1", obj: base_obj});
@@ -966,7 +974,7 @@ export function parse_poly(root, poly, parent_id, is_container) {
             base = tree.parse({id: factor_id + "/1/1/1", obj: base_obj});
             base.type = "base";
             base.text = parse_poly(base, inside, factor_id + "/" + "1", false);
-            power_obj = factor_obj.last().find(".vlist").first();
+            power_obj = factor_obj.last().find(".msupsub").first();
             power = tree.parse({id: factor_id + "/1/1/2", obj: power_obj});
             power.type = "power";
             inside = power_obj.find(".mord").first();
@@ -1044,7 +1052,7 @@ export function parse_poly(root, poly, parent_id, is_container) {
     //PARSING CHILDREN: deal with things with children, recursivelly.
     if (factor_obj.is(":has(*)")) {
       //fractions, and Leibniz diffs
-      if (thing.is(".mfrac") || (thing.children(".mfrac").length !== 0 && thing.children(".mfrac").children(".vlist").children().length === 4) )
+      if (thing.is(".mfrac") || (thing.children(".mfrac").length !== 0)) //&& thing.children(".mfrac").children(".vlist").children().length === 4
       {
         //console.log("fraction");
         factor.type2 = "frac";
@@ -1077,7 +1085,7 @@ export function parse_poly(root, poly, parent_id, is_container) {
         factor.text = "\\sqrt{" + parse_poly(factor, inside, factor_id, true) + "}";
       }
       //exponentials, and sub and superscripts
-      else if (thing.is(":has(.vlist)") && !thing.is(".mop") && !thing.is(".accent") && thing.children(".mfrac").length === 0 && thing.children(".op-symbol").length === 0)
+      else if (thing.is(":has(.msupsub)") && !thing.is(".mop") && !thing.is(".accent") && thing.children(".mfrac").length === 0 && thing.children(".op-symbol").length === 0)
       {
         //console.log("exponential");
         base_obj = thing.find(".mord").first();
@@ -1086,29 +1094,51 @@ export function parse_poly(root, poly, parent_id, is_container) {
         base.text = parse_poly(base, base_obj, factor_id + "/" + "1", false);
         factor.addChild(base);
         factor.text = base.text
-        let arr = thing.closest_n_descendents(".vlist",1).children(":not(.baseline-fix)");
+        // let arr = thing.closest_n_descendents(".vlist",1).children(":not(.baseline-fix)");
+        let supsub = thing.children(".msupsub");
+
         factor.type2 = "";
-        for (let i = 0; i < arr.length; i++) {
-          //TODO: This feels very ad-hoc, but it is because their html structure varies quite a lot...
-          inside2 = $(arr[i]).find("*:only-child:has(.mord:has(:not(.mord, .mfrac)), .mfrac:has(:not(.mord, .mfrac))), *:only-child:has(.mord:not(:has(*)), .mfrac:not(:has(*)))").first()
-          if ($(arr[i]).css("top").slice(0,1) === "-") // superscript/exp
-          {
-            let power = tree.parse({id: factor_id + "/" + (i+2).toString(), obj: $(arr[i])});
-            power.type = "power";
-            power.text = parse_poly(power, inside2, factor_id + "/" + (i+2).toString(), true);
-            factor.addChild(power);
-            factor.type2 += "exp";
-            factor.text += "^{"+power.text+"}";
-          } else
-          {
-            let sub = tree.parse({id: factor_id + "/" + (i+2).toString(), obj: $(arr[i])});
-            sub.type = "subscript";
-            sub.text = parse_poly(sub, inside2, factor_id + "/" + (i+2).toString(), true);
-            factor.addChild(sub);
-            factor.type2 += "subs";
-            factor.text += "_{"+sub.text+"}"
-          }
+        if (supsub.is(".sub, .supsub")) {
+          if (supsub.is(".sub")) sub_obj = supsub.closest_n_descendents(".mord", 1).first();
+          else sub_obj = supsub.closest_n_descendents(".mord", 2).first();
+          let sub = tree.parse({id: factor_id + "/" + (i+2).toString(), obj: sub_obj});
+          sub.type = "subscript";
+          sub.text = parse_poly(sub, sub_obj, factor_id + "/" + (i+2).toString(), true);
+          factor.addChild(sub);
+          factor.type2 += "subs";
+          factor.text += "_{"+sub.text+"}"
         }
+        if (supsub.is(".sup, .supsub")) {
+          if (supsub.is(".sup")) sup_obj = supsub.closest_n_descendents(".mord", 1).first();
+          else sup_obj = supsub.closest_descendents(".mord", 2).last();
+          let power = tree.parse({id: factor_id + "/" + (i+2).toString(), obj: sup_obj});
+          power.type = "power";
+          power.text = parse_poly(power, sup_obj, factor_id + "/" + (i+2).toString(), true);
+          factor.addChild(power);
+          factor.type2 += "exp";
+          factor.text += "^{"+power.text+"}";
+        }
+        // // for (let i = 0; i < arr.length; i++) {
+        // //   //TODO: This feels very ad-hoc, but it is because their html structure varies quite a lot...
+        //   inside2 = $(arr[i]).find("*:only-child:has(.mord:has(:not(.mord, .mfrac)), .mfrac:has(:not(.mord, .mfrac))), *:only-child:has(.mord:not(:has(*)), .mfrac:not(:has(*)))").first()
+        //   if ($(arr[i]).css("top").slice(0,1) === "-") // superscript/exp
+        //   {
+        //     let power = tree.parse({id: factor_id + "/" + (i+2).toString(), obj: $(arr[i])});
+        //     power.type = "power";
+        //     power.text = parse_poly(power, inside2, factor_id + "/" + (i+2).toString(), true);
+        //     factor.addChild(power);
+        //     factor.type2 += "exp";
+        //     factor.text += "^{"+power.text+"}";
+        //   } else
+        //   {
+        //     let sub = tree.parse({id: factor_id + "/" + (i+2).toString(), obj: $(arr[i])});
+        //     sub.type = "subscript";
+        //     sub.text = parse_poly(sub, inside2, factor_id + "/" + (i+2).toString(), true);
+        //     factor.addChild(sub);
+        //     factor.type2 += "subs";
+        //     factor.text += "_{"+sub.text+"}"
+        //   }
+        // // }
       }
       //exponentiated group
       else if (!factor_obj.first().is(".mop") && factor_obj.last().is(".mclose:has(.vlist)"))
@@ -1240,7 +1270,7 @@ export function parse_poly(root, poly, parent_id, is_container) {
       //logs
       else if (thing.is(".mop") && (thing.children().filter(".mop").text() === "log" || thing.text() === "log"))
       {
-        base_obj = thing.children().filter(".vlist").children().not(".baseline-fix").children(".reset-textstyle").children();
+        base_obj = thing.children().filter(".msupsub").closest_n_descendents(".mord", 1).first();
         let log_text = "\\log"
         let bodyIndex = 1;
         if (base_obj.length > 0) {
@@ -1254,7 +1284,7 @@ export function parse_poly(root, poly, parent_id, is_container) {
         let body_obj = thing.next();
         let body = tree.parse({id: factor_id + "/" + bodyIndex.toString(), obj: body_obj});
         body.type = "body";
-        let is_container = body_obj.children().length > 0 && body_obj.is(".textstyle");
+        let is_container = body_obj.children().length > 0 && body_obj.is(".mord");
         body.text = parse_poly(body, body_obj, factor_id + "/" + bodyIndex.toString(), is_container);
         factor.addChild(body);
         factor.text = log_text + "{" + body.text + "}";

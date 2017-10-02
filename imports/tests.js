@@ -1,79 +1,35 @@
-// import {change_side, move_right, move_left, move_up, move_down, split, merge, distribute_in, collect_out, unbracket, evaluate, operate, add_both_sides, replace, remove, cancel_out, flip_equation} from "../../../imports/maths/manipulations.js";
-// import {select_node, clear_math, math_str_to_tree, replace_in_mtstr, tot_width} from "../../maths/functions";
-// import Bro from 'brototype'
-// import {symbols} from '../../maths/symbols.js';
 import store from './redux/store';
 import * as act from './redux/actions/action-creators';
-// import * as manips from '../../maths/manipulations.js';
-
 
 const dispatch = store.dispatch;
 
-//Oh man tests do really rock. But need to update framework to work with react!
-dispatch(act.changeStepDuration(0)) //is doing this ok?
+dispatch(act.changeStepDuration(0))
 
 function test_manip(assert, manip, math_str_init, math_str_exp, node_ids) {
   console.log("BEGIN TEST");
-  // confirm("kek")
-  // let done = assert.async();
-  // step_duration=0;
 
   const state = store.getState();
   dispatch(act.addToHist(math_str_init, state.current_index))
 
-  // let var_select=false;
-  // let multi_select=false;
-  //
   if (node_ids.length > 1) { dispatch(act.updateSelect({multi_select: true})) }
   //
   for (var i=0; i<node_ids.length; i++) { //selecting nodes in node_ids
     dispatch(act.selectNode(node_ids[i]));
   }
-  // // console.log("node_ids", node_ids);
-  // // console.log("manip", manip);
-  // let promise, eqCoords = {};
-  //
-  // let vars = {};
-  //
-  // eqCoords.beginning_of_equation = math_root.children[0].model.obj.offset();
-  // eqCoords.width_last_term = tot_width(math_root.children[math_root.children.length-1].model.obj, true, true);
-  // eqCoords.end_of_equation = math_root.children[math_root.children.length-1].model.obj.offset();
-  // eqCoords.end_of_equation.left += eqCoords.width_last_term;
-  // eqCoords.equals_position = $equals.offset();
-  //
-  // vars.eqCoords = eqCoords;
-  //
-  // promise = manips[manip].call(vars);
-  // // console.log("promise", promise);
-  // if (typeof promise !== "undefined") {
-  //   promise.then((data) => {
-  //     data = clear_math(data);
-  //     // console.log("data coming", data);
-  //     assert.equal(data, math_str_exp);
-  //     done();
-  //   })
-  // } else {
-  //   assert.equal(math_str_init, math_str_exp);
-  //   done();
-  // }
 
-  // multi_select=false;
-  // Reminder of how to asynchronous tests if needed
   var done = assert.async();
-  // setTimeout(function() {
-  //   assert.equal(math_str_el.val(), "bx+ax^{2}+c=0");
-  //   done();
-  // }, 10);
 
   let listen = true;
   if (typeof unsubscribe === "undefined") {
     let unsubscribe = store.subscribe(() => {
-      const state = store.getState();
-      if (!state.doing_manip && listen) {
-        console.log("asserting", math_str_init);
-        assert.equal(state.mathHist[state.current_index].mathStr, math_str_exp);
-        done();
-        listen = false;
+      if (listen) {
+        const state = store.getState();
+        if (!state.doing_manip) {
+          console.log("asserting", math_str_init);
+          assert.equal(state.mathHist[state.current_index].mathStr, math_str_exp);
+          done();
+          listen = false;
+        }
       }
     })
   }
@@ -92,34 +48,6 @@ function test_manip(assert, manip, math_str_init, math_str_exp, node_ids) {
 
 
 }
-
-  // QUnit.test("tree", function( assert ) {
-  //   dispatch(act.addToHist("ax^{2}+bx+c=0", 0))
-  //   assert.equal(math_root.children.length, 5);
-  //   assert.equal(math_root.children[0].text, "ax^{2}");
-  //   assert.equal(math_root.children[0].type, "term");
-  //     assert.equal(math_root.children[0].children[0].text, "a");
-  //     assert.equal(math_root.children[0].children[0].type, "factor");
-  //     assert.equal(math_root.children[0].children[1].text, "x^{2}");
-  //     assert.equal(math_root.children[0].children[1].type, "factor");
-  //     assert.equal(math_root.children[0].children[1].type2, "exp");
-  //     assert.equal(math_root.children[0].children[1].children[0].text, "x");
-  //     assert.equal(math_root.children[0].children[1].children[0].type, "base");
-  //     assert.equal(math_root.children[0].children[1].children[1].text, "2");
-  //     assert.equal(math_root.children[0].children[1].children[1].type, "power");
-  //   assert.equal(math_root.children[1].text, "+bx");
-  //
-  //   dispatch(act.addToHist("\\frac{ax^{2}+bx+c}{\\frac{a}{b}}", 0))
-  //   assert.equal(math_root.children.length, 1);
-  //   assert.equal(math_root.children[0].children[0].type2, "frac");
-  //   assert.equal(math_root.children[0].children[0].children[0].text, "ax^{2}+bx+c");
-  //   assert.equal(math_root.children[0].children[0].children[0].type, "numerator");
-  //   assert.equal(math_root.children[0].children[0].children[1].text, "\\frac{a}{b}");
-  //   assert.equal(math_root.children[0].children[0].children[1].type, "denominator");
-  // });
-
-  // QUnit.test("manipulations.change_side", function( assert ) {
-
     //change terms of side
     QUnit.test("manipulations.change_side", (assert) => {
       test_manip(assert, "change_side", "ax^{2}+bx+c=0", "bx+c=-ax^{2}",  ["0/1"]);
@@ -398,7 +326,7 @@ function test_manip(assert, manip, math_str_init, math_str_exp, node_ids) {
 
     //merge two exponentials
     QUnit.test("manipulations.evaluate", (assert) => {
-      test_manip(assert, "evaluate", "a^{-1}a^{-1}", "\\frac{1}{ a^{2}}",  ["0/1/1", "0/1/2"]);
+      test_manip(assert, "evaluate", "a^{-1}a^{-1}", "a^{-2}",  ["0/1/1", "0/1/2"]);
     });
 
     //merge two terms
@@ -421,3 +349,31 @@ function test_manip(assert, manip, math_str_init, math_str_exp, node_ids) {
   QUnit.test("manipulations.operate", function( assert ) {
     test_manip(assert, "operate", "\\frac{d}{dx} (x^{5}+x^{3})", "5 x^{4}+3 x^{2}",  ["0/1/1"]);
   });
+
+
+    // QUnit.test("tree", function( assert ) {
+    //   dispatch(act.addToHist("ax^{2}+bx+c=0", 0))
+    //   assert.equal(math_root.children.length, 5);
+    //   assert.equal(math_root.children[0].text, "ax^{2}");
+    //   assert.equal(math_root.children[0].type, "term");
+    //     assert.equal(math_root.children[0].children[0].text, "a");
+    //     assert.equal(math_root.children[0].children[0].type, "factor");
+    //     assert.equal(math_root.children[0].children[1].text, "x^{2}");
+    //     assert.equal(math_root.children[0].children[1].type, "factor");
+    //     assert.equal(math_root.children[0].children[1].type2, "exp");
+    //     assert.equal(math_root.children[0].children[1].children[0].text, "x");
+    //     assert.equal(math_root.children[0].children[1].children[0].type, "base");
+    //     assert.equal(math_root.children[0].children[1].children[1].text, "2");
+    //     assert.equal(math_root.children[0].children[1].children[1].type, "power");
+    //   assert.equal(math_root.children[1].text, "+bx");
+    //
+    //   dispatch(act.addToHist("\\frac{ax^{2}+bx+c}{\\frac{a}{b}}", 0))
+    //   assert.equal(math_root.children.length, 1);
+    //   assert.equal(math_root.children[0].children[0].type2, "frac");
+    //   assert.equal(math_root.children[0].children[0].children[0].text, "ax^{2}+bx+c");
+    //   assert.equal(math_root.children[0].children[0].children[0].type, "numerator");
+    //   assert.equal(math_root.children[0].children[0].children[1].text, "\\frac{a}{b}");
+    //   assert.equal(math_root.children[0].children[0].children[1].type, "denominator");
+    // });
+
+    // QUnit.test("manipulations.change_side", function( assert ) {

@@ -883,7 +883,8 @@ export function distribute_in() {
   }
 
   //distribute in
-  if (selection.selected_nodes[0].type === "factor" && same_type && same_parents && grouped.length > 0)
+  if (selection.selected_nodes[0].type === "factor" && same_type && same_parents && grouped.length > 0
+    && (grouped.length < selection.selected_nodes.length || grouped.length > 1))
   {
     // var factors_text = "";
     //   // console.log(selection.selected_nodes);
@@ -891,7 +892,7 @@ export function distribute_in() {
     //     factors_text+=selection.selected_nodes[i].text;
     //   }
     var grouped_node = grouped[grouped.length-1];
-    console.log("distribute in", grouped_node);
+    console.log("distribute in");
     return new Promise((resolve, reject) => {
       selection.$selected.animate({"font-size": 0, opacity: 0}, step_duration) //IMPROVE ANIMATION (FOR EXAMPLE CLONE)
         .css('overflow', 'visible')
@@ -1010,9 +1011,52 @@ export function distribute_in() {
     new_math_str = replace_in_mtstr(math_root, [selection.selected_nodes[0].parent], text);
     return new Promise((resolve, reject) => {resolve(new_math_str)});
   }
-
-
-
+  //split certain grouped nodes
+  else if (selection.selected_nodes.length === 1
+    && selection.selected_nodes[0].type2 === "group"
+    && selection.selected_nodes[0].openText === "\\langle ")
+  {
+    console.log("split certain grouped nodes");
+    //a single term with several factors (valid when factors are independent...)
+    if (selection.selected_nodes[0].children.length === 1) {
+      return new Promise((resolve, reject) => {
+        //ANIMATION??
+        let factors = selection.selected_nodes[0].children[0].children;
+        let new_text = "\\langle ";
+        for (var i = 0; i < factors.length; i++) {
+          if (factors[i].text === "+") {
+            continue;
+          } else if (factors[i].type2 === "op") {
+            new_text+=factors[i].text;
+          } else if (i < factors.length-1 ){
+            new_text+=factors[i].text+"\\rangle \\langle ";
+          } else {
+            new_text+=factors[i].text+"\\rangle";
+          }
+        }
+        let new_math_str = replace_in_mtstr(math_root, selection.selected_nodes, new_text);
+        resolve(new_math_str);
+      });
+    } else {
+      return new Promise((resolve, reject) => {
+        //ANIMATION??
+        let terms = selection.selected_nodes[0].children;
+        let new_text = "";
+        for (var i = 0; i < terms.length; i++) {
+          if (terms[i].text[0] === "+" || terms[i].text[0] === "-") {
+            new_text+=terms[i].text[0]+"\\langle "+terms[i].text.slice(1)+"\\rangle ";
+          } else {
+            new_text+="\\langle "+terms[i].text+"\\rangle ";
+          }
+        }
+        if (selection.selected_nodes[0].parent.children.length > 1) {
+          new_text = "("+new_text+")";
+        }
+        let new_math_str = replace_in_mtstr(math_root, selection.selected_nodes, new_text);
+        resolve(new_math_str);
+      });
+    }
+  }
 }
 
 //merging stuff
