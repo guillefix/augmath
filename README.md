@@ -24,7 +24,7 @@ Here's a quick demo of most of the current manipulations:
 3. Install [webpack](https://webpack.js.org/) and [webpack-dev-server](https://github.com/webpack/webpack-dev-server) for trying the bundled version (work in progress).
 
 
-###File structure
+### File structure
 
 Following standard Meteor structure.
 
