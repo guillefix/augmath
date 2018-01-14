@@ -513,12 +513,12 @@ export default class Equation extends React.Component {
   }
   render() {
     const { selected } = this.props;
-    return <span className={classNames({"selected-equation" : selected })} onClick={this.handleClick.bind(this)}>
-      <span ref={(p) => this.math_el = p} className="math">...</span>
-    </span>
-    // return <div className={classNames({"selected-equation" : selected })} onClick={this.handleClick.bind(this)}>
-    //   <p ref={(p) => this.math_el = p} className="math">...</p>
-    // </div>
+    // return <span className={classNames({"selected-equation" : selected })} onClick={this.handleClick.bind(this)}>
+    //   <span ref={(p) => this.math_el = p} className="math">...</span>
+    // </span>
+    return <div className={classNames({"selected-equation" : selected })} onClick={this.handleClick.bind(this)}>
+      <p ref={(p) => this.math_el = p} className="math">...</p>
+    </div>
   }
 }
 Equation.contextTypes = {

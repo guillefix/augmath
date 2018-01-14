@@ -1,78 +1,62 @@
-#AugMath
+# AugMath
 
-[![Join the chat at https://gitter.im/guillefix/augmath](https://badges.gitter.im/guillefix/augmath.svg)](https://gitter.im/guillefix/augmath?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+<!-- [![Join the chat at https://gitter.im/guillefix/augmath](https://badges.gitter.im/guillefix/augmath.svg)](https://gitter.im/guillefix/augmath?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge) -->
 
 Try it live [here](http://augmath.net)
 
-##Vision
+## Vision
 
-See [here](http://guillefix.me/augmath.html). A recent demo can be seen [here](https://www.youtube.com/watch?v=9fwOiLsuXSI&feature=youtu.be)
+See [here](http://guillefix.me/augmath.html).
+A recent video demo can be seen [here](https://www.youtube.com/watch?v=9fwOiLsuXSI&feature=youtu.be)
 
-##Usage
+## Usage
 Here's a quick demo of most of the current manipulations:
 </br>
-<img src="quadratic.gif" width="700" alt="Proof of Quadratic Formula">
+<img src="others/quadratic.gif" width="700" alt="Proof of Quadratic Formula">
 </br>(Created using [ScreenToGif](https://screentogif.codeplex.com/))
 
 ## Development
 
-MeteorJS is required for development. You can download it [here](https://www.meteor.com/).
+1. Install [MeteorJS](https://www.meteor.com/)
 
-Dependencies are included locally :P
+2. Run `npm install` to intall rest of dependencies
 
-<!-- Install bower, the frontend dependency manager, globally with the following command
+3. Install [webpack](https://webpack.js.org/) and [webpack-dev-server](https://github.com/webpack/webpack-dev-server) for trying the bundled version (work in progress).
 
-```bash
-npm install -g bower
-```
-
-From the project root, use bower to install the front end dependencies
-
-```bash
-bower install
-``` -->
 
 ###File structure
 
-JS scripts and CSS files are found in the `public` folder. The main script is called `augmath.js`, and is found in `public/next/final`. This nested structure is just to control the order in which Meteor loads the files..
+Following standard Meteor structure.
 
-The html, and more CSS, is found on the `client` folder.
+The entrypoint files for the client app (where most of the action happens right now) are in the `client` folder. Some assets are found in `public`. For the server side part, they are in the `server` folder.
 
-##TODOs
-Here are some things that one can work on:
+The `client/main.jsx` file basically just imports everything it needs, from the main codebase, found in `imports`. The file containing the main structure and layout of the web app is `imports/ui/App.js`. We are using the awesome [React](https://reactjs.org/), so we are using the components found in the `imports/ui/components` folder.
 
-* Improve algebra manipulations:
+I recommend using the [React developer tools](https://chrome.google.com/webstore/detail/react-developer-tools/fmkadmapgofadopljbjfkapdkoienihi?hl=en) and [Redux DevTools](https://chrome.google.com/webstore/detail/redux-devtools/lmhkpmbekcpmknklioeibfkpmmfibljd?hl=en)
 
- * Refactor split/merge manipulations into split/merge and split all/merge all...
- * Add "cancel" feature
- * Improve "change side" for powers.
+The main area where math is found is built with components in `imports/ui/components/intmath` (interactive math). There, we have two compoments to *input* math (`mathinput.js` for latex, and `mqinput.js` for the natural math input [MathQuill](http://mathquill.com/)), and two compoments to *display dynamic maths* (`matharea.js` is just a container of `Equation` compoments from `equation.js`). The `Equation` compoment is the most complex one, as it has to keep track of the whole tree which stores the equation structure, together with its associated DOM elements (see MathTree below), as well as all the events for making it interactive and animated (including the pretty buggy drag and drop functionality).
 
-* Extend math support:
- * Add logarithms
- * Add trigonometry
- * Add calculus
- * Add vector and matrices
+The tools (`imports/ui/components/tools`) compoments just contain all the buttons that allow you to do actions/manipulations.
 
-* Backend:
- * Save maths
- * User login
- * share and search maths
+In `imports/ui/components/maths` we have `functions.js`, we have many useful functions, mainly used by the equation compoment. At the bottom are found the big bois. The functions that parse the KaTeX HTML to make the MathTree, and a function that takes a MathTree (together with a node to be replaced) and produces a new LaTeX string. These are at the heart of AugMath! I'll explain the more below.
 
-* Improve GUI design
+In `manipulations.js` we have the code that says what the manipulations do, and how to animate them (for those where an animation is implemented). `symbols.js` is just a technical thing to translate unicode to latex for non-ascii math symbols, taken from KaTeX.
 
-* Improve the animations of some manipulations (with jQuery animations, or otherwise), like the fraction splitting or the factor factoring or ditribution.
+In `imports/startup`, and `imports/api`, we just have two files to deal with simple server and database stuff, like the collections where one can save equations, and the users.
 
-<!-- * Add validations to manipulations. Many manipulations can break the math if the user hasn't selected the right stuff. Change code so that nothing happens if right stuff isn't selected. -->
+Finally, in `imports/redux`, we have the [Redux](https://redux.js.org/docs/introduction/) stuff. A store (), where we save the state of the app, and the reducers (which take actions built with simple action-creators). In case you are not familiar with Redux, the reducer is just a big function, which takes an action, and a state, and produces the new state of the app. Mixing react and redux means that React compoments can depend on this global app state, and *dispatch* actions that change it. This breaks the whole nice compartimentalization of react a bit. But it is much more convenient for some things, and its strong functional philosophy makes it actually not too bad, and even quite good!
 
-<!-- ###More (possibly) challenging stuff: -->
+## The triangle of math representations
 
-<!-- * Refactor the tree-building function to use the semantic MathML KaTeX uses to build the tree. Probably requires knowing how KaTeX works quite well, as well as knoweledge of MathML. -->
+The main object of an equation in AugMath is a tree (created with [TreeModel](http://jnuno.com/tree-model-js/)), which contains all the manipulatives in the equation or expression, and we call a MathTree (often `math_root` in code). This is done through the function `parse_poly` in `functions.js`. This creates a tree by parsing the HTML created by KaTeX from a LaTeX string. This is nice because the tree then doesn't only contain the logic of the equation (could be done by parsing LaTeX string directly), but it automatically connectes each node in the tree with a DOM element, so that we can make it interactive and dynamic! We can add event handlers and animate arbitrary bits of the HTML-rendered equation. This is what all the manipulations do.
 
-<!-- * Add drag and drop capabilities, so that moving-based manipulations can be done that way. While you are dragging, visual feedback should be offered of the places you can drop it. -->
+However, after we have animated something, we haven't really changed the html equation. To do this, I have implemented `parse_mtstr` in `functions.js`. It takes a MathTree, a set of nodes (as IDs) in the tree, and a set of LaTeX strings with which to substitute the nodes. Then it creates a LaTeX string from the MathTree, but where the nodes are substituted. This allows a manipulation to do this: We first animate the manipulation, then we compute the LaTeX string that results after performing that manipulation to the equation. This is done with `parse_mtstr` (actually called through its wrapper `replace_in_mtstr`), by removing some nodes, and adding others in the right places. Then we rerender the equation with KaTeX. If the animation is done well enough, and because KaTeX is so fast, the user shouldn't notice anything, and it should all look smooth :D
 
-<!-- * Allow to make selections with keyboard arrow keys (up and down for changing depth) to traverse the tree. -->
+Here's a diagram of this **triangle of math representations and their transformation functions at the heart of AugMath!**
 
-##Acknowledgements
+<img src="others/augmath_loop.png" width="700" alt="AugMath_loop">
+
+## Acknowledgements
 
 AugMath uses [KaTeX](https://khan.github.io/KaTeX/) for math rendering, [Algebrite](http://algebrite.org/), for some algebraic operations and [Math.js](http://mathjs.org/) for some math operations, [MathQuill](http://mathquill.com/) for input, and [KaTeX](https://khan.github.io/KaTeX/) for rendering, and jQuery for animations and stuff.
 
@@ -81,6 +65,3 @@ Here is a [Worflowy list](https://workflowy.com/s/BlNaX36nRR) I made to organize
 <!-- Here is a [Codepen](http://codepen.io/guillefix/full/xGWQPJ/) to test it live. -->
 
 <!-- Some discussion in this [Forum](http://forum.fractalfuture.net/t/augmented-math-and-education/265) -->
-
-##Math Tree
-The main object in AugMath is a tree created with [TreeModel](http://jnuno.com/tree-model-js/), which contains all the manipulatives in the equation or expression. This is done through the function parse_poly. This creates a tree by going through the terms in an expression, and going through its factors. Factors that can contain whole expressions within them are then recursively analyzed in the same way. This is accessed through the math_root object.
