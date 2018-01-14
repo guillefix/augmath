@@ -23,6 +23,10 @@ Here's a quick demo of most of the current manipulations:
 
 3. Install [webpack](https://webpack.js.org/) and [webpack-dev-server](https://github.com/webpack/webpack-dev-server) for trying the bundled version (work in progress).
 
+You can now bundle augmath into a standalone JS file and use it in your own projects through a simple API!
+
+To use: Run `meteor run webpack`, get the `bundle/augmath.js` file, and see `client/library.jsx` and `index.html` for example of how to use it on your own html files.
+
 
 ### File structure
 
