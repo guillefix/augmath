@@ -8,8 +8,8 @@ import TreeModel from '../../../TreeModel-min.js';
 import "jquery-ui"
 // var draggable = require( "jquery-ui/ui/widgets/draggable" );
 import 'nestedSortable';
-// import katex from '../../../katex.min.js';
-import katex from '/imports/katex.min.js';
+import katex from '../../../katex.min.js';
+// import katex from '/imports/katex.min.js';
 import classNames from 'classnames';
 
 
