@@ -27,7 +27,9 @@ EquationList.propTypes = {
   equations: PropTypes.array.isRequired,
 };
 
-export default EquationListComponent = createContainer(({query}) => {
+
+//EquationListComponent
+export default createContainer(({query}) => {
   // console.log(query);
   let eqs;
   if (query === "") {

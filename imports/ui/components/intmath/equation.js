@@ -5,7 +5,10 @@ import * as Actions from '../../../redux/actions/action-creators';
 import * as manips from '../../../maths/manipulations.js';
 import {clear_math, select_node, parse_poly, tot_width, replace_in_mtstr, getIndicesOf, parse_mtstr, get_next, get_prev, get_all_prev, compare_trees} from "../../../maths/functions";
 import TreeModel from '../../../TreeModel-min.js';
+import "jquery-ui"
+// var draggable = require( "jquery-ui/ui/widgets/draggable" );
 import 'nestedSortable';
+// import katex from '../../../katex.min.js';
 import katex from '/imports/katex.min.js';
 import classNames from 'classnames';
 
@@ -19,6 +22,7 @@ export default class Equation extends React.Component {
   componentDidMount() {
     console.log("mounting comp", this.props.index, this.props.math);
     const { store } = this.context;
+    const thisComp = this
     const state = store.getState();
     this.unsubscribe = store.subscribe(this.doManip.bind(this));
     katex.render(this.props.math, this.math_el, { displayMode: true });
@@ -37,6 +41,8 @@ export default class Equation extends React.Component {
     const dispatch = store.dispatch;
     this.unsubscribe();
     this.unsubscribe = store.subscribe(this.doManip.bind(this)); //rebinding
+
+    //Drag and drop
 
     let currentDD = store.getState().dragDrop;
     function handleDDChange() {
@@ -346,7 +352,7 @@ export default class Equation extends React.Component {
     let math_el = this.math_el;
     let root_poly = $(math_el).find(".base");
 
-    tree = new TreeModel();
+    let tree = new TreeModel();
 
     math_root = tree.parse({});
     math_root.model.id = this.props.index.toString();
@@ -357,12 +363,12 @@ export default class Equation extends React.Component {
     this.math_root = math_root;
   }
   doManip() {
-    // console.log(this);
     const { store } = this.context;
     let math_root = this.math_root;
     const state = store.getState();
     if (state.doing_manip && state.mathHist[state.current_index].current_eq === this.props.index)
     {
+      console.log("doing Manip", state.manip, this.selection.selected_nodes);
       let promise, eqCoords = {};
 
       //useful variables
@@ -412,8 +418,11 @@ export default class Equation extends React.Component {
     this.selection.$selected = $(".selected");
     // selected_width = tot_width(this.selection.$selected, true);
     this.selection.selected_position = this.selection.$selected.offset();
-    var replace_el = document.getElementById("replace");
-    replace_el.value = this.selection.selected_text;
+    // var replace_el = document.getElementById("replace");
+    // replace_el.value = this.selection.selected_text;
+    // const { store } = this.context;
+    // const dispatch = store.dispatch;
+    // dispatch(Actions.updateSelectedText(""));
   }
   selectNode(nodeId, multi_select=false, var_select=false, math_root = this.math_root, mayUpdateSelect=true) {
     console.log("selectNode", nodeId, multi_select, var_select);
@@ -474,8 +483,11 @@ export default class Equation extends React.Component {
     thisComp.selection.$selected = $(".selected");
     // selected_width = tot_width(this.selection.$selected, true);
     thisComp.selection.selected_position = thisComp.selection.$selected.offset();
-    var replace_el = document.getElementById("replace");
-    replace_el.value = thisComp.selection.selected_text;
+    // var replace_el = document.getElementById("replace");
+    // replace_el.value = thisComp.selection.selected_text;
+    const { store } = thisComp.context;
+    const dispatch = store.dispatch;
+    dispatch(Actions.updateSelectedText(thisComp.selection.selected_text));
 
     //////this.shouldResetSelectedNodes = false; will mean that we can change the varSelects, without
     //reseting the selectedNodes;
@@ -485,8 +497,6 @@ export default class Equation extends React.Component {
     if ((node.type !== this.props.mtype || getIndicesOf("/", node.model.id).length !== this.props.depth)
       && mayUpdateSelect) {
       console.log("doing this.shouldResetSelectedNodes = false;");
-      const { store } = thisComp.context;
-      const dispatch = store.dispatch;
       let varSelects = {depth: getIndicesOf("/", node.model.id).length, mtype: node.type};
       $this.toggleClass("selected");
       thisComp.shouldResetSelectedNodes = false;
@@ -503,6 +513,9 @@ export default class Equation extends React.Component {
   }
   render() {
     const { selected } = this.props;
+    // return <span className={classNames({"selected-equation" : selected })} onClick={this.handleClick.bind(this)}>
+    //   <span ref={(p) => this.math_el = p} className="math">...</span>
+    // </span>
     return <div className={classNames({"selected-equation" : selected })} onClick={this.handleClick.bind(this)}>
       <p ref={(p) => this.math_el = p} className="math">...</p>
     </div>

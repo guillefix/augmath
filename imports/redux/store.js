@@ -24,6 +24,7 @@ const defaultState = {
   equations: [init_math_str],
   current_eq: 0,
   selectedNodes: [],
+  selectedText: "",
   dragDrop: 'apply',
   step_duration: 700,
   recording: {doingRecording: false, doingPlaying: false, recordedActions: []}

@@ -63,6 +63,11 @@ export const resetSelected = () => ({
   type: 'RESET_SELECTED'
 })
 
+export const updateSelectedText = (newText) => ({
+  type: 'UPDATE_SELECTED_TEXT',
+  newText
+})
+
 export const updateddmode = (newMode) => ({
   type: 'UPDATE_DRAGDROP_MODE',
   newMode

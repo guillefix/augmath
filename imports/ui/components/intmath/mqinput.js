@@ -22,11 +22,19 @@ export default class MQInput extends React.Component {
     this.mathquill.latex(this.props.mathStr)
   }
   render() {
+    const { store } = this.context;
+    const { dispatch } = store;
+    const state = store.getState();
     return (
       <span id="mathquill"
         onKeyUp={(e) => {
-          if (e.keyCode == 13) this.props.dispatch(Actions.addToHist(this.props.mathStr, ++this.props.index))
+          const state = store.getState();
+          let index = state.current_index;
+          if (e.keyCode == 13) dispatch(Actions.addToHist(this.props.mathStr, ++index))
           else this.props.update(this.mqlatex()) }}>...</span>
     );
   }
 }
+MQInput.contextTypes = {
+  store: React.PropTypes.object
+};

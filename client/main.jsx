@@ -1,12 +1,21 @@
 import '../imports/startup/accounts-config.js';
 
+import jQuery from 'jquery';
+
+// var $ = require('jquery');
+// window.jQuery = $;
+// window.$ = $;
+//
+// import "jquery-ui"
+// var verdict = require('verdict.js');
+// import "./lib/katex.min.js"
+
 import React from 'react';
 import ReactDOM from 'react-dom';
 import { Provider } from 'react-redux'
 import store from '../imports/redux/store';
 import App from '../imports/ui/App.js';
 
-import jQuery from 'jquery';
 
 // import {convertMathML} from 'mathml-to-asciimath';
 //

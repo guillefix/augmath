@@ -1,16 +1,14 @@
 import jQuery from 'jquery';
-import katex from '/imports/katex.min.js';
+import katex from '../katex.min.js';
 // import TreeModel from '../TreeModel-min.js';
 import {symbols} from './symbols.js';
 import Bro from 'brototype';
 import Algebrite from 'algebrite';
 import algebra from 'algebra.js'
 import math from 'mathjs'
+import {LaTeXtoMathML} from 'latextomathml'
 
 import TreeModel from '../TreeModel-min.js';
-
-
-import {eqCoords, selection} from '../ui/App.js';
 
 let convertMathML = require('mathml-to-asciimath');
 
@@ -76,17 +74,10 @@ export function latex_to_ascii(str) {
   //   .replace(/\*\^\*\{\*(\-?[0-9]+)\)/g, "^($1)")
   //   .replace(/\^\*\{\*(\-?[0-9]+)\)/g, "^($1)")
   //   .replace(/\*\^\*\{(\-?[0-9]+)\)/g, "^($1)");
-  // console.log(str);
-  str = str.replace(/\\langle( )*([A-z0-9]+)( )*\\rangle/g, "(langle$2rangle)")
-           .replace(/ \^/g, "^")
-           .replace(/\\cdot/g, " ");
-  // console.log(str);
-  str = convertMathML(LatexToMathML(str)).replace(/ \(/g,"(")
-        .replace(/\( \) /g, "");
-  // console.log(str);
-  // str = str.replace(/([0-9]) ([0-9])/g, "$1$2")
-  str = str.replace(/l a n g l e( )+/g, "langle");
-  str = str.replace(/( )+r a n g l e/g, "rangle");
+  str = convertMathML(LaTeXtoMathML(str)).replace(/ \(/g,"(");
+  str = str.replace(/([0-9]) ([0-9])/g, "$1$2")
+  str = str.replace(/⟨ /g, "langle");
+  str = str.replace(/ ⟩/g, "rangle");
   //needed to edit mo-helpers.js from mathml-to-asciimath package, to make it work.
   // console.log(str);
   return str;
@@ -132,7 +123,6 @@ export function eval_expression(expression) {
     // console.log("new_term", new_term);
 
   } else {
-    expression = expression.replace(/ /, "*")
     new_term = ("+" + math.eval(expression).toString());
               // .replace(/^( *)(\+)+/g, "");
   }
@@ -155,11 +145,11 @@ export function rationalize(str) {
 export function tot_width(obj, bool, include_op) {
   var width=0;
   obj.each(function(i) {
-    width += $(this).outerWidth(includeMargin=bool);
+    width += $(this).outerWidth(bool); //bool is includeMargin
   })
   if (include_op === true) {
     if (obj.first().text() !== "+" && obj.first().text() !== "−") {
-      width += $(".base").find(".mbin").first().outerWidth(includeMargin=bool);
+      width += $(".base").find(".mbin").first().outerWidth(bool);
     }
   }
   return width;
@@ -171,7 +161,7 @@ export function tot_width(obj, bool, include_op) {
 export function change_sign(nodes) {
   // console.log("changing side");
   var text="";
-  for (i=0; i<nodes.length; i++) {
+  for (let i=0; i<nodes.length; i++) {
     if (nodes[i].text.slice(0, 1) === "+") {
       text += nodes[i].text.replace("+", "-");
     } else if (nodes[i].text.slice(0, 1) === "-") {
@@ -259,7 +249,7 @@ export function multiply(nodes) {
       text += nodes[i].text;
     }
   }
-  sign = signs.replace(/\+/g, '--').replace(/(--)+-/g, '-').replace(/--/g, '+');
+  let sign = signs.replace(/\+/g, '--').replace(/(--)+-/g, '-').replace(/--/g, '+');
   let result = sign + text
   return result;
 }
@@ -509,7 +499,7 @@ export function parse_mtstr(root, node_arr, str_arr) {
   while (i < root.children.length) {
     var term_text="";
     var child = root.children[i];
-    node_selected = false;
+    let node_selected = false;
     for (var k=0; k<node_arr.length; k++) {
       if (child.model.id === node_arr[k].model.id) {
         node_selected = true;
@@ -760,7 +750,7 @@ export function replace_in_mtstr(root, nodes, str_arr) {
   if (typeof str_arr === "string") {
     var str = str_arr;
     str_arr = [];
-    for (i=0; i<nodes.length; i++) {
+    for (let i=0; i<nodes.length; i++) {
       if (i === 0) {str_arr.push(str);}
       else {str_arr.push("");}
     }
@@ -777,7 +767,7 @@ export function parse_poly(root, poly, parent_id, is_container) {
   var term_cnt = 0;
   var factor_cnt = 0;
   var i = 0;
-  var factor_obj, factor, op, term_obj=$(), factor_id, term_id, inside, nom_str, denom_str, prev_factor_id, inside_text, base_obj, power_obj, base, power, child1, child2;
+  var factor_obj, factor, op, term_obj=$(), factor_id, term_id, inside, nom_str, denom_str, prev_factor_id, inside_text, base_obj, power_obj, base, power, child1, child2, close_group_text;
   var numerator, denominator;
   var term = tree.parse({id: parent_id.toString() + "/" + (term_cnt+1).toString()});
   term.text = "";
@@ -785,7 +775,7 @@ export function parse_poly(root, poly, parent_id, is_container) {
   root.addChild(term);
   // console.log(poly);
   var things = is_container ? poly.children() : poly;
-  //LOOP through things
+  //console.log(things, is_container);
   while (i < things.length) {
     var thing = things.filter(":eq("+i+")");
     // console.log(i,"thing", thing.text());
@@ -810,7 +800,7 @@ export function parse_poly(root, poly, parent_id, is_container) {
       if (!factor_obj.last().is(".mclose:has(.msupsub)")) {
         inside_text = parse_poly(factor, inside, factor_id, false);
         let open_group_text = factor_obj.first().text();
-        let close_group_text = factor_obj.last().text();
+        close_group_text = factor_obj.last().text();
         if (open_group_text === "⟨") open_group_text = "\\langle ";
         if (close_group_text === "⟩") close_group_text = "\\rangle ";
         factor.text = open_group_text + inside_text + close_group_text;
@@ -1099,6 +1089,7 @@ export function parse_poly(root, poly, parent_id, is_container) {
 
         factor.type2 = "";
         if (supsub.is(".sub, .supsub")) {
+          var sub_obj;
           if (supsub.is(".sub")) sub_obj = supsub.closest_n_descendents(".mord", 1).first();
           else sub_obj = supsub.closest_n_descendents(".mord", 2).first();
           let sub = tree.parse({id: factor_id + "/" + (i+2).toString(), obj: sub_obj});
@@ -1109,8 +1100,9 @@ export function parse_poly(root, poly, parent_id, is_container) {
           factor.text += "_{"+sub.text+"}"
         }
         if (supsub.is(".sup, .supsub")) {
+          let sup_obj;
           if (supsub.is(".sup")) sup_obj = supsub.closest_n_descendents(".mord", 1).first();
-          else sup_obj = supsub.closest_descendents(".mord", 2).last();
+          else sup_obj = supsub.closest_n_descendents(".mord", 2).last();
           let power = tree.parse({id: factor_id + "/" + (i+2).toString(), obj: sup_obj});
           power.type = "power";
           power.text = parse_poly(power, sup_obj, factor_id + "/" + (i+2).toString(), true);
@@ -1321,7 +1313,7 @@ export function parse_poly(root, poly, parent_id, is_container) {
       factor_text = factor.text;
     }
     //change symbols unicode to latex
-    for (symbol in symbols.math) {
+    for (let symbol in symbols.math) {
         if (factor_text === symbols.math[symbol].replace && factor_text !== "k") { //k is a special case. there is a special symbol in latex, but user will often not mean that..
           factor.text = symbol + " ";
           factor_text = factor.text;
@@ -1365,14 +1357,14 @@ export function clear_math(math) {
 }
 
 export function math_str_to_tree(math) {
-  $(".math-container").append($('<p id="temp"></p>'))
-  let math_el = document.getElementById("temp");
+  $("body").append($('<p id="temppppppp"></p>'))
+  let math_el = document.getElementById("temppppppp");
   // console.log(math_el);
   $(math_el).hide();
   // console.log(math);
   katex.render(math, math_el, { displayMode: true });
 
-  var root_poly = $("#temp .base");
+  var root_poly = $("#temppppppp .base");
 
   let tree = new TreeModel();
 

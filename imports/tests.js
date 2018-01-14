@@ -33,6 +33,7 @@ function test_manip(assert, manip, math_str_init, math_str_exp, node_ids) {
       }
     })
   }
+
   dispatch(act.manipulate(manip));
 
     // if (typeof unsubscriber === "undefined") {
@@ -48,6 +49,10 @@ function test_manip(assert, manip, math_str_init, math_str_exp, node_ids) {
 
 
 }
+
+$( document ).ready(() => {
+
+
     //change terms of side
     QUnit.test("manipulations.change_side", (assert) => {
       test_manip(assert, "change_side", "ax^{2}+bx+c=0", "bx+c=-ax^{2}",  ["0/1"]);
@@ -326,7 +331,8 @@ function test_manip(assert, manip, math_str_init, math_str_exp, node_ids) {
 
     //merge two exponentials
     QUnit.test("manipulations.evaluate", (assert) => {
-      test_manip(assert, "evaluate", "a^{-1}a^{-1}", "a^{-2}",  ["0/1/1", "0/1/2"]);
+      // test_manip(assert, "evaluate", "a^{-1}a^{-1}", "a^{-2}",  ["0/1/1", "0/1/2"]);
+      test_manip(assert, "evaluate", "a^{-1}a^{-1}", "\\frac{1}{ a^{2}}",  ["0/1/1", "0/1/2"]);
     });
 
     //merge two terms
@@ -377,3 +383,5 @@ function test_manip(assert, manip, math_str_init, math_str_exp, node_ids) {
     // });
 
     // QUnit.test("manipulations.change_side", function( assert ) {
+
+});

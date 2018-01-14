@@ -7,6 +7,10 @@ import * as act from '../../../redux/actions/action-creators';
 import RecordPlayControl from './record-play-control.js';
 
 export default class Tools extends React.Component {
+  // constructor() {
+  //   super();
+  //   this.state = {selectedText: ""}
+  // }
   componentDidMount() {
   $("#depth").numbers({
     min: 0,
@@ -14,6 +18,14 @@ export default class Tools extends React.Component {
     integer: true,
     growth: 10,
   });
+  const { store } = this.context;
+  const state = store.getState();
+  let thisComp = this;
+  store.subscribe(() => {
+    const state = store.getState();
+    // thisComp.setState({selectedText: state.selectedText})
+    thisComp.replaceSelectInput.value = state.selectedText;
+  })
   }
   render() {
     const { store } = this.context;

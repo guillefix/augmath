@@ -1,6 +1,6 @@
 import {replace_in_mtstr, tot_width, rationalize, eval_expression, ascii_to_latex, latex_to_ascii, getIndicesOf, cleanIndices, change_sign, exponentiate, multiply, flip_fraction, add_brackets, are_of_type, any_of_type, have_same_ancestors, have_same_type, have_same_text, have_single_factor, have_same_denom, are_same_terms, have_same_prop, have_same_log_base, get_prev, get_next, get_all_next, has_op, parse_mtstr, parse_poly, math_str_to_tree, clear_math} from "./functions";
 
-// import Algebrite from 'algebrite';
+import Algebrite from 'algebrite';
 
 import algebra from 'algebra.js'
 
@@ -9,6 +9,8 @@ import Bro from 'brototype';
 import {symbols} from './symbols.js';
 
 //MANIPULATIONS
+
+let new_math_str;
 
 //change side
 export function change_side() {
@@ -20,7 +22,7 @@ export function change_side() {
   console.log("changing side", math_root);
   var new_term;
   var selected_width = tot_width(selection.$selected, true, true);
-  equals_node = math_root.first(function (node) {
+  let equals_node = math_root.first(function (node) {
     if (node.children.length > 0) {
         return node.children[0].type === "rel";
       }
@@ -43,8 +45,8 @@ export function change_side() {
       return new Promise((resolve, reject) => {
         selection.$selected.animate({left:offset}, step_duration).promise().done(function() {
           selection.$selected = $(".selected").add($(".selected").find("*"));
-          new_term = change_sign(selection.selected_nodes);
-          new_math_str = replace_in_mtstr(math_root, selection.selected_nodes, "")+"+"+new_term;
+          var new_term = change_sign(selection.selected_nodes);
+          var new_math_str = replace_in_mtstr(math_root, selection.selected_nodes, "")+"+"+new_term;
           resolve(new_math_str); //this should pass it to the promise
         });
       });
@@ -57,8 +59,8 @@ export function change_side() {
       return new Promise((resolve, reject) => {
         selection.$selected.animate({left:offset}, step_duration).promise().done(function() {
           selection.$selected = $(".selected").add($(".selected").find("*"));
-          new_term = change_sign(selection.selected_nodes);
-          new_math_str = replace_in_mtstr(math_root, selection.selected_nodes, "");
+          var new_term = change_sign(selection.selected_nodes);
+          var new_math_str = replace_in_mtstr(math_root, selection.selected_nodes, "");
           new_math_str = new_math_str.replace("=", "+"+new_term+"=");
           resolve(new_math_str); //this should pass it to the promise
         });
@@ -85,8 +87,8 @@ export function change_side() {
       return new Promise((resolve, reject) => {
           selection.$selected.animate({left:offset}, step_duration).promise().done(function() {
           var RHS_terms = math_root.children.slice(parseInt(equals_node.model.id.split("/")[1]));
-          new_term = change_sign(RHS_terms);
-          new_math_str = replace_in_mtstr(math_root, selection.selected_nodes.concat(RHS_terms), "")+new_term;
+          var new_term = change_sign(RHS_terms);
+          var new_math_str = replace_in_mtstr(math_root, selection.selected_nodes.concat(RHS_terms), "")+new_term;
           resolve(new_math_str);
         });
       });
@@ -98,8 +100,8 @@ export function change_side() {
       return new Promise((resolve, reject) => {
         selection.$selected.animate({left:offset}, step_duration).promise().done(function() {
           var LHS_terms = math_root.children.slice(0, parseInt(equals_node.model.id.split("/")[1])-1);
-          new_term = change_sign(LHS_terms);
-          new_math_str = new_term+replace_in_mtstr(math_root, selection.selected_nodes.concat(LHS_terms), "");
+          var new_term = change_sign(LHS_terms);
+          var new_math_str = new_term+replace_in_mtstr(math_root, selection.selected_nodes.concat(LHS_terms), "");
           resolve(new_math_str);
         });
       });
@@ -118,7 +120,7 @@ export function change_side() {
   {
     console.log("changing factor of side");
     if (selection.selected_nodes[0].model.id.split("/")[1] < equals_node.model.id.split("/")[1]) { //before eq sign
-      RHS_width = tot_width($equals.nextAll(), false, false);
+      let RHS_width = tot_width($equals.nextAll(), false, false);
       var after_eq = false, after_eq_nodes=[];
       for (var i=0; i<math_root.children.length; i++) {
         if (after_eq) {after_eq_nodes.push(math_root.children[i])}
@@ -127,14 +129,14 @@ export function change_side() {
       var include_in_frac = after_eq_nodes.length === 1
           && after_eq_nodes[0].children.length === 1
           && after_eq_nodes[0].children[0].type2 === "frac";
-      h_offset = $equals.offset().left - selection.$selected.offset().left + tot_width($equals, true, false) + (RHS_width)/2;
-      v_offset = selection.$selected.outerHeight(includeMargin=true)/2;
+      var h_offset = $equals.offset().left - selection.$selected.offset().left + tot_width($equals, true, false) + (RHS_width)/2;
+      var v_offset = selection.$selected.outerHeight(true)/2;
       if (include_in_frac) {v_offset = 0;}
       $equals.nextAll().animate({top:-v_offset, left:tot_width(selection.$selected, true, false)/2}, step_duration);
       return new Promise((resolve, reject) => {
         selection.$selected.animate({left:h_offset, top:v_offset}, step_duration).promise().done(function() {
           new_math_str = replace_in_mtstr(math_root, selection.selected_nodes, "");
-          math_HS = new_math_str.split("="); //HS=hand sides
+          var math_HS = new_math_str.split("="); //HS=hand sides
           if (include_in_frac) {
             new_math_str = math_HS[0] + "=" + "\\frac{" + after_eq_nodes[0].children[0].children[0].text + "}{" + after_eq_nodes[0].children[0].children[1].text + selection.selected_text + "}";
           } else {
@@ -145,7 +147,7 @@ export function change_side() {
         });
       });
     } else if (selection.selected_nodes[0].model.id.split("/")[1] > equals_node.model.id.split("/")[1]) { //after eq sign
-      LHS_width = tot_width($equals.prevAll(), false, false);
+      var LHS_width = tot_width($equals.prevAll(), false, false);
       var before_eq = false, before_eq_nodes=[];
       for (var i=math_root.children.length-1; i>=0; i--) {
         if (before_eq) {before_eq_nodes.push(math_root.children[i])}
@@ -154,14 +156,14 @@ export function change_side() {
       var include_in_frac = before_eq_nodes.length === 1
           && before_eq_nodes[0].children.length === 1
           && before_eq_nodes[0].children[0].type2 === "frac";
-      h_offset = selection.$selected.offset().left - $equals.offset().left + (LHS_width)/2;
-      v_offset = selection.$selected.outerHeight(includeMargin=true)/2;
+      var h_offset = selection.$selected.offset().left - $equals.offset().left + (LHS_width)/2;
+      var v_offset = selection.$selected.outerHeight(true)/2;
       if (include_in_frac) {v_offset = 0;}
       $equals.prevAll().animate({top:-v_offset, left:tot_width(selection.$selected, true, false)/2}, step_duration);
       return new Promise((resolve, reject) => {
         selection.$selected.animate({left:-h_offset, top:v_offset}, step_duration).promise().done(function() {
           new_math_str = replace_in_mtstr(math_root, selection.selected_nodes, "");
-          math_HS = new_math_str.split("="); //HS=hand sides
+          var math_HS = new_math_str.split("="); //HS=hand sides
           if (include_in_frac) {
             new_math_str = "\\frac{" + before_eq_nodes[0].children[0].children[0].text + "}{" + before_eq_nodes[0].children[0].children[1].text + selection.selected_text + "}" + "=" + math_HS[1];
           } else {
@@ -180,7 +182,7 @@ export function change_side() {
   {
     console.log("changing denominator of side");
     if (selection.selected_nodes[0].model.id.split("/")[1] < equals_node.model.id.split("/")[1]) { //before eq sign
-      RHS_width = tot_width($equals.nextAll(), false, false);
+      let RHS_width = tot_width($equals.nextAll(), false, false);
       var after_eq = false, after_eq_nodes=[];
       for (var i=0; i<math_root.children.length; i++) {
         if (after_eq) {after_eq_nodes.push(math_root.children[i])}
@@ -189,18 +191,18 @@ export function change_side() {
       var include_in_frac = after_eq_nodes.length === 1
           && after_eq_nodes[0].children.length === 1
           && after_eq_nodes[0].children[0].type2 === "frac";
-      h_offset = $equals.offset().left - selection.$selected.offset().left + tot_width($equals, true, false) + (RHS_width)/2;
-      v_offset = selection.$selected.outerHeight(includeMargin=true)/2;
+      var h_offset = $equals.offset().left - selection.$selected.offset().left + tot_width($equals, true, false) + (RHS_width)/2;
+      var v_offset = selection.$selected.outerHeight(true)/2;
       if (include_in_frac) {v_offset*=2;}
       $equals.nextAll().animate({left: tot_width(selection.$selected, true, false)/2}, step_duration);
       if (include_in_frac) {
-        $equals.prevAll().animate({top: selection.$selected.outerHeight(includeMargin=true)/2}, step_duration);
-        v_offset+=selection.$selected.outerHeight(includeMargin=true)/2;
+        $equals.prevAll().animate({top: selection.$selected.outerHeight(true)/2}, step_duration);
+        v_offset+=selection.$selected.outerHeight(true)/2;
       }
       return new Promise((resolve, reject) => {
         selection.$selected.animate({left:h_offset, top:-v_offset}, step_duration).promise().done(function() {
           new_math_str = replace_in_mtstr(math_root, selection.selected_nodes, "");
-          math_HS = new_math_str.split("="); //HS=hand sides
+          var math_HS = new_math_str.split("="); //HS=hand sides
           if (include_in_frac) {
             new_math_str = math_HS[0].replace(/\\frac{([ -~]+)}{}/, "$1") + "=" + "\\frac{" + after_eq_nodes[0].children[0].children[0].text + selection.selected_text + "}{" + after_eq_nodes[0].children[0].children[1].text + "}";
           } else if (after_eq_nodes.length > 1) {
@@ -213,7 +215,7 @@ export function change_side() {
         });
       });
     } else if (selection.selected_nodes[0].model.id.split("/")[1] > equals_node.model.id.split("/")[1]) { //after eq sign
-      LHS_width = tot_width($equals.prevAll(), false, false);
+      var LHS_width = tot_width($equals.prevAll(), false, false);
       var before_eq = false, before_eq_nodes=[];
       for (var i=math_root.children.length-1; i>=0; i--) {
         if (before_eq) {before_eq_nodes.push(math_root.children[i])}
@@ -222,18 +224,18 @@ export function change_side() {
       var include_in_frac = before_eq_nodes.length === 1
           && before_eq_nodes[0].children.length === 1
           && before_eq_nodes[0].children[0].type2 === "frac";
-      h_offset = selection.$selected.offset().left - $equals.offset().left + (LHS_width)/2;
-      v_offset = selection.$selected.outerHeight(includeMargin=true)/2;
+      var h_offset = selection.$selected.offset().left - $equals.offset().left + (LHS_width)/2;
+      var v_offset = selection.$selected.outerHeight(true)/2;
       if (include_in_frac) {v_offset*=2;}
       $equals.prevAll().animate({left:tot_width(selection.$selected, true, false)/2}, step_duration);
       if (include_in_frac) {
-        $equals.nextAll().animate({top: selection.$selected.outerHeight(includeMargin=true)/2}, step_duration);
-        v_offset+=selection.$selected.outerHeight(includeMargin=true)/2;
+        $equals.nextAll().animate({top: selection.$selected.outerHeight(true)/2}, step_duration);
+        v_offset+=selection.$selected.outerHeight(true)/2;
       }
       return new Promise((resolve, reject) => {
         selection.$selected.animate({left:-h_offset, top:-v_offset}, step_duration).promise().done(function() {
           new_math_str = replace_in_mtstr(math_root, selection.selected_nodes, "");
-          math_HS = new_math_str.split("="); //HS=hand sides
+          var math_HS = new_math_str.split("="); //HS=hand sides
           if (include_in_frac) {
             new_math_str = "\\frac{" + before_eq_nodes[0].children[0].children[0].text + selection.selected_text + "}{" + before_eq_nodes[0].children[0].children[1].text + "}" + "=" + math_HS[1].replace(/\\frac{([ -~]+)}{}/, "$1");
           } else {
@@ -266,7 +268,7 @@ export function change_side() {
       return new Promise((resolve, reject) => {
         selection.$selected.animate({left:offset}, step_duration).promise().done(function() {
           new_math_str = replace_in_mtstr(math_root, selection.selected_nodes, "");
-          math_HS = new_math_str.split("="); //HS=hand sides
+          var math_HS = new_math_str.split("="); //HS=hand sides
           if (selection.selected_nodes[0].text === "2") {
             new_math_str = math_HS[0] + "=" + "\\sqrt{" + math_HS[1] + "}";
           } else {
@@ -284,7 +286,7 @@ export function change_side() {
       return new Promise((resolve, reject) => {
         selection.$selected.animate({left:-offset}, step_duration).promise().done(function() {
           new_math_str = replace_in_mtstr(math_root, selection.selected_nodes, "");
-          math_HS = new_math_str.split("="); //HS=hand sides
+          var math_HS = new_math_str.split("="); //HS=hand sides
           if (selection.selected_nodes[0].text === "2") {
             new_math_str = "\\sqrt{" + math_HS[0] + "}" + "=" + math_HS[1];
           } else {
@@ -321,7 +323,7 @@ export function change_side() {
     }
     let body_text = node.parent.children[1].text;
     new_math_str = replace_in_mtstr(math_root, selection.selected_nodes, "");
-    math_HS = new_math_str.split("="); //HS=hand sides
+    var math_HS = new_math_str.split("="); //HS=hand sides
     if (node.parent.model.obj.nextAll(".mrel").length !== 0) { //before eq sign
       let offset = this.eqCoords.end_of_equation.left - this.eqCoords.equals_position.left;
       return new Promise((resolve, reject) => {
@@ -395,7 +397,7 @@ export function move_right(){
     return new Promise((resolve, reject) => {
       selection.$selected.animate({left:selected_next_width}, step_duration).promise().done(function() {
         if (!has_op(selection.$selected) && selection.selected_nodes[0].type === "term") {selected_text_str = "+" + selection.selected_text;} else {selected_text_str = selection.selected_text;}
-        next_text = next_node.text;
+        var next_text = next_node.text;
         if (!has_op($selected_next) && selection.selected_nodes[0].type === "term") {next_text_str = "+" + next_text;} else {next_text_str = next_text;}
         new_math_str = replace_in_mtstr(math_root, [next_node].concat(selection.selected_nodes), [selected_text_str, next_text_str]);
         resolve(new_math_str);
@@ -443,7 +445,7 @@ export function move_left() {
     return new Promise((resolve, reject) => {
       selection.$selected.animate({left:-selected_prev_width}, step_duration).promise().done(function() {
         if (!has_op(selection.$selected) && selection.selected_nodes[0].type === "term") {selected_text_str = "+" + selection.selected_text;} else {selected_text_str = selection.selected_text;}
-        prev_text = prev_node.text;
+        var prev_text = prev_node.text;
         if (!has_op($selected_prev) && selection.selected_nodes[0].type === "term")
         { prev_text_str = "+" + prev_text;}
         else {prev_text_str = prev_text;}
@@ -638,8 +640,8 @@ export function move_down() {
       selection.$selected.first().prevAll().animate({left:-extra_selected_width/2}, step_duration);
       return new Promise((resolve, reject) => {
         selection.$selected.animate({left:-h_offset, top:v_offset}, step_duration).promise().done(function() {
-          new_nom_text = "";
-          new_denom_text = exponentiate(selection.selected_nodes, false, "-1");
+          var new_nom_text = "";
+          var new_denom_text = exponentiate(selection.selected_nodes, false, "-1");
           var begin_i = (selection.selected_nodes[0].parent.children[0].type2 === "op") ? 1 : 0;
           for (var i = begin_i; i <selection.selected_nodes[0].parent.children.length; i++) {
             for (var k = selection.selected_nodes.length - 1; k >= 0; k--) {
@@ -648,8 +650,8 @@ export function move_down() {
               }
             };
           };
-          new_text = "\\frac{"+new_nom_text+"}{"+new_denom_text+"}";
-          new_math_str = replace_in_mtstr(math_root, selection.selected_nodes[0].parent.children.slice(begin_i), new_text);
+          var new_text = "\\frac{"+new_nom_text+"}{"+new_denom_text+"}";
+          var new_math_str = replace_in_mtstr(math_root, selection.selected_nodes[0].parent.children.slice(begin_i), new_text);
           resolve(new_math_str);
         });
       });
@@ -717,7 +719,7 @@ export function split() {
       denominator_text2 = "";
     }
     var new_text = "\\frac{" + numerator_text + "}{" + denominator_text + "}" + "\\frac{" + numerator_text2 + "}{" + denominator_text2 + "}";
-    new_math_str = replace_in_mtstr(math_root, [selection.selected_nodes[0].parent.parent.parent], new_text);
+    var new_math_str = replace_in_mtstr(math_root, [selection.selected_nodes[0].parent.parent.parent], new_text);
     return new Promise((resolve, reject) => {resolve(new_math_str)});
   }
   //split factors out of logs
@@ -837,7 +839,7 @@ export function merge() {
           power_text+=selection.selected_nodes[i].children[childIndex].text;
         }
         var new_text = base_text + "^{" + power_text + "}";
-        new_math_str = replace_in_mtstr(math_root, selection.selected_nodes, new_text);
+        var new_math_str = replace_in_mtstr(math_root, selection.selected_nodes, new_text);
         return new Promise((resolve, reject) => {resolve(new_math_str)});
     }
     else
@@ -883,8 +885,7 @@ export function distribute_in() {
   }
 
   //distribute in
-  if (selection.selected_nodes[0].type === "factor" && same_type && same_parents && grouped.length > 0
-    && (grouped.length < selection.selected_nodes.length || grouped.length > 1))
+  if (selection.selected_nodes[0].type === "factor" && same_type && same_parents && grouped.length > 0)
   {
     // var factors_text = "";
     //   // console.log(selection.selected_nodes);
@@ -892,7 +893,7 @@ export function distribute_in() {
     //     factors_text+=selection.selected_nodes[i].text;
     //   }
     var grouped_node = grouped[grouped.length-1];
-    console.log("distribute in");
+    console.log("distribute in", grouped_node);
     return new Promise((resolve, reject) => {
       selection.$selected.animate({"font-size": 0, opacity: 0}, step_duration) //IMPROVE ANIMATION (FOR EXAMPLE CLONE)
         .css('overflow', 'visible')
@@ -913,7 +914,7 @@ export function distribute_in() {
           } else {
             var new_text = text
           }
-          new_math_str = replace_in_mtstr(math_root, selection.selected_nodes, new_text);
+          var new_math_str = replace_in_mtstr(math_root, selection.selected_nodes, new_text);
           // console.log(text, new_math_str);
           resolve(new_math_str);
         });
@@ -1011,52 +1012,9 @@ export function distribute_in() {
     new_math_str = replace_in_mtstr(math_root, [selection.selected_nodes[0].parent], text);
     return new Promise((resolve, reject) => {resolve(new_math_str)});
   }
-  //split certain grouped nodes
-  else if (selection.selected_nodes.length === 1
-    && selection.selected_nodes[0].type2 === "group"
-    && selection.selected_nodes[0].openText === "\\langle ")
-  {
-    console.log("split certain grouped nodes");
-    //a single term with several factors (valid when factors are independent...)
-    if (selection.selected_nodes[0].children.length === 1) {
-      return new Promise((resolve, reject) => {
-        //ANIMATION??
-        let factors = selection.selected_nodes[0].children[0].children;
-        let new_text = "\\langle ";
-        for (var i = 0; i < factors.length; i++) {
-          if (factors[i].text === "+") {
-            continue;
-          } else if (factors[i].type2 === "op") {
-            new_text+=factors[i].text;
-          } else if (i < factors.length-1 ){
-            new_text+=factors[i].text+"\\rangle \\langle ";
-          } else {
-            new_text+=factors[i].text+"\\rangle";
-          }
-        }
-        let new_math_str = replace_in_mtstr(math_root, selection.selected_nodes, new_text);
-        resolve(new_math_str);
-      });
-    } else {
-      return new Promise((resolve, reject) => {
-        //ANIMATION??
-        let terms = selection.selected_nodes[0].children;
-        let new_text = "";
-        for (var i = 0; i < terms.length; i++) {
-          if (terms[i].text[0] === "+" || terms[i].text[0] === "-") {
-            new_text+=terms[i].text[0]+"\\langle "+terms[i].text.slice(1)+"\\rangle ";
-          } else {
-            new_text+="\\langle "+terms[i].text+"\\rangle ";
-          }
-        }
-        if (selection.selected_nodes[0].parent.children.length > 1) {
-          new_text = "("+new_text+")";
-        }
-        let new_math_str = replace_in_mtstr(math_root, selection.selected_nodes, new_text);
-        resolve(new_math_str);
-      });
-    }
-  }
+
+
+
 }
 
 //merging stuff
@@ -1119,7 +1077,7 @@ export function collect_out() {
           term_ids.push(selection.selected_nodes[i+1].parent.model.id);
         }
         // console.log("fact_subs", fact_subs);
-        last_node_in_loop = selection.selected_nodes[i+1];
+        var last_node_in_loop = selection.selected_nodes[i+1];
       }
       create_fact_subs(last_node_in_loop.parent, fact_cnt[j]);
       //the above could be made more pretty I think..
@@ -1143,7 +1101,7 @@ export function collect_out() {
         .done(function() {
           var selected_terms = [];
           let factor_selected_text = factor_texts[0];
-          new_math_str = replace_in_mtstr(math_root, selection.selected_nodes, fact_subs);
+          var new_math_str = replace_in_mtstr(math_root, selection.selected_nodes, fact_subs);
           var new_text = "";
           math_root = math_str_to_tree(clear_math(new_math_str)); //I SHOULD CREATE A FUNCTION THAT PARSES A LATEX STRING INTO A MATH_ROOT IDEALLY...
           console.log("new math_root", math_root);
@@ -1202,7 +1160,7 @@ export function collect_out() {
       }
     }
     var new_text = "+\\frac{" + numerator_text + "}{" + denominator_text + "}";
-    new_math_str = replace_in_mtstr(math_root, selection.selected_nodes, new_text);
+    var new_math_str = replace_in_mtstr(math_root, selection.selected_nodes, new_text);
     return new Promise((resolve, reject) => {resolve(new_math_str)});
   }
   //merge terms into fraction
@@ -1236,7 +1194,7 @@ export function collect_out() {
     //ANIMATION??
     var new_text = "+\\frac{" + numerator_text + "}{" + denominator_text + "}";
     // new_text = "+" + rationalize(selection.selected_text);
-    new_math_str = replace_in_mtstr(math_root, selection.selected_nodes, new_text);
+    var new_math_str = replace_in_mtstr(math_root, selection.selected_nodes, new_text);
     return new Promise((resolve, reject) => {resolve(new_math_str)});
   }
   //merge exponentials
@@ -1287,7 +1245,7 @@ export function collect_out() {
         power_text+=selection.selected_nodes[i].children[childIndex].text;
       }
       var new_text = base_text + "^{" + power_text + "}";
-      new_math_str = replace_in_mtstr(math_root, selection.selected_nodes, new_text);
+      var new_math_str = replace_in_mtstr(math_root, selection.selected_nodes, new_text);
       return new Promise((resolve, reject) => {resolve(new_math_str)});
     }
     else if (same_power && !same_base)  //with common power
@@ -1308,7 +1266,7 @@ export function collect_out() {
         }
       }
       var new_text = "(" + base_text + ")" + "^{" + power_text + "}";
-      new_math_str = replace_in_mtstr(math_root, selection.selected_nodes, new_text);
+      var new_math_str = replace_in_mtstr(math_root, selection.selected_nodes, new_text);
       return new Promise((resolve, reject) => {resolve(new_math_str)});
     }
   }
@@ -1330,7 +1288,7 @@ export function collect_out() {
       }
     }
     new_text+="}";
-    new_math_str = replace_in_mtstr(math_root, selection.selected_nodes, new_text);
+    var new_math_str = replace_in_mtstr(math_root, selection.selected_nodes, new_text);
     return new Promise((resolve, reject) => {resolve(new_math_str)});
   }
 
@@ -1362,8 +1320,8 @@ export function evaluate() {
   //equals position not too well animated
   return new Promise((resolve, reject) => {
     selection.$selected.animate({"font-size": 0, opacity: 0}, step_duration).css('overflow', 'visible').promise().done(function() {
-      new_term = eval_expression(selection.selected_text);
-      new_math_str = replace_in_mtstr(math_root, selection.selected_nodes, new_term);
+      var new_term = eval_expression(selection.selected_text);
+      var new_math_str = replace_in_mtstr(math_root, selection.selected_nodes, new_term);
       resolve(new_math_str);
     });
   });
@@ -1404,7 +1362,7 @@ export function operate() {
           new_term = Algebrite.run("d(" + new_term + "," + variable + ")");
         }
         new_term = ascii_to_latex(new_term);
-        new_math_str = replace_in_mtstr(math_root, selection.selected_nodes.concat(next_nodes), new_term);
+        var new_math_str = replace_in_mtstr(math_root, selection.selected_nodes.concat(next_nodes), new_term);
         resolve(new_math_str);
       });
     });
@@ -1427,7 +1385,7 @@ $("#add_both_sides").keyup(function (e) {
 export function add_both_sides(thing, math_str) {
   let math_root = this.math_root;
   let selection = this.selection;
-  math_HS = math_str.split("=");
+  var math_HS = math_str.split("=");
   new_math_str = math_HS[0] + thing + "=" +math_HS[1] + thing;
   return new Promise((resolve, reject) => {resolve(new_math_str)});
 }
@@ -1546,7 +1504,7 @@ export function flip_equation(math_str) {
     $equals.nextAll().animate({left:-offset2}, step_duration)
       .promise()
       .done(function() {
-      math_HS = math_str.split("=");
+      var math_HS = math_str.split("=");
       new_math_str = math_HS[1] + "=" + math_HS[0];
       resolve(new_math_str);
     });

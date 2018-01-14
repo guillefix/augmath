@@ -26,7 +26,8 @@ RecordingsList.propTypes = {
   recordings: PropTypes.array.isRequired,
 };
 
-export default RecordingsListComponent = createContainer(({query}) => {
+//RecordingsListComponent
+export default createContainer(({query}) => {
   // console.log(query);
   let recs;
   if (query === "") {

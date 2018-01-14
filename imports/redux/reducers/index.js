@@ -1,5 +1,5 @@
 //import { combineReducers } from 'redux';
-import { clear_math } from '../../maths/functions'
+import { clear_math } from '../../maths/functions.js'
 
 let subsArray = (arr, index, el) => {
   if (typeof el === "undefined") return [ ...arr.slice(0, index), ...arr.slice(index+1)]
@@ -9,7 +9,7 @@ let subsArray = (arr, index, el) => {
 let updateIndexMathHist = (current_index, mathHist, equations, index) => [...mathHist.slice(0,current_index), {mathStr: equations[index], current_eq: index}];
 
 const rootReducer = (state = {}, action) => {
-  let newState;
+  let newState,cl_math, newObj;
   if (state.recording.doingRecording
       && (action.type === "ADD_TO_EQUATIONS"
         // || action.type === "ADD_TO_HISTORY"
@@ -110,6 +110,9 @@ const rootReducer = (state = {}, action) => {
     case "RESET_SELECTED":
       return { ...newState,
         selectedNodes: []}
+    case "UPDATE_SELECTED_TEXT":
+      // console.log("updazing zoom", action.newZoom);
+      return { ...newState, selectedText: action.newText}
     case "UPDATE_DRAGDROP_MODE":
       return { ...newState,
         dragDrop: action.newMode}

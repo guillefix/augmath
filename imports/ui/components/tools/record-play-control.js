@@ -15,7 +15,7 @@ export default class RecordPlayControl extends React.Component {
   componentDidMount() {
     const { store } = this.context;
     store.subscribe(()=>{
-      state = store.getState();
+      const state = store.getState();
       let recordingEl = ReactDOM.findDOMNode(this.refs.recording);
       if (state.recording.doingRecording !== recordingEl.checked) {
         recordingEl.checked = !recordingEl.checked;
