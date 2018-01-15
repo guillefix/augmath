@@ -328,9 +328,9 @@ export default class Equation extends React.Component {
     let math_el = this.math_el;
 
     //setting zoom
-    $(math_el).css("font-size", this.props.eqZoom.toString()+"px");
+    // $(math_el).css("font-size", this.props.eqZoom.toString()+"px");
 
-    $(math_el).css("height", "100%")
+    // $(math_el).css("height", "100%")
 
     //repositioning equals so that it's always in the same place. put in fixed value
     let root_poly = $(math_el).find(".base");
