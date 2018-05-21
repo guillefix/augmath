@@ -3,7 +3,7 @@ import ReactDOM from 'react-dom';
 import * as Actions from '../../../redux/actions/action-creators';
 
 import * as manips from '../../../maths/manipulations.js';
-import {clear_math, select_node, parse_poly, tot_width, replace_in_mtstr, getIndicesOf, parse_mtstr, get_next, get_prev, get_all_prev, compare_trees} from "../../../maths/functions";
+import {tree_to_math_str, clear_math, select_node, parse_poly, tot_width, replace_in_mtstr, getIndicesOf, parse_mtstr, get_next, get_prev, get_all_prev, compare_trees} from "../../../maths/functions";
 import TreeModel from '../../../TreeModel-min.js';
 import "jquery-ui"
 // var draggable = require( "jquery-ui/ui/widgets/draggable" );
@@ -113,7 +113,7 @@ export default class Equation extends React.Component {
     let math_root = this.math_root;
     let thisComp = this;
     let thisIndex = this.props.index
-    // console.log("creating events", type,depth);
+    console.log("creating events", type,depth);
     let math_el = this.math_el;
     $(math_el).find("*").off();
     var  index;
@@ -140,7 +140,7 @@ export default class Equation extends React.Component {
           });
           obj.droppable({
             drop: function( event, ui ) {
-              // let root = $( this ).data('root');
+              //math_root is the one I am dropping onto, root is the one which I just dropped.
               let root = ui.draggable.data('root');
               console.log(root);
               let eqNode1 = root.first(x => x.type === "rel")
@@ -150,6 +150,7 @@ export default class Equation extends React.Component {
               let allPrev2 = get_all_prev(math_root, eqNode2);
               let tempNode2 = {children: allPrev2, type:"temp", type2: "temp"}
               let comp = compare_trees(tempNode1, tempNode2)
+              console.log(comp)
               if (comp.same
                 && !(comp.subs.length === 1
                   && comp.subs[0][0].model.id.split("/").length < 4
@@ -183,7 +184,7 @@ export default class Equation extends React.Component {
                 let texts = thisComp.selection.selected_nodes.map(x => newText);
                 let newStr = replace_in_mtstr(math_root, thisComp.selection.selected_nodes, texts);
                 // dispatch(Actions.selectNode(node.model.id))
-                dispatch(Actions.addToHist(newStr, state.current_index, thisIndex))
+                dispatch(Actions.addToHist(newStr, state.current_index+1, thisIndex))
               }
             }
           });
@@ -193,6 +194,7 @@ export default class Equation extends React.Component {
 
     if (dragDrop === "subs")
     {
+      console.log("hi")
       // console.log($(math_el).find( ".draggable" ));
       $(math_el).find( ".draggable" ).draggable( "destroy" );
       $(math_el).find(".draggable").droppable( "destroy" );
@@ -213,11 +215,11 @@ export default class Equation extends React.Component {
               let node = $( this ).data('node');
               let text = ui.draggable.data('node').text;
               console.log("dropping", node);
-              thisComp.selectNode(node.model.id, false, true);
+              thisComp.selectNode(node.model.id, false, true, math_root,false);
               let n = thisComp.selection.selected_nodes.length;
               let newStr = replace_in_mtstr(math_root, thisComp.selection.selected_nodes, thisComp.selection.selected_nodes.map(x=>text));
               // dispatch(Actions.selectNode(node.model.id))
-              dispatch(Actions.addToHist(newStr, state.current_index, thisIndex))
+              dispatch(Actions.addToHist(newStr, state.current_index+1, thisIndex))
             }
           });
         }
@@ -226,8 +228,12 @@ export default class Equation extends React.Component {
 
     if (dragDrop === "move")
     {
-      $(".sortable").removeClass("sortable")
-      $( ".sortable" ).disableSelection();
+      $(math_el).find( ".draggable" ).draggable( "destroy" );
+      $(math_el).find(".draggable").droppable( "destroy" );
+      $(math_el).find(".draggable").removeClass("draggable");
+      $(math_el).find(".sortable").sortable("destroy")
+      $(math_el).find(".sortable").removeClass("sortable")
+      $(math_el).find( ".sortable" ).disableSelection();
       math_root.walk(function (node) {
 
         let obj;
@@ -279,6 +285,8 @@ export default class Equation extends React.Component {
                   ui.item.after(elements);
                   ui.item.remove();
                 }
+                let new_math_str = tree_to_math_str(math_el);
+                dispatch(Actions.addToHist(new_math_str, state.current_index+1, thisIndex))
               }
             });
           }
@@ -389,7 +397,7 @@ export default class Equation extends React.Component {
       vars.$equals =  $(this.math_el).find(".base").find(".mrel");
 
       if (state.manip === "replace" && this.selection.selected_nodes.length > 0) {
-        promise = manips[state.manip].call(vars, state.manip_data, state.replace_ind);
+        promise = manips[state.manip].call(vars, state.manip_data, state.replace_ind || state.var_select);
       } else if (state.manip === "flip_equation") {
         promise = manips[state.manip].call(vars, this.props.math);
       } else if (state.manip === "add_both_sides") {
@@ -398,11 +406,19 @@ export default class Equation extends React.Component {
         promise = manips[state.manip].call(vars);
       }
       if (typeof promise !== "undefined") {
-        promise.then((data) => {
+        promise.catch(err=>{
+          console.log("manip failed", err);
+          let index = state.current_index;
+          store.dispatch(Actions.addToHist(state.equations[state.current_eq], index, state.current_eq));
+        }).then((data) => {
           console.log("going to update equation", data);
           let index = state.current_index;
           store.dispatch(Actions.addToHist(data, ++index, state.current_eq));
         })
+      } else {
+        console.log("manip failed");        
+        let index = state.current_index;
+        store.dispatch(Actions.addToHist(state.equations[state.current_eq], index, state.current_eq));
       }
     }
   }
@@ -425,10 +441,11 @@ export default class Equation extends React.Component {
     // dispatch(Actions.updateSelectedText(""));
   }
   selectNode(nodeId, multi_select=false, var_select=false, math_root = this.math_root, mayUpdateSelect=true) {
+    //if  mayUpdateSelect is false, then we keep changes "local", i.e. we don't dispatch with Redux.
     console.log("selectNode", nodeId, multi_select, var_select);
     // let math_root = this.math_root;
-    let node = math_root.first(x => x.model.id === nodeId)
     const thisComp = this;
+    let node = math_root.first(x => x.model.id === nodeId)
 
     if ((node.type !== this.props.mtype || getIndicesOf("/", node.model.id).length !== this.props.depth)
     && mayUpdateSelect) {
@@ -451,6 +468,7 @@ export default class Equation extends React.Component {
     if (!multi_select) {
       this.selection.selected_nodes = [];
     }
+    if (node.selected) this.selection.selected_nodes.push(node);    
     // console.log("node.text",node.text);
     if (var_select) {
       math_root.walk(function (node2) {
@@ -470,10 +488,9 @@ export default class Equation extends React.Component {
         }
       });
     }
+    
     this.selection.selected_text = "";
-    this.selection.selected_nodes.push(node);
-    // console.log(this.selection.selected_nodes);
-    // this.selection.selected_text += node.text;
+    
     math_root.walk(function (node) {
       if (node.selected) {thisComp.selection.selected_text += node.text;}
     });
@@ -483,11 +500,11 @@ export default class Equation extends React.Component {
     thisComp.selection.$selected = $(".selected");
     // selected_width = tot_width(this.selection.$selected, true);
     thisComp.selection.selected_position = thisComp.selection.$selected.offset();
-    // var replace_el = document.getElementById("replace");
-    // replace_el.value = thisComp.selection.selected_text;
+
+    
     const { store } = thisComp.context;
     const dispatch = store.dispatch;
-    dispatch(Actions.updateSelectedText(thisComp.selection.selected_text));
+    if (mayUpdateSelect) dispatch(Actions.updateSelectedText(thisComp.selection.selected_text));
 
     //////this.shouldResetSelectedNodes = false; will mean that we can change the varSelects, without
     //reseting the selectedNodes;

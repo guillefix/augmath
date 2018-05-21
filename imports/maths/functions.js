@@ -74,6 +74,8 @@ export function latex_to_ascii(str) {
   //   .replace(/\*\^\*\{\*(\-?[0-9]+)\)/g, "^($1)")
   //   .replace(/\^\*\{\*(\-?[0-9]+)\)/g, "^($1)")
   //   .replace(/\*\^\*\{(\-?[0-9]+)\)/g, "^($1)");
+  str = str.replace(/\\cdot /g, "") //latextomath (or the other one, doesn't work with \\cdot...)
+  console.log(str)
   str = convertMathML(LaTeXtoMathML(str)).replace(/ \(/g,"(");
   str = str.replace(/([0-9]) ([0-9])/g, "$1$2")
   str = str.replace(/⟨ /g, "langle");
@@ -744,10 +746,10 @@ export function parse_mtstr(root, node_arr, str_arr) {
 //do some preparation to str_arr before calling parse_mtstr
 export function replace_in_mtstr(root, nodes, str_arr) {
   // console.log("root", root);
-  if (nodes.__proto__.length !== 0) {
+  if (nodes.__proto__.length !== 0) { //if not an array
     nodes = [nodes];
   }
-  if (typeof str_arr === "string") {
+  if (typeof str_arr === "string") { //replace a bunch of nodes with a single text is interpreted as replacing the first and erasing the others (works well for sibling nodes..)
     var str = str_arr;
     str_arr = [];
     for (let i=0; i<nodes.length; i++) {
@@ -1379,6 +1381,18 @@ export function math_str_to_tree(math) {
   $(math_el).remove();
 
   return root;
+}
+
+export function tree_to_math_str(math_el) {
+  let root_poly = $(math_el).find(".base");
+
+  let tree = new TreeModel();
+
+  let math_root = tree.parse({});
+  math_root.model.id = "-1";
+  math_root.model.obj = root_poly;
+
+  return parse_poly(math_root, root_poly, "-1", true);
 }
 
 export function compare_trees(tree1, tree2) {

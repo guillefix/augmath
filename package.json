@@ -20,16 +20,16 @@
   },
   "homepage": "https://github.com/guillefix/augmath#readme",
   "dependencies": {
+    "@babel/runtime": "^7.0.0-beta.42",
     "algebra.js": "^0.2.6",
     "algebrite": "^0.4.5",
-    "babel-loader": "^7.1.2",
     "babel-runtime": "^6.25.0",
     "bcrypt": "^0.8.7",
     "big-integer": "^1.6.26",
     "brototype": "0.0.5",
     "classnames": "^2.2.5",
     "jquery": "^3.2.1",
-    "jquery-ui": "^1.12.1",
+    "jquery-ui": "1.10.5",
     "latextomathml": "0.0.4",
     "mathjs": "^3.20.0",
     "mathml-to-asciimath": "^1.4.0",
@@ -46,22 +46,25 @@
     "tree-model": "^1.0.6",
     "uglify-js": "^3.3.7",
     "verdict.js": "^0.1.2",
-    "webpack": "^3.5.5"
+    "webpack-dev-server": "^3.1.4"
   },
   "devDependencies": {
     "babel-core": "^6.26.0",
     "babel-loader": "^7.1.2",
-    "babel-plugin-transform-object-rest-spread": "^6.26.0",
-    "babel-preset-stage-2": "^6.24.1",
-    "babel-preset-stage-3": "^6.24.1",
-    "qunitjs": "^2.4.0",
+    "babel-preset-latest": "^6.24.1",
+    "core-js": "^2.5.3",
     "rollup": "^0.49.2",
     "rollup-plugin-babel": "^3.0.2",
-    "webpack": "^3.8.1"
+    "webpack": "^3.12.0",
+    "webpack-cli": "^2.1.3"
   },
   "keywords": [
     "maths",
     "interactive",
     "animation"
+  ],
+  "browserslist": [
+    "> 1%",
+    "last 2 versions"
   ]
 }

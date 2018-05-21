@@ -4,3 +4,4 @@ README.md
 webpack.config.js
 build/
 client/library.jsx
+.babelrc

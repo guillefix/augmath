@@ -1,3 +1,5 @@
+// import './qunit-2.0.0.js'
+
 import store from './redux/store';
 import * as act from './redux/actions/action-creators';
 

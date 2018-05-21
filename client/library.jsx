@@ -6,7 +6,7 @@ window.$ = $;
 
 import "jquery-ui"
 var verdict = require('verdict.js');
-import "./lib/katex.min.js"
+// import "./lib/katex.min.js"
 // import "./lib/qunit-2.0.0.js"
 // import 'qunitjs'
 

@@ -176,9 +176,12 @@ export function change_side() {
     }
   }
   //denominator
-  else if (selection.selected_nodes[0].parent.type == "denominator"
+  else if ((selection.selected_nodes[0].parent.type == "denominator" && election.selected_nodes[0].parent.children.length === 1)
     || selection.selected_nodes[0].type === "denominator"
-    || (selection.selected_nodes[0].type === "factor" && selection.selected_nodes[0].model.id.split("/").length === 6 && selection.selected_nodes[0].parent.parent.type === "denominator"))
+    || (selection.selected_nodes[0].type === "factor" 
+      && selection.selected_nodes[0].model.id.split("/").length === 6 
+      && selection.selected_nodes[0].parent.parent.type === "denominator" 
+      && selection.selected_nodes[0].parent.parent.children.length === 1))
   {
     console.log("changing denominator of side");
     if (selection.selected_nodes[0].model.id.split("/")[1] < equals_node.model.id.split("/")[1]) { //before eq sign
@@ -203,12 +206,24 @@ export function change_side() {
         selection.$selected.animate({left:h_offset, top:-v_offset}, step_duration).promise().done(function() {
           new_math_str = replace_in_mtstr(math_root, selection.selected_nodes, "");
           var math_HS = new_math_str.split("="); //HS=hand sides
+          let processed_selected_text = selection.selected_text;
+          if (selection.selected_nodes[0].type === "denominator" 
+            && (selection.selected_nodes[0].children.length > 1 
+              || selection.selected_nodes[0].children[0].children[0].type==="op")) {
+                processed_selected_text = "("+processed_selected_text+")";
+          } else if (selection.selected_nodes[0].type === "term" 
+            && selection.selected_nodes[0].children[0].type==="op") {
+              processed_selected_text = "("+processed_selected_text+")";
+            }
+
           if (include_in_frac) {
-            new_math_str = math_HS[0].replace(/\\frac{([ -~]+)}{}/, "$1") + "=" + "\\frac{" + after_eq_nodes[0].children[0].children[0].text + selection.selected_text + "}{" + after_eq_nodes[0].children[0].children[1].text + "}";
+            new_math_str = math_HS[0].replace(/\\frac{([ -~]+)}{}/, "$1") + "=" 
+              + "\\frac{" + after_eq_nodes[0].children[0].children[0].text + processed_selected_text 
+              + "}{" + after_eq_nodes[0].children[0].children[1].text + "}";
           } else if (after_eq_nodes.length > 1) {
-            new_math_str = math_HS[0] + "=" + selection.selected_text + "(" + math_HS[1] + ")" ;
+            new_math_str = math_HS[0] + "=" + processed_selected_text + "(" + math_HS[1] + ")" ;
           } else {
-            new_math_str = math_HS[0] + "=" + selection.selected_text + math_HS[1] ;
+            new_math_str = math_HS[0] + "=" + processed_selected_text + math_HS[1] ;
           }
           new_math_str = new_math_str.replace(/\\frac{([ -~]+)}{}/, "$1").replace(/=$/, "=1").replace(/^=/, "1=");
           resolve(new_math_str);
@@ -380,6 +395,7 @@ export function move_right(){
     var selected_width = tot_width(selection.$selected, true, include_op);
     var selected_text_str, next_text_str;
     var next_node = get_next(math_root, selection.selected_nodes);
+    var next_next_node = get_next(math_root, next_node);
     var $selected_next = next_node.model.obj;
     var selected_next_width = tot_width($selected_next, true, include_op);
     //check if it's a multiplication operator, and if so, get next thing
@@ -393,12 +409,30 @@ export function move_right(){
     } else if (next_node.type2 === "op" && next_node.optype === "vecmult") {
       return new Promise((resolve, reject) => {resolve(mathStr)});
     }
+    
     $selected_next.animate({left:-selected_width}, step_duration); //animation should take into account possibly missing operator
     return new Promise((resolve, reject) => {
       selection.$selected.animate({left:selected_next_width}, step_duration).promise().done(function() {
-        if (!has_op(selection.$selected) && selection.selected_nodes[0].type === "term") {selected_text_str = "+" + selection.selected_text;} else {selected_text_str = selection.selected_text;}
+        if (!has_op(selection.$selected) && selection.selected_nodes[0].type === "term") 
+          {selected_text_str = "+" + selection.selected_text;} 
+          else {selected_text_str = selection.selected_text;}
         var next_text = next_node.text;
-        if (!has_op($selected_next) && selection.selected_nodes[0].type === "term") {next_text_str = "+" + next_text;} else {next_text_str = next_text;}
+        if (!has_op($selected_next) && selection.selected_nodes[0].type === "term") 
+          {next_text_str = "+" + next_text;} 
+          else {next_text_str = next_text;}
+
+        if (selection.selected_nodes[0].type2 === "matrix" && next_node.type2 === "matrix") {
+          if (selection.selected_nodes[0].parent.children.length > 2) {
+            selected_text_str = "(" + next_text_str + selected_text_str + "+["+selected_text_str+","+next_text_str+"]" + ")";
+            next_text_str = "";
+          } else {
+            next_text_str = next_text_str + "+["+selected_text_str+","+next_text_str+"]";
+          }
+        }
+
+        if (selection.selected_nodes[0].type === "factor" && /[0-9]$/.test(selection.selected_text) && /^[0-9]/.test(next_next_node.text)) {
+          selected_text_str += "\\cdot "
+        }
         new_math_str = replace_in_mtstr(math_root, [next_node].concat(selection.selected_nodes), [selected_text_str, next_text_str]);
         resolve(new_math_str);
       });
@@ -427,6 +461,7 @@ export function move_left() {
     var selected_width = tot_width(selection.$selected, true, include_op);
     var selected_text_str, prev_text_str;
     var prev_node = get_prev(math_root, selection.selected_nodes);
+    var prev_prev_node = get_prev(math_root, prev_node);
     var $selected_prev = prev_node.model.obj;
     var selected_prev_width = tot_width($selected_prev, true, include_op);
     //check if it's a multiplication operator, and if so, get prev thing
@@ -449,6 +484,7 @@ export function move_left() {
         if (!has_op($selected_prev) && selection.selected_nodes[0].type === "term")
         { prev_text_str = "+" + prev_text;}
         else {prev_text_str = prev_text;}
+
         if (selection.selected_nodes[0].type2 === "matrix" && prev_node.type2 === "matrix") {
           if (selection.selected_nodes[0].parent.children.length > 2) {
             selected_text_str = "(" + selected_text_str + prev_text_str + "+["+prev_text_str+","+selected_text_str+"]" + ")";
@@ -456,6 +492,10 @@ export function move_left() {
           } else {
             prev_text_str = prev_text_str + "+["+prev_text_str+","+selected_text_str+"]";
           }
+        }
+
+        if (selection.selected_nodes[0].type === "factor" && /^[0-9]/.test(selection.selected_text) && /[0-9]$/.test(prev_prev_node.text)) {
+          selected_text_str = "\\cdot " + selected_text_str
         }
         console.log("selected_text_str", selected_text_str);
         console.log("prev_text_str",prev_text_str);
@@ -1320,7 +1360,14 @@ export function evaluate() {
   //equals position not too well animated
   return new Promise((resolve, reject) => {
     selection.$selected.animate({"font-size": 0, opacity: 0}, step_duration).css('overflow', 'visible').promise().done(function() {
-      var new_term = eval_expression(selection.selected_text);
+      var new_term = ""
+        try {
+          new_term = eval_expression(selection.selected_text);
+        }
+        catch(error) {
+          console.error(error);
+          resolve(math_root.text);
+        }
       var new_math_str = replace_in_mtstr(math_root, selection.selected_nodes, new_term);
       resolve(new_math_str);
     });
@@ -1391,12 +1438,12 @@ export function add_both_sides(thing, math_str) {
 }
 
 //replace something
-$("#replace").keyup(function (e) {
-    if (e.keyCode == 13) {
-      var thing = $("#replace").get()[0].value;
-        replace(thing);
-    }
-});
+// $("#replace").keyup(function (e) {
+//     if (e.keyCode == 13) {
+//       var thing = $("#replace").get()[0].value;
+//         replace(thing);
+//     }
+// });
 export function replace(text, replace_ind=false) {
   let step_duration = this.step_duration;
   let math_root = this.math_root;
@@ -1415,6 +1462,7 @@ export function replace(text, replace_ind=false) {
 
         } else {
           console.log("math_root",math_root);
+          console.log("replacing", selection.selected_nodes, text)
           new_math_str = replace_in_mtstr(math_root, selection.selected_nodes, text);
           console.log("new_math_str",new_math_str);
         }

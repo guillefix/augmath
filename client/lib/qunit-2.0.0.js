@@ -2227,11 +2227,9 @@ if ( typeof define === "function" && define.amd ) {
 }
 
 // Get a reference to the global object, like window in browsers
-}( window ) );
-
-// ( function() {
-// 	return this;
-// }() )
+}( ( function() {
+	return this;
+}() ) ) );
 
 ( function() {
 
