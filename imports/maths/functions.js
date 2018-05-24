@@ -833,18 +833,21 @@ export function parse_poly(root, poly, parent_id, is_container) {
       i += factor_obj.length;
     }
     //operators that begin new term
-    else if ((thing.text() === "+"
-      || thing.text() === "−"
-      || thing.text() === "="
-      || thing.text() === ">"
-      || thing.text() === "<"
-      || thing.text() === "≠"
-      || thing.text() === "~"))
+    else if ((thing.text().trim() === "+"
+      || thing.text().trim() === "−"
+      || thing.text().trim() === "="
+      || thing.text().trim() === ">"
+      || thing.text().trim() === "<"
+      || thing.text().trim() === "≠"
+      || thing.text().trim() === "→"
+      || thing.text().trim().charCodeAt(0) === 8764 //"∼"
+      || thing.text().trim().charCodeAt(0) === 126 //"~". wow so different
+        ))
     {
       //console.log("operator that begins new term");
       term.model.obj = term_obj;
       op = tree.parse({id: factor_id, obj: thing});
-      if (factor_cnt > 0) {
+      if (factor_cnt > 0) { // if we have already some factors in the current term, actually start a new one, otherwise no.
         poly_str+=term.text;
         factor_cnt = 0;
         term_cnt++;
@@ -877,9 +880,11 @@ export function parse_poly(root, poly, parent_id, is_container) {
         op.type = "rel";
         op.text = thing.text();
         if (thing.text() === "≠") op.text = "\\neq ";
-        else if (thing.text() === "~") op.text = "\\sim ";
+        else if (thing.text().trim().charCodeAt(0) === 8764 || thing.text().trim().charCodeAt(0) === 126) op.text = "\\sim ";
+        else if (thing.text() === "→") op.text = "\\to ";
         term.text+=op.text;
         poly_str+=term.text;
+
         term_cnt++;
         factor_cnt = 0;
         factor_id = parent_id.toString() + "/" + (term_cnt+1).toString() + "/" + (factor_cnt+1).toString();

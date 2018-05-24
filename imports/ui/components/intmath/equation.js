@@ -167,11 +167,12 @@ export default class Equation extends React.Component {
                   texts = [ ...texts, ...tempTexts];
                   console.log("nodes, texts",i, nodes, texts);
                 }
+                let relText = math_root.first(node => node.type === "rel").text;
                 let newLHS = replace_in_mtstr(root, nodes, texts).split("=")[1];
-                let oldRHS = math_root.text.split("=")[1];
-                dispatch(Actions.addToHist(newLHS+"="+oldRHS, state.current_index+1, thisIndex))
+                let oldRHS = math_root.text.split(relText)[1];
+                dispatch(Actions.addToHist(newLHS+relText+oldRHS, state.current_index+1, thisIndex))
               }
-              else if (root.children[1].type === "rel") {
+              else if (root.children[1].type === "rel") { // only one term on LHS
                 console.log("second type of apply");
                 let varText = root.text.split("=")[0];
                 let newText = root.text.split("=")[1];

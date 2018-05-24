@@ -22,6 +22,8 @@ export function change_side() {
   console.log("changing side", math_root);
   var new_term;
   var selected_width = tot_width(selection.$selected, true, true);
+  let relText = math_root.first(node => node.type === "rel").text;
+  if (relText === "→") return;  
   let equals_node = math_root.first(function (node) {
     if (node.children.length > 0) {
         return node.children[0].type === "rel";
@@ -61,7 +63,7 @@ export function change_side() {
           selection.$selected = $(".selected").add($(".selected").find("*"));
           var new_term = change_sign(selection.selected_nodes);
           var new_math_str = replace_in_mtstr(math_root, selection.selected_nodes, "");
-          new_math_str = new_math_str.replace("=", "+"+new_term+"=");
+          new_math_str = new_math_str.replace(relText, "+"+new_term+relText);
           resolve(new_math_str); //this should pass it to the promise
         });
       });
@@ -136,13 +138,13 @@ export function change_side() {
       return new Promise((resolve, reject) => {
         selection.$selected.animate({left:h_offset, top:v_offset}, step_duration).promise().done(function() {
           new_math_str = replace_in_mtstr(math_root, selection.selected_nodes, "");
-          var math_HS = new_math_str.split("="); //HS=hand sides
+          var math_HS = new_math_str.split(relText); //HS=hand sides
           if (include_in_frac) {
-            new_math_str = math_HS[0] + "=" + "\\frac{" + after_eq_nodes[0].children[0].children[0].text + "}{" + after_eq_nodes[0].children[0].children[1].text + selection.selected_text + "}";
+            new_math_str = math_HS[0] + relText + "\\frac{" + after_eq_nodes[0].children[0].children[0].text + "}{" + after_eq_nodes[0].children[0].children[1].text + selection.selected_text + "}";
           } else {
-            new_math_str = math_HS[0] + "=" + "\\frac{" + math_HS[1] + "}{" + selection.selected_text + "}";
+            new_math_str = math_HS[0] + relText + "\\frac{" + math_HS[1] + "}{" + selection.selected_text + "}";
           }
-          new_math_str = new_math_str.replace(/=$/, "=1").replace(/^=/, "1=");
+          new_math_str = new_math_str.replace(new RegExp(relText+"$","g"), relText+"1").replace(new RegExp("^"+relText,"g"), "1"+relText);
           resolve(new_math_str);
         });
       });
@@ -163,13 +165,13 @@ export function change_side() {
       return new Promise((resolve, reject) => {
         selection.$selected.animate({left:-h_offset, top:v_offset}, step_duration).promise().done(function() {
           new_math_str = replace_in_mtstr(math_root, selection.selected_nodes, "");
-          var math_HS = new_math_str.split("="); //HS=hand sides
+          var math_HS = new_math_str.split(relText); //HS=hand sides
           if (include_in_frac) {
-            new_math_str = "\\frac{" + before_eq_nodes[0].children[0].children[0].text + "}{" + before_eq_nodes[0].children[0].children[1].text + selection.selected_text + "}" + "=" + math_HS[1];
+            new_math_str = "\\frac{" + before_eq_nodes[0].children[0].children[0].text + "}{" + before_eq_nodes[0].children[0].children[1].text + selection.selected_text + "}" + relText + math_HS[1];
           } else {
-            new_math_str = "\\frac{" + math_HS[0] + "}{" + selection.selected_text + "}" + "=" + math_HS[1];
+            new_math_str = "\\frac{" + math_HS[0] + "}{" + selection.selected_text + "}" + relText + math_HS[1];
           }
-          new_math_str = new_math_str.replace(/=$/, "=1").replace(/^=/, "1=");
+          new_math_str = new_math_str.replace(new RegExp(relText+"$","g"), relText+"1").replace(new RegExp("^"+relText,"g"), "1"+relText);
           resolve(new_math_str);
         });
       });
@@ -205,7 +207,7 @@ export function change_side() {
       return new Promise((resolve, reject) => {
         selection.$selected.animate({left:h_offset, top:-v_offset}, step_duration).promise().done(function() {
           new_math_str = replace_in_mtstr(math_root, selection.selected_nodes, "");
-          var math_HS = new_math_str.split("="); //HS=hand sides
+          var math_HS = new_math_str.split(relText); //HS=hand sides
           let processed_selected_text = selection.selected_text;
           if (selection.selected_nodes[0].type === "denominator" 
             && (selection.selected_nodes[0].children.length > 1 
@@ -217,15 +219,15 @@ export function change_side() {
             }
 
           if (include_in_frac) {
-            new_math_str = math_HS[0].replace(/\\frac{([ -~]+)}{}/, "$1") + "=" 
+            new_math_str = math_HS[0].replace(/\\frac{([ -~]+)}{}/, "$1") + relText 
               + "\\frac{" + after_eq_nodes[0].children[0].children[0].text + processed_selected_text 
               + "}{" + after_eq_nodes[0].children[0].children[1].text + "}";
           } else if (after_eq_nodes.length > 1) {
-            new_math_str = math_HS[0] + "=" + processed_selected_text + "(" + math_HS[1] + ")" ;
+            new_math_str = math_HS[0] + relText + processed_selected_text + "(" + math_HS[1] + ")" ;
           } else {
-            new_math_str = math_HS[0] + "=" + processed_selected_text + math_HS[1] ;
+            new_math_str = math_HS[0] + relText + processed_selected_text + math_HS[1] ;
           }
-          new_math_str = new_math_str.replace(/\\frac{([ -~]+)}{}/, "$1").replace(/=$/, "=1").replace(/^=/, "1=");
+          new_math_str = new_math_str.replace(new RegExp(relText+"$","g"), relText+"1").replace(new RegExp("^"+relText,"g"), "1"+relText);
           resolve(new_math_str);
         });
       });
@@ -250,14 +252,14 @@ export function change_side() {
       return new Promise((resolve, reject) => {
         selection.$selected.animate({left:-h_offset, top:-v_offset}, step_duration).promise().done(function() {
           new_math_str = replace_in_mtstr(math_root, selection.selected_nodes, "");
-          var math_HS = new_math_str.split("="); //HS=hand sides
+          var math_HS = new_math_str.split(relText); //HS=hand sides
           if (include_in_frac) {
-            new_math_str = "\\frac{" + before_eq_nodes[0].children[0].children[0].text + selection.selected_text + "}{" + before_eq_nodes[0].children[0].children[1].text + "}" + "=" + math_HS[1].replace(/\\frac{([ -~]+)}{}/, "$1");
+            new_math_str = "\\frac{" + before_eq_nodes[0].children[0].children[0].text + selection.selected_text + "}{" + before_eq_nodes[0].children[0].children[1].text + "}" + relText + math_HS[1].replace(/\\frac{([ -~]+)}{}/, "$1");
           } else {
-            new_math_str = math_HS[0] + selection.selected_text + "=" + math_HS[1];
+            new_math_str = math_HS[0] + selection.selected_text + relText + math_HS[1];
           }
           // console.log(new_math_str);
-          new_math_str = new_math_str.replace(/=$/, "=1").replace(/^=/, "1=");
+          new_math_str = new_math_str.replace(new RegExp(relText+"$","g"), relText+"1").replace(new RegExp("^"+relText,"g"), "1"+relText);
           // console.log(new_math_str);
           resolve(new_math_str);
         });
@@ -283,14 +285,14 @@ export function change_side() {
       return new Promise((resolve, reject) => {
         selection.$selected.animate({left:offset}, step_duration).promise().done(function() {
           new_math_str = replace_in_mtstr(math_root, selection.selected_nodes, "");
-          var math_HS = new_math_str.split("="); //HS=hand sides
+          var math_HS = new_math_str.split(relText); //HS=hand sides
           if (selection.selected_nodes[0].text === "2") {
-            new_math_str = math_HS[0] + "=" + "\\sqrt{" + math_HS[1] + "}";
+            new_math_str = math_HS[0] + relText + "\\sqrt{" + math_HS[1] + "}";
           } else {
             if (selection.selected_nodes[0].children.length === 1 && selection.selected_nodes[0].children[0].children.length ===1 && selection.selected_nodes[0].children[0].children[0].type2 === "frac") {
-              new_math_str = math_HS[0] + "=" + add_brackets(math_HS[1]) + "^{" + flip_fraction([selection.selected_nodes[0].children[0].children[0]]) + "}";
+              new_math_str = math_HS[0] + relText + add_brackets(math_HS[1]) + "^{" + flip_fraction([selection.selected_nodes[0].children[0].children[0]]) + "}";
             } else {
-              new_math_str = math_HS[0] + "=" + add_brackets(math_HS[1]) + "^{" + "\\frac{1}{" + selection.selected_text + "}}"; //add brackets
+              new_math_str = math_HS[0] + relText + add_brackets(math_HS[1]) + "^{" + "\\frac{1}{" + selection.selected_text + "}}"; //add brackets
             }
           }
           resolve(new_math_str);
@@ -301,16 +303,16 @@ export function change_side() {
       return new Promise((resolve, reject) => {
         selection.$selected.animate({left:-offset}, step_duration).promise().done(function() {
           new_math_str = replace_in_mtstr(math_root, selection.selected_nodes, "");
-          var math_HS = new_math_str.split("="); //HS=hand sides
+          var math_HS = new_math_str.split(relText); //HS=hand sides
           if (selection.selected_nodes[0].text === "2") {
-            new_math_str = "\\sqrt{" + math_HS[0] + "}" + "=" + math_HS[1];
+            new_math_str = "\\sqrt{" + math_HS[0] + "}" + relText + math_HS[1];
           } else {
             if (selection.selected_nodes[0].children.length === 1
               && selection.selected_nodes[0].children[0].children.length ===1
               && selection.selected_nodes[0].children[0].children[0].type2 === "frac") {
-              new_math_str = add_brackets(math_HS[0]) + "^{" + flip_fraction([selection.selected_nodes[0].children[0].children[0]]) + "}" + "=" + math_HS[1];
+              new_math_str = add_brackets(math_HS[0]) + "^{" + flip_fraction([selection.selected_nodes[0].children[0].children[0]]) + "}" + relText + math_HS[1];
             } else {
-              new_math_str = add_brackets(math_HS[0]) + "^{" + "\\frac{1}{" + selection.selected_text + "}}" + "=" + math_HS[1]; //add brackets
+              new_math_str = add_brackets(math_HS[0]) + "^{" + "\\frac{1}{" + selection.selected_text + "}}" + relText + math_HS[1]; //add brackets
             }
           }
           resolve(new_math_str);
@@ -338,14 +340,14 @@ export function change_side() {
     }
     let body_text = node.parent.children[1].text;
     new_math_str = replace_in_mtstr(math_root, selection.selected_nodes, "");
-    var math_HS = new_math_str.split("="); //HS=hand sides
+    var math_HS = new_math_str.split(relText); //HS=hand sides
     if (node.parent.model.obj.nextAll(".mrel").length !== 0) { //before eq sign
       let offset = this.eqCoords.end_of_equation.left - this.eqCoords.equals_position.left;
       return new Promise((resolve, reject) => {
         selection.$selected.animate({left:offset}, step_duration).promise().done(function() {
           let new_math_str;
           if (node.parent.type2 === "log") {
-            new_math_str = body_text + "=" + base_text + "^{" + math_HS[1] + "}";
+            new_math_str = body_text + relText + base_text + "^{" + math_HS[1] + "}";
           } else if (node.parent.type2 === "exp" || node.parent.type2 === "group_exp") {
             new_math_str = body_text + "=\\log_{" + base_text + "}{" + math_HS[1] + "}";
           }
@@ -395,12 +397,13 @@ export function move_right(){
     var selected_width = tot_width(selection.$selected, true, include_op);
     var selected_text_str, next_text_str;
     var next_node = get_next(math_root, selection.selected_nodes);
-    var next_next_node = get_next(math_root, next_node);
+    var next_next_node = get_next(math_root, next_node);      
     var $selected_next = next_node.model.obj;
     var selected_next_width = tot_width($selected_next, true, include_op);
     //check if it's a multiplication operator, and if so, get next thing
     if (next_node.type2 === "op" && next_node.optype === "mult") {
       next_node = get_next(math_root, next_node)
+      next_next_node = get_next(math_root, next_node);      
       var width_diff = selected_next_width - selected_width;
       var $selected_next = next_node.model.obj;
       var selected_next_width = tot_width($selected_next.add($selected_next.prev()), true, include_op);
@@ -429,8 +432,8 @@ export function move_right(){
             next_text_str = next_text_str + "+["+selected_text_str+","+next_text_str+"]";
           }
         }
-
-        if (selection.selected_nodes[0].type === "factor" && /[0-9]$/.test(selection.selected_text) && /^[0-9]/.test(next_next_node.text)) {
+        // console.log(/^[0-9]/.test(next_next_node.text), next_next_node.text)
+        if (selection.selected_nodes[0].type === "factor" && /[0-9]$/.test(selection.selected_text) && next_next_node && /^[0-9]/.test(next_next_node.text)) {
           selected_text_str += "\\cdot "
         }
         new_math_str = replace_in_mtstr(math_root, [next_node].concat(selection.selected_nodes), [selected_text_str, next_text_str]);
@@ -467,6 +470,7 @@ export function move_left() {
     //check if it's a multiplication operator, and if so, get prev thing
     if (prev_node.type2 === "op" && prev_node.optype === "mult") {
       prev_node = get_prev(math_root, prev_node)
+      prev_prev_node = get_next(math_root, prev_node);      
       var $selected_prev = prev_node.model.obj;
       var width_diff = selected_prev_width - selected_width;
       var selected_prev_width = tot_width($selected_prev.add($selected_prev.next()), true, include_op);
@@ -494,7 +498,7 @@ export function move_left() {
           }
         }
 
-        if (selection.selected_nodes[0].type === "factor" && /^[0-9]/.test(selection.selected_text) && /[0-9]$/.test(prev_prev_node.text)) {
+        if (selection.selected_nodes[0].type === "factor" && /^[0-9]/.test(selection.selected_text) && prev_prev_node && /[0-9]$/.test(prev_prev_node.text)) {
           selected_text_str = "\\cdot " + selected_text_str
         }
         console.log("selected_text_str", selected_text_str);
@@ -1432,8 +1436,9 @@ $("#add_both_sides").keyup(function (e) {
 export function add_both_sides(thing, math_str) {
   let math_root = this.math_root;
   let selection = this.selection;
-  var math_HS = math_str.split("=");
-  new_math_str = math_HS[0] + thing + "=" +math_HS[1] + thing;
+  let relText = math_root.first(node => node.type === "rel").text;  
+  var math_HS = math_str.split(relText);
+  new_math_str = math_HS[0] + thing + relText +math_HS[1] + thing;
   return new Promise((resolve, reject) => {resolve(new_math_str)});
 }
 
@@ -1552,8 +1557,9 @@ export function flip_equation(math_str) {
     $equals.nextAll().animate({left:-offset2}, step_duration)
       .promise()
       .done(function() {
-      var math_HS = math_str.split("=");
-      new_math_str = math_HS[1] + "=" + math_HS[0];
+      let relText = math_root.first(node => node.type === "rel").text;      
+      var math_HS = math_str.split(relText);
+      new_math_str = math_HS[1] + relText + math_HS[0];
       resolve(new_math_str);
     });
   });
