@@ -2,7 +2,7 @@
 
 <!-- [![Join the chat at https://gitter.im/guillefix/augmath](https://badges.gitter.im/guillefix/augmath.svg)](https://gitter.im/guillefix/augmath?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge) -->
 
-Try it live [here](http://augmath.net)
+Try it live [here](http://augmath.xyz)
 
 ## Vision
 
