@@ -7,7 +7,7 @@ Try it live [here](http://augmath.xyz)
 ## Vision
 
 See [here](http://guillefix.me/augmath.html).
-A recent video demo can be seen [here](https://www.youtube.com/watch?v=9fwOiLsuXSI&feature=youtu.be)
+Some video demos can be seen [here](https://youtu.be/LyQkDemP67A?t=3m44s) and [here](https://www.youtube.com/watch?v=9fwOiLsuXSI&feature=youtu.be)
 
 ## Usage
 Here's a quick demo of most of the current manipulations:
