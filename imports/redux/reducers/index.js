@@ -84,7 +84,9 @@ const rootReducer = (state = {}, action) => {
     case "SELECT_NODE":
       console.log("selecting node", action.nodeId);
       let nodes = state.selectedNodes;
-      let id = action.nodeId;
+      let id = action.nodeId, mtype = action.mtype, depth = action.depth;
+      if (typeof depth !== "undefined" && depth !== state.depth) return state
+      if (typeof mtype !== "undefined" && mtype !== state.mtype) return state
       let index = nodes.indexOf(id);
       let currEq = action.nodeId.split('/')[0];
       if (state.multi_select && nodes.length > 0 && currEq === nodes[0].split('/')[0]) {

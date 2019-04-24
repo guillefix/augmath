@@ -20,7 +20,7 @@ autopublish@1.0.7             # Publish all data to the clients (for prototyping
 insecure@1.0.7                # Allow all DB writes from clients (for prototyping)
 
 
-ecmascript@0.10.6
+ecmascript
 modules@0.11.3
 shell-server@0.3.1
 react-meteor-data

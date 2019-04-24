@@ -39,22 +39,6 @@ Augmenting how we *do* maths using Computers
         }
         return $found; // Return first match of the collection
     };
-
-    // $.fn.closest_descendents = function(filter,n) {
-    //   let found = false
-    //   var $found = $(),
-    //       $currentSet = this; // Current place
-    //   while ($currentSet.length) {
-    //       for (var i = 0; i < $currentSet.filter(filter).length; i++) {
-    //         $found.add($currentSet.filter(filter)[i]);
-    //         if ($found.length === n) {found=true; break;}  // At least one match: break loop
-    //       }
-    //       if (found) break;
-    //       // Get all children of the current set
-    //       $currentSet = $currentSet.children();
-    //   }
-    //   return $found; // Return first match of the collection
-    // };
 })(jQuery);
 
 Meteor.startup(() => {
@@ -90,4 +74,3 @@ Meteor.startup(() => {
   }
 
 });
-

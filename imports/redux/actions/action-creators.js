@@ -54,8 +54,10 @@ export const updateZoom = (newZoom) => ({
   newZoom
 })
 
-export const selectNode = (nodeId) => ({
+export const selectNode = (nodeId, mtype, depth) => ({
   type: 'SELECT_NODE',
+  mtype,
+  depth,
   nodeId
 })
 
