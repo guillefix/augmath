@@ -11,6 +11,7 @@ import Toolbar from './components/tools/toolbar.js';
 import AccountsUIWrapper from './components/AccountsUIWrapper.jsx';
 
 import * as Actions from '../redux/actions/action-creators';
+import {get_next_id, get_prev_id, get_child_id, get_parent_id } from '../maths/functions.js'
 
 
 export default class App extends React.Component {
@@ -108,46 +109,44 @@ let Nav = () => (
 function setUpKeyControls(dispatch, store) {
   //Key controls
   $(document).on( "keyup", function (e) {
-      if (e.keyCode == 39) { //right
+      if (e.keyCode == 76 && e.altKey) { //move right
+          dispatch(Actions.manipulate("move_right"))
+      } else if (e.keyCode == 72 && e.altKey) { //move left
+          dispatch(Actions.manipulate("move_left"))
+      } else if (e.keyCode == 74 && e.altKey) { //move down
+          dispatch(Actions.manipulate("move_down"))
+      } else if (e.keyCode == 75 && e.altKey) { //move up
+          dispatch(Actions.manipulate("move_up"))
+      } else if (e.keyCode == 39 || e.keyCode == 76) { //right
         const state = store.getState();
         const selectedNodes = state.selectedNodes;
         if (selectedNodes.length > 0) {
-          let arr = selectedNodes[0].split("/");
-          arr[arr.length-1] = (parseInt(arr[arr.length-1])+1).toString();
-          let newNodeId = arr.join("/");
-          dispatch(Actions.selectNode(newNodeId));
+          dispatch(Actions.selectNode(get_next_id(selectedNodes[0])));
           }
-      } else if (e.keyCode == 37) { //left
+      } else if (e.keyCode == 37 || e.keyCode == 72) { //left
         const state = store.getState();
         const selectedNodes = state.selectedNodes;
         if (selectedNodes.length > 0) {
-          let arr = selectedNodes[0].split("/");
-          arr[arr.length-1] = (parseInt(arr[arr.length-1])-1).toString();
-          let newNodeId = arr.join("/");
-          dispatch(Actions.selectNode(newNodeId));
+          dispatch(Actions.selectNode(get_prev_id(selectedNodes[0])));
           }
-      } else if (e.keyCode == 40) { //down
+      } else if (e.keyCode == 40 || e.keyCode == 74) { //down
         const state = store.getState();
         const selectedNodes = state.selectedNodes;
         if (selectedNodes.length > 0) {
-            let arr = selectedNodes[0].split("/");
-            arr = [...arr, "1"];
-            let newNodeId = arr.join("/");
-            dispatch(Actions.selectNode(newNodeId));
+          dispatch(Actions.selectNode(get_child_id(selectedNodes[0])));
         }
-      } else if (e.keyCode == 38) { //up
+      } else if (e.keyCode == 38 || e.keyCode == 75) { //up
         const state = store.getState();
         const selectedNodes = state.selectedNodes;
         if (selectedNodes.length > 0) {
-            let arr = selectedNodes[0].split("/");
-            arr = arr.slice(0,-1);
-            let newNodeId = arr.join("/");
-            dispatch(Actions.selectNode(newNodeId));
+          dispatch(Actions.selectNode(get_parent_id(selectedNodes[0])));
         }
       } else if (e.keyCode == 77 && e.ctrlKey) { //ctrl+m for multiselect
         const state = store.getState();
         dispatch(Actions.updateSelect({multi_select: !state.multi_select}));
         // console.log(thisApp.state.multi_select);
+      } else if (e.keyCode == 68) { //Change side
+          dispatch(Actions.manipulate("change_side"))
       }
   });
 

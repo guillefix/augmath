@@ -52,7 +52,7 @@ export default class Equation extends React.Component {
     //   }
     // }
 
-    store.subscribe(handleDDChange.bind(this));
+    // store.subscribe(handleDDChange.bind(this));
 
     //If math string is changed
     if (prevProps.math !== this.props.math ) { //|| prevProps.eqNum !== this.props.eqNum
@@ -345,12 +345,12 @@ export default class Equation extends React.Component {
       eqCoords.equals_position = this.equals_position;
 
       vars.eqCoords = eqCoords;
+      vars.$equals =  $(this.math_el).find(".base").find(".mrel");
 
       vars.math_root = this.math_root;
       vars.selection = this.selection;
       vars.step_duration = state.step_duration;
       vars.mathStr = this.props.math;
-      vars.$equals =  $(this.math_el).find(".base").find(".mrel");
 
       if (state.manip === "replace" && this.selection.selected_nodes.length > 0) {
         promise = manips[state.manip].call(vars, state.manip_data, state.replace_ind || state.var_select);
@@ -367,9 +367,12 @@ export default class Equation extends React.Component {
           let index = state.current_index;
           store.dispatch(Actions.addToHist(state.equations[state.current_eq], index, state.current_eq));
         }).then((data) => {
+          let mathstr = data.math_str
+          let nodeId = data.selected_node
           console.log("going to update equation", data);
           let index = state.current_index;
-          store.dispatch(Actions.addToHist(data, ++index, state.current_eq));
+          store.dispatch(Actions.addToHist(mathstr, ++index, state.current_eq));
+          store.dispatch(Actions.selectNode(nodeId));
         })
       } else {
         console.log("manip failed");
@@ -410,6 +413,10 @@ export default class Equation extends React.Component {
       node.selected = true;
       node.model.obj.addClass("selected");
       this.selection.selected_nodes.push(node)
+    }
+
+    for (let nodeId of this.props.selectedNodes.sort()) {
+      let node = math_root.first(n => n.model.id === nodeId)
       this.selection.selected_text += node.text;
     }
 

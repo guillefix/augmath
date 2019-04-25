@@ -4,16 +4,6 @@ import { Provider } from 'react-redux'
 import Equation from './components/intmath/equation.js'
 import store from '../redux/store';
 
-
-//Components
-// import Tools from './components/tools/tools.js';
-// import EquationsPanel from './components/equations-panel.js';
-// import MathInput from './components/intmath/mathinput.js';
-// import MQInput from './components/intmath/mqinput.js';
-// import MathArea from './components/intmath/matharea.js';
-// import Toolbar from './components/tools/toolbar.js';
-// import AccountsUIWrapper from './components/AccountsUIWrapper.jsx';
-
 import * as Actions from '../redux/actions/action-creators';
 
 class EqWrapper extends React.Component {

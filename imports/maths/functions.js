@@ -484,6 +484,30 @@ export function get_all_prev(math_root, node) {
   return prev_nodes;
 }
 
+//get related ids
+export function get_prev_id(id) {
+  let arr = id.split("/");
+  arr[arr.length-1] = (parseInt(arr[arr.length-1])-1).toString();
+  return arr.join("/");
+}
+
+export function get_next_id(id) {
+  let arr = id.split("/");
+  arr[arr.length-1] = (parseInt(arr[arr.length-1])+1).toString();
+  return arr.join("/");
+}
+
+export function get_child_id(id) {
+  let arr = id.split("/");
+  arr = [...arr, "1"];
+  return arr.join("/");
+}
+
+export function get_parent_id(id) {
+  let arr = id.split("/");
+  return arr.slice(0,-1).join("/");
+}
+
 //does it have a visible sign?
 export function has_op(obj) {
   if (obj.first().text() === "+" || obj.first().text() === "−") {
@@ -852,6 +876,7 @@ export function parse_poly(root, poly, parent_id, is_container) {
         factor_cnt = 0;
         term_cnt++;
         factor_id = parent_id.toString() + "/" + (term_cnt+1).toString() + "/" + (factor_cnt+1).toString();
+        op = tree.parse({id: factor_id, obj: thing});
         term_id = parent_id.toString() + "/" + (term_cnt+1).toString();
         term = tree.parse({id: term_id});
         term_obj = $();
